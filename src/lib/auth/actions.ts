@@ -18,9 +18,34 @@ export async function iniciaSessioContrasenya(
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: "Correu o contrasenya incorrectes." };
+  if (error) {
+    // Al registre de Vercel queda la causa real; a la pantalla, una de
+    // concreta. Abans tot sortia com a "contrasenya incorrecta" i amagava
+    // errors de configuració.
+    console.error("login:", error.code, error.status, error.message);
+    return { error: missatgeLogin(error.code, error.status) };
+  }
 
   redirect("/");
+}
+
+function missatgeLogin(code: string | undefined, status: number | undefined): string {
+  switch (code) {
+    case "invalid_credentials":
+      return "Correu o contrasenya incorrectes.";
+    case "email_not_confirmed":
+      return "L'usuari no està confirmat. Confirma'l a Supabase (Authentication → Users).";
+    case "user_banned":
+      return "Aquest usuari està bloquejat a Supabase.";
+    case "over_request_rate_limit":
+    case "over_email_send_rate_limit":
+      return "Massa intents seguits. Espera uns minuts.";
+  }
+  if (status === 401 || code === "no_authorization" || code === "bad_jwt")
+    return "La clau de Supabase no és vàlida. Revisa NEXT_PUBLIC_SUPABASE_ANON_KEY a Vercel i torna a desplegar.";
+  if (!status || status === 404 || status >= 500)
+    return "No s'ha pogut connectar amb Supabase. Revisa NEXT_PUBLIC_SUPABASE_URL a Vercel i torna a desplegar.";
+  return `Error d'autenticació (${code ?? status}).`;
 }
 
 export async function iniciaSessioEntra() {
