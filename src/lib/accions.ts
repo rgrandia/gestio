@@ -265,6 +265,38 @@ async function desaCoresponsables(
   return null;
 }
 
+// Arxivar i paperera: res no s'esborra (§7.2). Es marca amb una data i es
+// desfà tornant-la a null.
+export async function arxivaProjecte(id: string, arxivar: boolean): Promise<Resultat> {
+  const supabase = await createClient();
+  const { error, count } = await supabase
+    .from("projectes")
+    .update({ arxivat_el: arxivar ? new Date().toISOString() : null }, { count: "exact" })
+    .eq("id", id);
+  if (error) return { error: missatgeError(error) };
+  if (!count) return { error: "No s'ha trobat el projecte. Recarrega la pàgina." };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function eliminaProjecte(id: string, eliminar: boolean): Promise<Resultat> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const { error, count } = await supabase
+    .from("projectes")
+    .update(
+      eliminar
+        ? { eliminat_el: new Date().toISOString(), eliminat_per: claims?.claims?.sub ?? null }
+        : { eliminat_el: null, eliminat_per: null },
+      { count: "exact" },
+    )
+    .eq("id", id);
+  if (error) return { error: missatgeError(error) };
+  if (!count) return { error: "No s'ha trobat el projecte. Recarrega la pàgina." };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 // ------------------------------------------------------------------
 // Fases, entregables, tasques, contactes
 // ------------------------------------------------------------------

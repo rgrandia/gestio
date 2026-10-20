@@ -12,7 +12,15 @@ export const dynamic = "force-dynamic";
 
 type Filtres = { tipus?: string; client?: string; responsable?: string; estat?: string };
 
-const ESTATS: (EstatProjecte | "obert" | "tots")[] = ["obert", "actiu", "pausat", "tancat", "cancellat", "tots"];
+const ESTATS: (EstatProjecte | "obert" | "tots" | "arxivats" | "paperera")[] = [
+  "obert", "actiu", "pausat", "tancat", "cancellat", "tots", "arxivats", "paperera",
+];
+const TEXT_ESTAT: Record<string, string> = {
+  obert: "actius i pausats",
+  tots: "tots els estats",
+  arxivats: "arxivats",
+  paperera: "paperera",
+};
 
 export default async function Projectes({ searchParams }: { searchParams: Promise<Filtres> }) {
   const f = await searchParams;
@@ -39,8 +47,14 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
       : q.eq("responsable_id", f.responsable);
   }
   // Per defecte, fora tancats i cancel·lats (§7.2)
-  if (estat === "obert") q = q.in("estat", ["actiu", "pausat"]);
-  else if (estat !== "tots") q = q.eq("estat", estat);
+  // Arxivats i paperera només surten quan es demanen explícitament.
+  if (estat === "paperera") q = q.not("eliminat_el", "is", null);
+  else if (estat === "arxivats") q = q.not("arxivat_el", "is", null).is("eliminat_el", null);
+  else {
+    q = q.is("arxivat_el", null).is("eliminat_el", null);
+    if (estat === "obert") q = q.in("estat", ["actiu", "pausat"]);
+    else if (estat !== "tots") q = q.eq("estat", estat);
+  }
 
   const [projectes, clients, perfils] = await Promise.all([q, obteClientsActius(), obtePerfils()]);
   const files = comprova(projectes) as (Projecte & {
@@ -77,7 +91,7 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
         </select>
         <select name="estat" defaultValue={estat} aria-label="estat">
           {ESTATS.map((e) => (
-            <option key={e} value={e}>{e === "obert" ? "actius i pausats" : e === "tots" ? "tots els estats" : e}</option>
+            <option key={e} value={e}>{TEXT_ESTAT[e] ?? e}</option>
           ))}
         </select>
         <button className="boto">filtrar</button>

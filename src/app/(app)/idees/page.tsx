@@ -31,7 +31,13 @@ export default async function Idees({ searchParams }: { searchParams: Promise<{ 
 
   const [ideesR, projectesR, clients, noms] = await Promise.all([
     q,
-    supabase.from("projectes").select("id, titol").eq("estat", "actiu").order("titol"),
+    supabase
+      .from("projectes")
+      .select("id, titol")
+      .eq("estat", "actiu")
+      .is("arxivat_el", null)
+      .is("eliminat_el", null)
+      .order("titol"),
     obteClientsActius(),
     nomsPerfils(),
   ]);

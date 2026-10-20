@@ -33,6 +33,7 @@ export default async function FitxaClient({
       .from("projectes")
       .select("*, contactes(data)")
       .eq("client_id", id)
+      .is("eliminat_el", null) // la paperera no surt a la fitxa
       .order("data_inici", { ascending: false, nullsFirst: false }),
     supabase
       .from("idees")
@@ -51,8 +52,9 @@ export default async function FitxaClient({
     .flatMap((p) => p.contactes.map((c) => c.data))
     .sort()
     .at(-1);
-  const actius = projectes.filter((p) => p.estat === "actiu" || p.estat === "pausat");
-  const tancats = projectes.filter((p) => p.estat === "tancat" || p.estat === "cancellat");
+  // Els arxivats van amb els tancats, encara que el seu estat sigui "actiu".
+  const actius = projectes.filter((p) => !p.arxivat_el && (p.estat === "actiu" || p.estat === "pausat"));
+  const tancats = projectes.filter((p) => p.arxivat_el || p.estat === "tancat" || p.estat === "cancellat");
 
   return (
     <>
@@ -132,7 +134,7 @@ export default async function FitxaClient({
 
       <section className="seccio">
         <header>
-          <span className="titol">projectes tancats</span>
+          <span className="titol">projectes tancats i arxivats</span>
           <span className="meta">{tancats.length}</span>
         </header>
         <LlistaProjectes projectes={tancats} noms={noms} buit="cap projecte tancat" />
@@ -180,7 +182,7 @@ function LlistaProjectes({
               <td><Link href={`/projectes/${p.id}`}>{p.titol}</Link></td>
               <td className="suau">{p.tipus}{p.subtipus ? ` · ${p.subtipus}` : ""}</td>
               <td><Persona nom={noms.get(p.responsable_id)} /></td>
-              <td className="suau">{p.estat}</td>
+              <td className="suau">{p.arxivat_el ? "arxivat" : p.estat}</td>
               <td className="num">{dataCurta(p.data_fi_real ?? p.data_fi_prevista)}</td>
             </tr>
           ))}

@@ -52,6 +52,9 @@ export type Projecte = {
   data_fi_real: string | null;
   dies_silenci_max: number;
   notes: string | null;
+  arxivat_el: string | null;
+  eliminat_el: string | null; // a la paperera
+  eliminat_per: string | null;
 };
 
 export type Fase = {

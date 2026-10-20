@@ -12,11 +12,13 @@ export default async function Clients({ searchParams }: { searchParams: Promise<
   const ambInactius = inactius === "1";
   const supabase = await createClient();
 
-  let q = supabase.from("clients").select("*, projectes(estat)").order("nom");
+  let q = supabase.from("clients").select("*, projectes(estat, arxivat_el, eliminat_el)").order("nom");
   if (!ambInactius) q = q.eq("actiu", true);
 
   const [clientsR, noms] = await Promise.all([q, nomsPerfils()]);
-  const clients = comprova(clientsR) as (Client & { projectes: { estat: string }[] })[];
+  const clients = comprova(clientsR) as (Client & {
+    projectes: { estat: string; arxivat_el: string | null; eliminat_el: string | null }[];
+  })[];
 
   return (
     <>
@@ -52,7 +54,7 @@ export default async function Clients({ searchParams }: { searchParams: Promise<
                   <td><span className="etiqueta">{c.tipus}</span></td>
                   <td className="suau">{c.territori ?? ""}</td>
                   <td><Persona nom={noms.get(c.responsable_id ?? "")} /></td>
-                  <td className="num">{c.projectes.filter((p) => p.estat === "actiu").length}</td>
+                  <td className="num">{c.projectes.filter((p) => p.estat === "actiu" && !p.arxivat_el && !p.eliminat_el).length}</td>
                 </tr>
               ))}
             </tbody>
