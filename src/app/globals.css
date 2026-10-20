@@ -1,0 +1,256 @@
+@import "tailwindcss";
+
+/* ==========================================================
+   Contracte visual (CLAUDE.md §11). Rectangular, sense ombres,
+   sense degradats, monoespaiada per a tota dada.
+   ========================================================== */
+
+:root {
+  --base:        #FFFFFF;
+  --superficie:  #EEF0F2;
+  --linia:       #C9CFD4;
+  --linia-forta: #000000;
+  --text:        #000000;
+  --text-suau:   #5A646E;
+
+  --vencut:      #C2261B;
+  --risc:        #A86B00;
+  --mut:         #3D4A5C;
+  --fet:         #2E6B3E;
+
+  --accent:      #1B4FA0;
+
+  --fila: 34px;
+}
+
+@theme inline {
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+*, *::before, *::after {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background-image: none;
+}
+
+html, body {
+  background: var(--base);
+  color: var(--text);
+}
+
+body {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+/* ---------- estructura ---------- */
+
+.app {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  min-height: 100vh;
+}
+
+.rail {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  background: var(--superficie);
+  border-right: 1px solid var(--linia);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0;
+}
+.rail a, .rail button.enllac {
+  display: block;
+  padding: 4px 16px;
+  color: var(--text);
+}
+.rail a[aria-current="page"] {
+  border-left: 3px solid var(--text);
+  padding-left: 13px;
+  font-weight: 600;
+}
+.rail .marca { padding: 0 16px 16px; color: var(--text-suau); font-size: 11px; }
+.rail .peu { margin-top: auto; border-top: 1px solid var(--linia); padding-top: 8px; font-size: 11px; }
+.rail .peu .nom { padding: 4px 16px; color: var(--text-suau); }
+
+.contingut { padding: 16px 24px 48px; min-width: 0; }
+
+@media (max-width: 720px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .rail {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 8px 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--linia);
+  }
+  .rail .marca { display: none; }
+  .rail nav { display: flex; flex-wrap: wrap; }
+  .rail a, .rail button.enllac { padding: 4px 8px; }
+  .rail a[aria-current="page"] { border-left: 0; padding-left: 8px; text-decoration: underline; }
+  .rail .peu { margin: 0 0 0 auto; border: 0; padding: 0; display: flex; align-items: center; }
+  .rail .peu .nom { display: none; }
+  .contingut { padding: 12px 16px 48px; }
+}
+
+h1 {
+  font-size: 20px;
+  font-weight: 600;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--linia-forta);
+  margin-bottom: 16px;
+}
+
+.seccio { margin-bottom: 32px; }
+.seccio > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--linia-forta);
+  font-weight: 600;
+}
+.seccio > header .meta { font-weight: 400; color: var(--text-suau); font-size: 11px; }
+
+.prosa {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.suau { color: var(--text-suau); }
+.petit { font-size: 11px; }
+
+/* ---------- taules: files, no targetes ---------- */
+
+.taula { width: 100%; border-collapse: collapse; }
+.taula th {
+  text-align: left;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--text-suau);
+  background: var(--superficie);
+  padding: 0 8px;
+  height: 24px;
+  border-bottom: 1px solid var(--linia);
+  white-space: nowrap;
+}
+.taula td {
+  padding: 0 8px;
+  height: var(--fila);
+  border-bottom: 1px solid var(--linia);
+  vertical-align: middle;
+}
+.taula td:first-child, .taula th:first-child { border-left: 3px solid transparent; }
+.taula tr[data-estat="vencut"] td:first-child { border-left-color: var(--vencut); }
+.taula tr[data-estat="risc"]   td:first-child { border-left-color: var(--risc); }
+.taula tr[data-estat="mut"]    td:first-child { border-left-color: var(--mut); }
+.taula tr[data-estat="fet"]    td:first-child { border-left-color: var(--fet); }
+.taula tr[data-estat="cancellat"] td { color: var(--text-suau); }
+.taula .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.taula .nowrap { white-space: nowrap; }
+.taula .accions { text-align: right; white-space: nowrap; }
+.taula tr.expandida td { height: auto; padding-top: 4px; padding-bottom: 4px; }
+
+.buit { padding: 8px 11px; color: var(--text-suau); border-bottom: 1px solid var(--linia); }
+
+/* contenidor amb scroll horitzontal per a mòbil, sense que la pàgina en tingui */
+.desplacable { overflow-x: auto; }
+
+/* ---------- tags d'estat ---------- */
+
+.tag { font-size: 11px; white-space: nowrap; }
+.tag-vencut { color: var(--vencut); }
+.tag-risc   { color: var(--risc); }
+.tag-mut    { color: var(--mut); }
+.tag-fet    { color: var(--fet); }
+
+/* ---------- controls ---------- */
+
+.boto {
+  font: inherit;
+  font-size: 11px;
+  border: 1px solid var(--text);
+  background: transparent;
+  color: var(--text);
+  padding: 2px 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.boto:hover { background: var(--text); color: var(--base); }
+.boto:disabled { opacity: 0.5; cursor: default; }
+.boto:disabled:hover { background: transparent; color: var(--text); }
+.boto-primari { border-color: var(--accent); color: var(--accent); }
+.boto-primari:hover { background: var(--accent); color: var(--base); }
+.boto + .boto { margin-left: 4px; }
+
+.enllac {
+  font: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+input, select, textarea {
+  font: inherit;
+  border: 1px solid var(--linia);
+  background: var(--base);
+  color: var(--text);
+  padding: 4px 6px;
+  min-height: 28px;
+}
+textarea { font-family: var(--font-sans); font-size: 15px; line-height: 1.55; }
+input:focus, select:focus, textarea:focus { border-color: var(--text); }
+
+.formulari { display: grid; gap: 12px; max-width: 640px; }
+.formulari label { display: grid; gap: 4px; font-size: 11px; color: var(--text-suau); }
+.formulari label > input, .formulari label > select, .formulari label > textarea {
+  font-size: 13px; color: var(--text);
+}
+.formulari .fila-camps { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.formulari .check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--text); }
+
+.en-linia { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--linia); }
+.en-linia input, .en-linia select { font-size: 13px; }
+
+.error { color: var(--vencut); font-size: 11px; }
+
+.filtres { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+
+.pestanyes { display: flex; gap: 0; border-bottom: 1px solid var(--linia-forta); margin-bottom: 12px; }
+.pestanyes a { padding: 4px 12px; color: var(--text); border: 1px solid transparent; border-bottom: 0; }
+.pestanyes a[aria-current="page"] { border-color: var(--linia-forta); background: var(--base); margin-bottom: -1px; }
+
+.capcalera {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 16px;
+  margin-bottom: 24px;
+}
+.capcalera dt { color: var(--text-suau); font-size: 11px; line-height: 18px; }
+.capcalera dd { line-height: 18px; }
+
+/* ---------- moviment: només el fos de confirmació (§11.6) ---------- */
+
+.sortint { opacity: 0; transition: opacity 120ms linear; }
+@media (prefers-reduced-motion: reduce) {
+  .sortint { transition: none; }
+}
