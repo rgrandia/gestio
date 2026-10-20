@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { comprova, nomsPerfils, obteClientsActius } from "@/lib/dades";
+import { comprova, obteClientsActius, obtePersones } from "@/lib/dades";
 import { creaIdea } from "@/lib/accions";
 import { dataCurta } from "@/lib/dates";
 import { AccionsIdea } from "@/components/AccionsIdea";
@@ -29,7 +29,7 @@ export default async function Idees({ searchParams }: { searchParams: Promise<{ 
     .order("creat_el", { ascending: false });
   if (!ambDescartades) q = q.neq("estat", "descartada");
 
-  const [ideesR, projectesR, clients, noms] = await Promise.all([
+  const [ideesR, projectesR, clients, persones] = await Promise.all([
     q,
     supabase
       .from("projectes")
@@ -39,7 +39,7 @@ export default async function Idees({ searchParams }: { searchParams: Promise<{ 
       .is("eliminat_el", null)
       .order("titol"),
     obteClientsActius(),
-    nomsPerfils(),
+    obtePersones(),
   ]);
   const idees = comprova(ideesR) as FilaIdea[];
   const projectes = comprova(projectesR) as { id: string; titol: string }[];
@@ -93,7 +93,7 @@ export default async function Idees({ searchParams }: { searchParams: Promise<{ 
                         </td>
                         <td className="suau">{i.clients?.nom ?? ""}</td>
                         <td className="num" title="moment polític objectiu">{i.data_objectiu ? dataCurta(i.data_objectiu) : ""}</td>
-                        <td className="nowrap"><Persona nom={noms.get(i.proposada_per ?? "")} nomesAvatar /></td>
+                        <td className="nowrap"><Persona p={persones.get(i.proposada_per ?? "")} nomesAvatar /></td>
                         <td>
                           {i.projectes && <Link href={`/projectes/${i.projectes.id}`}>→ {i.projectes.titol}</Link>}
                         </td>

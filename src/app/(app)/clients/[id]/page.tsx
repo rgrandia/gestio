@@ -3,12 +3,12 @@ import { Plus } from "lucide-react";
 import { Persona } from "@/components/Persona";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { comprova, membres, obtePerfils } from "@/lib/dades";
+import { comprova, mapaPersones, membres, obtePerfils } from "@/lib/dades";
 import { actualitzaClient } from "@/lib/accions";
 import { avui, dataCurta, desplacament, diesEntre } from "@/lib/dates";
 import { Formulari } from "@/components/Formulari";
 import { CampsClient } from "../CampsClient";
-import type { Client, Idea, Projecte } from "@/lib/tipus";
+import type { Client, Idea, Perfil, Projecte } from "@/lib/tipus";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +45,7 @@ export default async function FitxaClient({
   ]);
   const projectes = comprova(projectesR) as (Projecte & { contactes: { data: string }[] })[];
   const idees = comprova(ideesR) as Idea[];
-  const noms = new Map(perfils.map((p) => [p.id, p.nom]));
+  const persones = mapaPersones(perfils);
   const hui = avui();
 
   const darrerContacte = projectes
@@ -76,7 +76,7 @@ export default async function FitxaClient({
       <dl className="capcalera">
         <div>
           <dt>responsable</dt>
-          <dd><Persona nom={noms.get(client.responsable_id ?? "")} /></dd>
+          <dd><Persona p={persones.get(client.responsable_id ?? "")} /></dd>
         </div>
         <div>
           <dt>darrer contacte</dt>
@@ -107,7 +107,7 @@ export default async function FitxaClient({
           <span className="titol">projectes actius</span>
           
         </header>
-        <LlistaProjectes projectes={actius} noms={noms} buit="cap projecte actiu" />
+        <LlistaProjectes projectes={actius} persones={persones} buit="cap projecte actiu" />
       </section>
 
       <section className="seccio">
@@ -137,7 +137,7 @@ export default async function FitxaClient({
           <span className="titol">projectes tancats i arxivats</span>
           <span className="meta">{tancats.length}</span>
         </header>
-        <LlistaProjectes projectes={tancats} noms={noms} buit="cap projecte tancat" />
+        <LlistaProjectes projectes={tancats} persones={persones} buit="cap projecte tancat" />
       </section>
 
       <section className="seccio">
@@ -165,11 +165,11 @@ export default async function FitxaClient({
 
 function LlistaProjectes({
   projectes,
-  noms,
+  persones,
   buit,
 }: {
   projectes: Projecte[];
-  noms: Map<string, string>;
+  persones: Map<string, Perfil>;
   buit: string;
 }) {
   if (projectes.length === 0) return <div className="buit">{buit}</div>;
@@ -181,7 +181,7 @@ function LlistaProjectes({
             <tr key={p.id} data-estat={p.estat === "cancellat" ? "cancellat" : undefined}>
               <td><Link href={`/projectes/${p.id}`}>{p.titol}</Link></td>
               <td className="suau">{p.tipus}{p.subtipus ? ` · ${p.subtipus}` : ""}</td>
-              <td><Persona nom={noms.get(p.responsable_id)} /></td>
+              <td><Persona p={persones.get(p.responsable_id)} /></td>
               <td className="suau">{p.arxivat_el ? "arxivat" : p.estat}</td>
               <td className="num">{dataCurta(p.data_fi_real ?? p.data_fi_prevista)}</td>
             </tr>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Persona } from "@/components/Persona";
 import { createClient } from "@/lib/supabase/server";
-import { comprova, nomsPerfils } from "@/lib/dades";
+import { comprova, obtePersones } from "@/lib/dades";
 import type { Client } from "@/lib/tipus";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,7 @@ export default async function Clients({ searchParams }: { searchParams: Promise<
   let q = supabase.from("clients").select("*, projectes(estat, arxivat_el, eliminat_el)").order("nom");
   if (!ambInactius) q = q.eq("actiu", true);
 
-  const [clientsR, noms] = await Promise.all([q, nomsPerfils()]);
+  const [clientsR, persones] = await Promise.all([q, obtePersones()]);
   const clients = comprova(clientsR) as (Client & {
     projectes: { estat: string; arxivat_el: string | null; eliminat_el: string | null }[];
   })[];
@@ -53,7 +53,7 @@ export default async function Clients({ searchParams }: { searchParams: Promise<
                   <td><Link href={`/clients/${c.id}`}>{c.nom}</Link></td>
                   <td><span className="etiqueta">{c.tipus}</span></td>
                   <td className="suau">{c.territori ?? ""}</td>
-                  <td><Persona nom={noms.get(c.responsable_id ?? "")} /></td>
+                  <td><Persona p={persones.get(c.responsable_id ?? "")} /></td>
                   <td className="num">{c.projectes.filter((p) => p.estat === "actiu" && !p.arxivat_el && !p.eliminat_el).length}</td>
                 </tr>
               ))}

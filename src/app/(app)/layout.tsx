@@ -26,7 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="seccio-nav">menú</div>
         <NavRail pendents={count ?? 0} />
         <div className="peu">
-          <Persona nom={perfil.nom} nomesAvatar gran />
+          <Persona p={perfil} nomesAvatar gran />
           <span className="nom">
             {perfil.nom}
             <small>{perfil.email}</small>

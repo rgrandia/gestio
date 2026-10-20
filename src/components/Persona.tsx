@@ -1,39 +1,43 @@
-// Inicial en un quadrat de color estable per persona + nom.
-const COLORS = ["#2563EB", "#7C3AED", "#0891B2", "#DB2777", "#EA580C", "#059669"];
+import type { Perfil } from "@/lib/tipus";
 
+// Color de reserva per si un perfil encara no en té (abans de la migració 0008).
+const COLORS = ["#2563EB", "#DB2777", "#059669", "#EA580C", "#7C3AED", "#0891B2"];
 function colorDe(nom: string): string {
   let h = 0;
   for (const c of nom) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return COLORS[h % COLORS.length];
 }
 
+type PersonaMinima = Pick<Perfil, "nom" | "extern"> & { color?: string | null };
+
+// Avatar quadrat amb inicial, del color propi de cada persona, + nom.
+// Externs (sense accés a l'app): avatar buit amb vora discontínua.
 export function Persona({
-  nom,
+  p,
   nomesAvatar = false,
   gran = false,
-  extern = false,
 }: {
-  nom: string | null | undefined;
+  p: PersonaMinima | null | undefined;
   nomesAvatar?: boolean;
   gran?: boolean;
-  extern?: boolean; // sense accés a l'app: avatar buit amb vora discontínua
 }) {
-  if (!nom) return <span className="fluix">—</span>;
+  if (!p) return <span className="fluix">—</span>;
+  const color = p.color ?? colorDe(p.nom);
   const avatar = (
     <span
-      className={["avatar", gran ? "gran" : "", extern ? "extern" : ""].join(" ")}
-      style={extern ? { color: colorDe(nom), borderColor: colorDe(nom) } : { background: colorDe(nom) }}
+      className={["avatar", gran ? "gran" : "", p.extern ? "extern" : ""].join(" ")}
+      style={p.extern ? { color, borderColor: color } : { background: color }}
       aria-hidden={!nomesAvatar}
-      title={extern ? `${nom} (extern, sense accés)` : nom}
+      title={p.extern ? `${p.nom} (extern, sense accés)` : p.nom}
     >
-      {nom.slice(0, 1).toUpperCase()}
+      {p.nom.slice(0, 1).toUpperCase()}
     </span>
   );
   if (nomesAvatar) return avatar;
   return (
     <span className="persona">
       {avatar}
-      {nom}
+      {p.nom}
     </span>
   );
 }

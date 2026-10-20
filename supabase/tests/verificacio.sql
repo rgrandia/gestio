@@ -324,6 +324,30 @@ end $$;
 update projectes set eliminat_el = null where id = '20000000-0000-0000-0000-000000000002';
 update projectes set numero_estudi = null where id = '20000000-0000-0000-0000-000000000004';
 
+-- ------------------------------------------------------------
+-- 0008: colors
+-- ------------------------------------------------------------
+do $$
+declare ca text; cc text;
+begin
+  select color into ca from perfils where id = '00000000-0000-0000-0000-00000000000a';
+  select color into cc from perfils where id = '00000000-0000-0000-0000-00000000000c';
+  assert ca is not null and cc is not null, 'els membres haurien de tenir color';
+  assert ca <> cc, 'dos membres actius tenen el mateix color';
+  begin
+    update perfils set color = cc where id = '00000000-0000-0000-0000-00000000000a';
+    raise exception 'FALLA: un membre ha pogut agafar el color d''un altre';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+  update perfils set color = '#475569' where id = '00000000-0000-0000-0000-00000000000a';
+  assert (select color from perfils where id = '00000000-0000-0000-0000-00000000000a') = '#475569',
+    'un membre no ha pogut canviar el seu color';
+  update perfils set color = '#475568' where id = '00000000-0000-0000-0000-00000000000c';
+  assert (select color from perfils where id = '00000000-0000-0000-0000-00000000000c') = cc,
+    'un membre ha pogut canviar el color d''un altre';
+end $$;
+
 -- historial: cap client hi pot escriure
 do $$ begin
   begin

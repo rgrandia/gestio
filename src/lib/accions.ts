@@ -493,8 +493,27 @@ export async function actualitzaPersonaExterna(_p: Resultat, fd: FormData): Prom
     p_nom: nom,
     p_area: text(fd, "area"),
     p_actiu: fd.get("actiu") === "on",
+    p_color: opcional(fd, "color"),
   });
   if (error) return { error: missatgeError(error) };
   revalidatePath("/equip");
+  return { ok: true };
+}
+
+// Cada membre tria el seu color (la RLS només deixa canviar el propi perfil).
+export async function canviaElMeuColor(_p: Resultat, fd: FormData): Promise<Resultat> {
+  const color = text(fd, "color").toUpperCase();
+  if (!/^#[0-9A-F]{6}$/.test(color)) return { error: "Tria un color de la llista." };
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const jo = claims?.claims?.sub;
+  if (!jo) return { error: "La sessió ha caducat. Torna a entrar." };
+  const { error, count } = await supabase
+    .from("perfils")
+    .update({ color }, { count: "exact" })
+    .eq("id", jo);
+  if (error) return { error: missatgeError(error) };
+  if (!count) return { error: "No s'ha pogut desar el color." };
+  revalidatePath("/", "layout");
   return { ok: true };
 }

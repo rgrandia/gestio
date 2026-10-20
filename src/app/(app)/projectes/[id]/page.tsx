@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { assignables, comprova, etiquetaPersona, membres, obtePerfils } from "@/lib/dades";
+import { assignables, comprova, etiquetaPersona, mapaPersones, membres, obtePerfils } from "@/lib/dades";
 import { avui, dataCurta } from "@/lib/dates";
 import {
   actualitzaProjecte,
@@ -66,6 +66,7 @@ export default async function DetallProjecte({
 
   const perfils = await obtePerfils();
   const noms = new Map(perfils.map((x) => [x.id, x.nom]));
+  const persones = mapaPersones(perfils);
 
   const base = `/projectes/${id}`;
 
@@ -107,8 +108,8 @@ export default async function DetallProjecte({
         <div>
           <dt>{coresponsables.length ? "responsables" : "responsable"}</dt>
           <dd>
-            <Persona nom={noms.get(p.responsable_id)} />
-            {coresponsables.map((id) => <Persona key={id} nom={noms.get(id)} />)}
+            <Persona p={persones.get(p.responsable_id)} />
+            {coresponsables.map((id) => <Persona key={id} p={persones.get(id)} />)}
           </dd>
         </div>
         <div>
@@ -150,7 +151,7 @@ export default async function DetallProjecte({
       {pestanya === "historial" && <Historial projecteId={id} />}
       {pestanya === "editar" && <Editar p={p} perfils={perfils} coresponsables={coresponsables} />}
       {pestanya === "detall" && (
-        <Detall p={p} hui={hui} noms={noms} perfils={perfils} mostraTancats={mostraTancats} base={base} />
+        <Detall p={p} hui={hui} persones={persones} perfils={perfils} mostraTancats={mostraTancats} base={base} />
       )}
     </>
   );
@@ -158,15 +159,15 @@ export default async function DetallProjecte({
 
 async function Detall({
   p,
+  persones,
   hui,
-  noms,
   perfils,
   mostraTancats,
   base,
 }: {
   p: Projecte;
   hui: string;
-  noms: Map<string, string>;
+  persones: Map<string, Perfil>;
   perfils: Perfil[];
   mostraTancats: boolean;
   base: string;
@@ -199,7 +200,6 @@ async function Detall({
     entregablesTots.length - entregables.length + (tasquesTotes.length - tasques.length);
 
   const nomFase = new Map(fases.map((f) => [f.id, f.nom]));
-  const externs = new Set(perfils.filter((x) => x.extern).map((x) => x.id));
   const nomEntregable = new Map(entregablesTots.map((e) => [e.id, e.titol]));
 
   return (
@@ -256,7 +256,7 @@ async function Detall({
                         </div>
                       </td>
                       <td>
-                        <Persona nom={noms.get(qui)} extern={externs.has(qui)} />
+                        <Persona p={persones.get(qui)} />
                         
                       </td>
                       <td className="num">{dataCurta(f.data_inici)}</td>
@@ -280,7 +280,7 @@ async function Detall({
                                       {t.titol}{" "}
                                       {t.prioritat === "alta" && <span className="etiqueta tag-vencut">alta</span>}
                                     </td>
-                                    <td><Persona nom={noms.get(t.assignada_a ?? "")} extern={externs.has(t.assignada_a ?? "")} /></td>
+                                    <td><Persona p={persones.get(t.assignada_a ?? "")} /></td>
                                     <td className="num">{dataCurta(t.data_prevista)}</td>
                                     <td className="num">
                                       {t.estat === "cancellat" ? (
@@ -381,7 +381,7 @@ async function Detall({
                         )}
                       </td>
                       <td className="suau">{e.tipus ?? ""}</td>
-                      <td><Persona nom={noms.get(e.responsable_id ?? p.responsable_id)} extern={externs.has(e.responsable_id ?? "")} /></td>
+                      <td><Persona p={persones.get(e.responsable_id ?? p.responsable_id)} /></td>
                       <td className="num">{dataCurta(e.data_prevista)}</td>
                       <td className="num">{dataCurta(e.data_real)}</td>
                       <td className="num">
@@ -428,7 +428,7 @@ async function Detall({
                     <td className="num nowrap">{dataCurta(c.data)}</td>
                     <td className="suau nowrap">{c.tipus ?? ""}</td>
                     <td className="font-sans">{c.resum ?? ""}</td>
-                    <td className="nowrap"><Persona nom={noms.get(c.usuari_id ?? "")} /></td>
+                    <td className="nowrap"><Persona p={persones.get(c.usuari_id ?? "")} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -491,7 +491,7 @@ async function Detall({
                     <td className="suau">
                       {t.fase_id ? nomFase.get(t.fase_id) : t.entregable_id ? nomEntregable.get(t.entregable_id) : ""}
                     </td>
-                    <td><Persona nom={noms.get(t.assignada_a ?? "")} extern={externs.has(t.assignada_a ?? "")} /></td>
+                    <td><Persona p={persones.get(t.assignada_a ?? "")} /></td>
                     <td className="num">{dataCurta(t.data_prevista)}</td>
                     <td className="num">{dataCurta(t.data_real)}</td>
                     <td className="num">

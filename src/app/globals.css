@@ -394,3 +394,12 @@ tbody.fase:has(.desplega:checked) > tr:first-child td { background: var(--hover)
 /* avisos de projecte arxivat / a la paperera */
 .notes.avis-vencut { border-left-color: var(--vencut); background: var(--vencut-suau); font-family: var(--font-mono); font-size: 13px; }
 .notes.avis-mut    { border-left-color: var(--mut); background: var(--mut-suau); font-family: var(--font-mono); font-size: 13px; }
+
+/* selector de color de persona */
+.selector-color { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.selector-color label { position: relative; cursor: pointer; }
+.selector-color input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.selector-color span { display: block; width: 22px; height: 22px; border: 2px solid var(--panell); outline: 1px solid var(--linia); }
+.selector-color input:checked + span { outline: 2px solid var(--text); }
+.selector-color input:focus-visible + span { outline: 2px solid var(--accent); }
+.selector-color input:disabled + span { opacity: 0.2; cursor: not-allowed; }
