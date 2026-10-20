@@ -12,6 +12,8 @@ import {
 } from "@/lib/dades";
 import { Replanificat } from "@/components/Replanificat";
 import { TiraFases } from "@/components/TiraFases";
+import { EnviaARevisar, EtiquetaRevisio, type DarreraRevisio } from "@/components/Revisio";
+import { requereixMembre } from "@/lib/auth/session";
 import { avui, dataCurta, desplacament, diesEntre } from "@/lib/dates";
 import {
   actualitzaProjecte,
@@ -200,11 +202,33 @@ async function Detall({
   const entregablesTots = comprova(entregablesR) as Entregable[];
   const tasquesTotes = comprova(tasquesR) as Tasca[];
   const contactes = comprova(contactesR) as Contacte[];
-  const replans = await comptaReplanificacions([
-    ...fases.map((x) => x.id),
-    ...entregablesTots.map((x) => x.id),
-    ...tasquesTotes.map((x) => x.id),
+  const [replans, revisionsR, jo] = await Promise.all([
+    comptaReplanificacions([
+      ...fases.map((x) => x.id),
+      ...entregablesTots.map((x) => x.id),
+      ...tasquesTotes.map((x) => x.id),
+    ]),
+    supabase
+      .from("revisions")
+      .select("tasca_id, estat, revisor_id, comentari, creat_el")
+      .in("tasca_id", tasquesTotes.map((t) => t.id))
+      .order("creat_el", { ascending: false }),
+    requereixMembre(),
   ]);
+  // Darrera revisió de cada tasca.
+  const revisions = new Map<string, DarreraRevisio>();
+  for (const r of (revisionsR.data ?? []) as {
+    tasca_id: string;
+    estat: DarreraRevisio["estat"];
+    revisor_id: string;
+    comentari: string | null;
+  }[]) {
+    if (!revisions.has(r.tasca_id))
+      revisions.set(r.tasca_id, { estat: r.estat, revisor: persones.get(r.revisor_id)?.nom ?? "?", comentari: r.comentari });
+  }
+  const revisors = membres(perfils)
+    .filter((x) => x.id !== jo.id)
+    .map((x) => ({ id: x.id, nom: x.nom }));
 
   // Cancel·lats i fets fora per defecte (tasques i entregables), amb filtre per recuperar-los.
   const visible = (x: { estat: string; data_real: string | null }) =>
@@ -504,11 +528,16 @@ async function Detall({
                     estat={estatFila(t.data_prevista, t.data_real, t.estat, hui)}
                     tePrevista={Boolean(t.data_prevista)}
                     acabat={Boolean(t.data_real) || t.estat === "cancellat"}
+                    revisors={revisors}
                   >
                     <td>
                       {t.titol}
                       {t.prioritat === "alta" && <span className="etiqueta tag-vencut ml-1">alta</span>}
                       <Replanificat n={replans.get(t.id)} />
+                      <EtiquetaRevisio r={revisions.get(t.id)} />
+                      {t.data_real && revisions.get(t.id)?.estat !== "pendent" && (
+                        <EnviaARevisar tascaId={t.id} revisors={revisors} />
+                      )}
                     </td>
                     <td className="suau">
                       {t.fase_id ? nomFase.get(t.fase_id) : t.entregable_id ? nomEntregable.get(t.entregable_id) : ""}

@@ -15,6 +15,8 @@ type Props = {
   acabat: boolean; // té data_real o està cancel·lat: sense accions
   desapareix?: boolean; // a la safata, la fila marxa amb un fos de 120 ms
   ambRevisat?: boolean;
+  // Tasques: a qui es pot enviar a revisar en marcar-la feta (membres, sense un mateix).
+  revisors?: { id: string; nom: string }[];
   children: ReactNode;
 };
 
@@ -29,6 +31,7 @@ export function FilaAccionable({
   acabat,
   desapareix = false,
   ambRevisat = false,
+  revisors,
   children,
 }: Props) {
   const router = useRouter();
@@ -42,6 +45,7 @@ export function FilaAccionable({
   const [dataReal, setDataReal] = useState(hui);
   const [novaData, setNovaData] = useState("");
   const [motiu, setMotiu] = useState("");
+  const [revisor, setRevisor] = useState("");
 
   function executa(crida: () => ReturnType<typeof accioItem>, treu: boolean) {
     setError(null);
@@ -105,13 +109,16 @@ export function FilaAccionable({
 
         {obert === "fet" && (
           <form
-            className="inline-flex gap-1 items-center"
+            className="inline-flex flex-wrap gap-1 items-center justify-end"
             onSubmit={(e) => {
               e.preventDefault();
-              executa(() => accioItem({ accio: "fet", taula, id, data: dataReal }), true);
+              executa(
+                () => accioItem({ accio: "fet", taula, id, data: dataReal, revisor: revisor || undefined }),
+                true,
+              );
             }}
           >
-            <label className="petit suau" htmlFor={`real-${id}`}>data real</label>
+            <label className="sr-only" htmlFor={`real-${id}`}>data real</label>
             <input
               id={`real-${id}`}
               type="date"
@@ -121,6 +128,14 @@ export function FilaAccionable({
               autoFocus
               onChange={(e) => setDataReal(e.target.value)}
             />
+            {taula === "tasques" && revisors && revisors.length > 0 && (
+              <select value={revisor} onChange={(e) => setRevisor(e.target.value)} aria-label="enviar a revisar">
+                <option value="">sense revisió</option>
+                {revisors.map((r) => (
+                  <option key={r.id} value={r.id}>i que la revisi {r.nom}</option>
+                ))}
+              </select>
+            )}
             <button className="boto boto-fet" disabled={pendent}><Check className="icona-petita" aria-hidden /> marcar fet</button>
             <button type="button" className="boto boto-suau boto-icona" aria-label="tanca" onClick={() => setObert(null)}><X className="icona-petita" aria-hidden /></button>
           </form>

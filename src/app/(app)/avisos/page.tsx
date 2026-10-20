@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BellOff, CalendarClock, UserCheck, UserPlus } from "lucide-react";
+import { BellOff, CalendarClock, ClipboardCheck, UserCheck, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { comprova, obtePersones } from "@/lib/dades";
 import { marcaAvisosLlegits } from "@/lib/accions";
@@ -21,6 +21,7 @@ const ICONA: Record<string, React.ReactNode> = {
   assignacio: <UserPlus className="icona-petita" aria-hidden />,
   responsable: <UserCheck className="icona-petita" aria-hidden />,
   replanificacio: <CalendarClock className="icona-petita" aria-hidden />,
+  revisio: <ClipboardCheck className="icona-petita" aria-hidden />,
 };
 
 function quan(iso: string): string {
@@ -49,7 +50,7 @@ export default async function Avisos() {
         <div>
           <h1>avisos</h1>
           <div className="sub">
-            quan algú t&apos;assigna feina, et fa responsable o et replanifica alguna cosa
+            quan algú t&apos;assigna feina, et fa responsable, et replanifica alguna cosa o et demana una revisió
           </div>
         </div>
         {noLlegits > 0 && (

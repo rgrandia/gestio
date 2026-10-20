@@ -11,6 +11,10 @@ export function missatgeError(error: ErrorPg): string {
         return "L'inici de la fase ha de ser anterior o igual al final previst.";
       if (error.message?.includes("projectes_numero_estudi_format"))
         return "El número d'estudi ha de tenir exactament 4 xifres.";
+      if (error.message?.includes("revisio_a_un_altre"))
+        return "No pots enviar-te una revisió a tu mateix.";
+      if (error.message?.includes("revisio_retornada_amb_comentari"))
+        return "Explica què cal canviar abans de retornar-la.";
       if (error.message?.includes("tasca_una_sola_ancora"))
         return "Una tasca pot penjar d'una fase o d'un entregable, no de tots dos.";
       return "Algun valor no és vàlid. Revisa el formulari.";

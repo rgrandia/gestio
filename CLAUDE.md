@@ -331,6 +331,16 @@ assignat automàticament en donar-la d'alta. Entre membres actius no es pot
 repetir (trigger). Cadascú canvia el seu des de la pantalla d'equip; els
 externs, per RPC. Serveix per distingir persones amb la mateixa inicial.
 
+### 4.4 quinquies Revisions de tasques (migració 0011)
+
+Qui marca una tasca com a feta la pot enviar a revisar a un altre membre
+(`revisions`). El revisor l'**aprova** o la **retorna** amb comentari
+obligatori; retornar-la la reobre (`data_real = null`, `estat = en_curs`).
+Només el revisor resol i només qui l'ha demanada la cancel·la; com a molt una
+revisió pendent per tasca; cada ronda queda desada. Avisos a totes dues parts.
+A "la meva setmana" hi ha la secció **revisions** (et toca revisar / esperant
+revisió) i compta al número del menú.
+
 ### 4.5 Qui actualitza les fases
 
 **Només el responsable del projecte** (membre del departament). El camp i la
