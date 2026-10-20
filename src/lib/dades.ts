@@ -42,3 +42,17 @@ export function comprova<T>(r: { data: T | null; error: { message: string } | nu
   if (r.error) throw new Error(`Error de base de dades: ${r.error.message}`);
   return r.data as T;
 }
+
+// Nombre de replanificacions de cada element (exclosa la primera planificació).
+export async function comptaReplanificacions(ids: string[]): Promise<Map<string, number>> {
+  const compte = new Map<string, number>();
+  if (ids.length === 0) return compte;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("historial_dates")
+    .select("registre_id")
+    .in("registre_id", ids)
+    .neq("motiu", "planificació inicial");
+  for (const r of data ?? []) compte.set(r.registre_id, (compte.get(r.registre_id) ?? 0) + 1);
+  return compte;
+}

@@ -405,3 +405,47 @@ tbody.fase:has(.desplega:checked) > tr:first-child td { background: var(--hover)
 .selector-color input:checked + span { outline: 2px solid var(--text); }
 .selector-color input:focus-visible + span { outline: 2px solid var(--accent); }
 .selector-color input:disabled + span { opacity: 0.2; cursor: not-allowed; }
+
+/* ---------------- tira de fases ---------------- */
+
+.tira-fases { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; padding: 16px; list-style: none; margin: 0; border-bottom: 1px solid var(--linia); }
+.tira-fases li { display: flex; flex-direction: column; gap: 2px; padding: 0 2px; min-width: 0; }
+.tira-fases .barra { height: 8px; background: var(--linia); margin-bottom: 6px; }
+.tira-fases .nom { font-weight: 600; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tira-fases .quan { font-size: 11px; color: var(--text-suau); white-space: nowrap; }
+.tira-fases .e-fet .barra    { background: var(--fet); }
+.tira-fases .e-vencut .barra { background: var(--vencut); }
+.tira-fases .e-vencut .quan b { color: var(--vencut); }
+.tira-fases .e-risc .barra   { background: var(--risc); }
+.tira-fases .e-risc .quan b  { color: var(--risc); }
+.tira-fases .e-fet .nom      { color: var(--text-suau); }
+.tira-fases .actual .barra   { outline: 2px solid var(--text); outline-offset: 2px; }
+.tira-fases .actual .nom::after { content: " · ara"; color: var(--accent); font-weight: 500; }
+
+.tira-compacta { display: inline-flex; flex-direction: column; gap: 4px; }
+.tira-compacta .blocs { display: inline-flex; gap: 2px; }
+.tira-compacta .bloc { width: 14px; height: 6px; background: var(--linia); }
+.tira-compacta .bloc.e-fet { background: var(--fet); }
+.tira-compacta .bloc.e-vencut { background: var(--vencut); }
+.tira-compacta .bloc.e-risc { background: var(--risc); }
+.tira-compacta .bloc.actual { outline: 1px solid var(--text); outline-offset: 1px; }
+.tira-compacta .nom-fase { font-size: 12px; }
+
+@media (max-width: 720px) {
+  .tira-fases { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* replanificacions */
+.replanificat { gap: 2px; margin-left: 6px; vertical-align: middle; }
+.replanificat svg { width: 12px; height: 12px; }
+
+/* agenda: capçalera de dia */
+.taula tr.dia td { background: var(--hover); font-size: 11px; font-weight: 600; color: var(--text-suau); padding: 6px 12px; border-left: 3px solid transparent; }
+.taula tr.dia.avui td { color: var(--accent); }
+.taula tr.dia:hover td { background: var(--hover); }
+
+/* cercador */
+.cerca { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--linia-forta); background: var(--panell); padding: 0 8px; }
+.cerca input { border: 0; min-height: 32px; padding: 0; outline: none; width: 170px; }
+.cerca input:focus { outline: none; }
+.cerca:focus-within { border-color: var(--accent); outline: 3px solid var(--accent-suau); }
