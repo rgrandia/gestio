@@ -166,6 +166,66 @@ begin
   assert (select ordre from fases where id = f) = 1, 'mou_fase no ha pujat la fase';
 end $$;
 
+-- ------------------------------------------------------------
+-- 0005: inici de fase, número d'estudi, persones externes
+-- ------------------------------------------------------------
+do $$
+declare f uuid;
+begin
+  select id into f from fases where projecte_id = '20000000-0000-0000-0000-000000000001'
+    and data_prevista is not null limit 1;
+  update fases set data_inici = (select data_prevista from fases where id = f) - 3 where id = f;
+  begin
+    update fases set data_inici = (select data_prevista from fases where id = f) + 1 where id = f;
+    raise exception 'FALLA: una fase ha pogut començar després d''acabar';
+  exception when check_violation then null;
+  end;
+end $$;
+
+update projectes set numero_estudi = '1234' where id = '20000000-0000-0000-0000-000000000001';
+do $$ begin
+  begin
+    update projectes set numero_estudi = '12a4' where id = '20000000-0000-0000-0000-000000000002';
+    raise exception 'FALLA: número d''estudi amb format incorrecte acceptat';
+  exception when check_violation then null;
+  end;
+  begin
+    update projectes set numero_estudi = '1234' where id = '20000000-0000-0000-0000-000000000002';
+    raise exception 'FALLA: número d''estudi repetit acceptat';
+  exception when unique_violation then null;
+  end;
+end $$;
+
+-- un membre crea un extern i li assigna una fase i una tasca
+do $$
+declare ext uuid; f uuid;
+begin
+  ext := crea_persona_externa('Marta (dades)', 'dades');
+  perform crea_persona_externa('Extern actiu', 'camp');
+  assert (select extern and actiu from perfils where id = ext), 'l''extern no s''ha creat bé';
+  select id into f from fases where projecte_id = '20000000-0000-0000-0000-000000000001' and ordre = 2;
+  update fases set responsable_id = ext where id = f;
+  update tasques set assignada_a = ext where id = '30000000-0000-0000-0000-000000000005';
+  -- a la safata, el que és d'un extern és del responsable del projecte
+  assert (select responsable_id from v_safata where id = '30000000-0000-0000-0000-000000000005')
+         = '00000000-0000-0000-0000-00000000000a',
+    'una tasca d''un extern hauria de sortir al responsable del projecte';
+  perform actualitza_persona_externa(ext, 'Marta', 'dades', false);
+  assert not (select actiu from perfils where id = ext), 'no s''ha pogut desactivar l''extern';
+  begin
+    perform actualitza_persona_externa('00000000-0000-0000-0000-00000000000a', 'X', null, false);
+    raise exception 'FALLA: s''ha pogut modificar un membre com si fos extern';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+  -- inserir perfils directament continua prohibit
+  begin
+    insert into perfils (id, nom, email) values ('00000000-0000-0000-0000-00000000000b', 'x', 'x');
+    raise exception 'FALLA: un membre ha pogut inserir un perfil directament';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
 -- historial: cap client hi pot escriure
 do $$ begin
   begin
@@ -234,6 +294,26 @@ do $$ begin
     raise exception 'FALLA: inactiu ha pogut crear un client';
   exception when insufficient_privilege then null;
   end;
+end $$;
+
+do $$ begin
+  begin
+    perform crea_persona_externa('Intrús', null);
+    raise exception 'FALLA: un usuari inactiu ha pogut crear un extern';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- un token amb l'id d'un extern no dona accés
+reset role;
+do $$
+declare ext uuid := (select id from perfils where extern and actiu limit 1);
+begin
+  perform set_config('request.jwt.claims', json_build_object('sub', ext)::text, true);
+end $$;
+set local role authenticated;
+do $$ begin
+  assert (select count(*) from projectes) = 0, 'un token amb id d''extern veu projectes';
 end $$;
 
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000ff"}';

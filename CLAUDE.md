@@ -292,6 +292,21 @@ esborrar, vegeu 7.2). Aquest és el punt de partida:
 
 Un projecte de tipus `consultoria` **no genera cap fase**.
 
+### 4.4 bis Ampliacions (octubre 2026, migració 0005)
+
+- **Fases amb inici previst** (`fases.data_inici`). `data_prevista` és el final
+  previst: és el que mira la safata i l'únic amb historial obligatori.
+  L'inici es canvia directament, sense motiu.
+- **Número d'estudi** (`projectes.numero_estudi`): 4 xifres, opcional, únic.
+- **Persones externes** (`perfils.extern = true`, amb `area`): gent sense accés
+  a l'app (p. ex. algú de dades) a qui s'assigna una fase, un entregable o una
+  tasca només per saber qui ho fa. Es creen per RPC (`crea_persona_externa`),
+  mai no poden entrar (`es_membre()` les exclou) i no poden ser responsables
+  de projecte ni de client. A la safata, el que és d'un extern, d'una persona
+  inactiva o de ningú li surt al responsable del projecte.
+- Per això `perfils.id` ja no és clau forana d'`auth.users`. Esborrar un usuari
+  d'auth desactiva el seu perfil en lloc d'esborrar-lo.
+
 ### 4.5 Qui actualitza les fases
 
 **Només el responsable del projecte** (membre del departament). El camp i la
@@ -394,7 +409,7 @@ Si cal navegar al detall del projecte per resoldre una línia, el disseny falla.
 
 ## 6. Pantalles de l'MVP
 
-Quatre. Cap més sense preguntar. Estil visual: secció 11.
+Quatre, més **equip** (membres i persones externes, afegida l'octubre de 2026). Cap més sense preguntar. Estil visual: secció 11.
 
 ### 6.1 La meva setmana (pàgina d'inici)
 

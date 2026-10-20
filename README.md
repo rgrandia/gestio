@@ -68,6 +68,17 @@ npm run dev
 executa la verificació (cal `psql`; usa les variables `PG*` habituals). La CI
 fa el mateix a cada PR.
 
+## Actualitzar una instal·lació existent
+
+Cada fitxer nou de `supabase/migrations/` s'ha d'executar a l'editor SQL de
+Supabase **abans** de fusionar la PR que el porta. Si es publica el codi sense
+la migració, l'app falla en buscar columnes que no existeixen.
+
+1. Enganxa la migració nova a l'editor SQL i executa-la.
+2. Executa `supabase/tests/verificacio.sql`: ha d'acabar amb
+   `verificacio: totes les comprovacions superades`.
+3. Fusiona la PR.
+
 ## Desviacions respecte a CLAUDE.md
 
 Totes són correccions d'errors del text de referència o decisions que el

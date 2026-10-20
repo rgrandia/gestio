@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 import { Persona } from "@/components/Persona";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { comprova, obtePerfils } from "@/lib/dades";
+import { comprova, membres, obtePerfils } from "@/lib/dades";
 import { actualitzaClient } from "@/lib/accions";
 import { avui, dataCurta, desplacament, diesEntre } from "@/lib/dates";
 import { Formulari } from "@/components/Formulari";
@@ -149,7 +149,7 @@ export default async function FitxaClient({
           <div className="cos">
             <Formulari accio={actualitzaClient} boto="desar canvis">
               <input type="hidden" name="id" value={client.id} />
-              <CampsClient client={client} perfils={perfils} />
+              <CampsClient client={client} perfils={membres(perfils)} />
               <label className="check">
                 <input type="checkbox" name="actiu" defaultChecked={client.actiu} /> client actiu
               </label>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requereixMembre } from "@/lib/auth/session";
-import { obteClientsActius, obtePerfils } from "@/lib/dades";
+import { membres, obteClientsActius, obtePerfils } from "@/lib/dades";
 import { creaProjecte } from "@/lib/accions";
 import { Formulari } from "@/components/Formulari";
 
@@ -42,10 +42,23 @@ export default async function NouProjecte({
       {idea && <p className="petit suau mb-3">a partir de la idea «{idea.titol}»</p>}
       <Formulari accio={creaProjecte} boto="crear projecte">
         {idea && <input type="hidden" name="idea_id" value={idea.id} />}
-        <label>
-          títol
-          <input name="titol" required defaultValue={idea?.titol} />
-        </label>
+        <div className="grid gap-4" style={{ gridTemplateColumns: "120px 1fr" }}>
+          <label>
+            núm. d&apos;estudi
+            <input
+              name="numero_estudi"
+              inputMode="numeric"
+              pattern="[0-9]{4}"
+              maxLength={4}
+              placeholder="0000"
+              title="4 xifres"
+            />
+          </label>
+          <label>
+            títol
+            <input name="titol" required defaultValue={idea?.titol} />
+          </label>
+        </div>
         <div className="fila-camps">
           <label>
             tipus
@@ -76,7 +89,7 @@ export default async function NouProjecte({
           <label>
             responsable
             <select name="responsable_id" required defaultValue={perfil.id}>
-              {perfils.map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
+              {membres(perfils).map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
             </select>
           </label>
         </div>

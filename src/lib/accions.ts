@@ -147,8 +147,11 @@ export async function creaProjecte(_p: Resultat, fd: FormData): Promise<Resultat
   const data_inici = dataOpcional(fd, "data_inici");
   const data_fi_prevista = dataOpcional(fd, "data_fi_prevista");
   const idea_id = opcional(fd, "idea_id");
+  const numero_estudi = opcional(fd, "numero_estudi");
 
   if (!titol) return { error: "El projecte necessita un títol." };
+  if (numero_estudi && !/^[0-9]{4}$/.test(numero_estudi))
+    return { error: "El número d'estudi ha de tenir exactament 4 xifres." };
   if (tipus !== "estudi" && tipus !== "consultoria") return { error: "Tria estudi o consultoria." };
   if (!client_id) return { error: "Tria un client." };
   if (!responsable_id) return { error: "Tria un responsable." };
@@ -167,6 +170,7 @@ export async function creaProjecte(_p: Resultat, fd: FormData): Promise<Resultat
       tipus,
       client_id,
       responsable_id,
+      numero_estudi,
       subtipus: opcional(fd, "subtipus"),
       data_inici,
       data_fi_prevista,
@@ -189,9 +193,12 @@ export async function actualitzaProjecte(_p: Resultat, fd: FormData): Promise<Re
   const data_inici = dataOpcional(fd, "data_inici");
   const data_fi_real = dataOpcional(fd, "data_fi_real");
   const silenci = Number(text(fd, "dies_silenci_max"));
+  const numero_estudi = opcional(fd, "numero_estudi");
 
   if (!text(fd, "titol")) return { error: "El projecte necessita un títol." };
   if (!ESTATS_PROJECTE.includes(estat)) return { error: "Estat no vàlid." };
+  if (numero_estudi && !/^[0-9]{4}$/.test(numero_estudi))
+    return { error: "El número d'estudi ha de tenir exactament 4 xifres." };
   if (data_inici === "invalida" || data_fi_real === "invalida")
     return { error: "Les dates han de tenir format AAAA-MM-DD." };
   if (!Number.isInteger(silenci) || silenci <= 0)
@@ -203,6 +210,7 @@ export async function actualitzaProjecte(_p: Resultat, fd: FormData): Promise<Re
     .from("projectes")
     .update({
       titol: text(fd, "titol"),
+      numero_estudi,
       subtipus: opcional(fd, "subtipus"),
       responsable_id: text(fd, "responsable_id"),
       estat,
@@ -224,9 +232,13 @@ export async function actualitzaProjecte(_p: Resultat, fd: FormData): Promise<Re
 export async function creaFase(_p: Resultat, fd: FormData): Promise<Resultat> {
   const projecte_id = text(fd, "projecte_id");
   const nom = text(fd, "nom");
+  const data_inici = dataOpcional(fd, "data_inici");
   const data_prevista = dataOpcional(fd, "data_prevista");
   if (!nom) return { error: "La fase necessita un nom." };
-  if (data_prevista === "invalida") return { error: "La data ha de tenir format AAAA-MM-DD." };
+  if (data_prevista === "invalida" || data_inici === "invalida")
+    return { error: "La data ha de tenir format AAAA-MM-DD." };
+  if (data_inici && data_prevista && data_inici > data_prevista)
+    return { error: "L'inici de la fase ha de ser anterior o igual al final previst." };
 
   const supabase = await createClient();
   const { data: darrera } = await supabase
@@ -241,9 +253,29 @@ export async function creaFase(_p: Resultat, fd: FormData): Promise<Resultat> {
     projecte_id,
     nom,
     ordre: (darrera?.ordre ?? 0) + 1,
+    data_inici,
     data_prevista,
   });
   if (error) return { error: missatgeError(error) };
+  revalidatePath(`/projectes/${projecte_id}`);
+  return { ok: true };
+}
+
+// Inici previst i responsable d'una fase. El final previst NO: va per
+// replanificar(), perquè quedi a l'historial.
+export async function actualitzaFase(_p: Resultat, fd: FormData): Promise<Resultat> {
+  const id = text(fd, "id");
+  const projecte_id = text(fd, "projecte_id");
+  const data_inici = dataOpcional(fd, "data_inici");
+  if (data_inici === "invalida") return { error: "La data ha de tenir format AAAA-MM-DD." };
+
+  const supabase = await createClient();
+  const { error, count } = await supabase
+    .from("fases")
+    .update({ data_inici, responsable_id: opcional(fd, "responsable_id") }, { count: "exact" })
+    .eq("id", id);
+  if (error) return { error: missatgeError(error) };
+  if (!count) return { error: "No s'ha trobat la fase. Recarrega la pàgina." };
   revalidatePath(`/projectes/${projecte_id}`);
   return { ok: true };
 }
@@ -360,5 +392,37 @@ export async function canviaEstatIdea(id: string, estat: EstatIdea): Promise<Res
   const { error } = await supabase.from("idees").update({ estat }).eq("id", id);
   if (error) return { error: missatgeError(error) };
   revalidatePath("/idees");
+  return { ok: true };
+}
+
+// ------------------------------------------------------------------
+// Persones externes: s'hi pot assignar feina però no tenen accés
+// ------------------------------------------------------------------
+
+export async function creaPersonaExterna(_p: Resultat, fd: FormData): Promise<Resultat> {
+  const nom = text(fd, "nom");
+  if (!nom) return { error: "La persona necessita un nom." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("crea_persona_externa", {
+    p_nom: nom,
+    p_area: text(fd, "area"),
+  });
+  if (error) return { error: missatgeError(error) };
+  revalidatePath("/equip");
+  return { ok: true };
+}
+
+export async function actualitzaPersonaExterna(_p: Resultat, fd: FormData): Promise<Resultat> {
+  const nom = text(fd, "nom");
+  if (!nom) return { error: "La persona necessita un nom." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("actualitza_persona_externa", {
+    p_id: text(fd, "id"),
+    p_nom: nom,
+    p_area: text(fd, "area"),
+    p_actiu: fd.get("actiu") === "on",
+  });
+  if (error) return { error: missatgeError(error) };
+  revalidatePath("/equip");
   return { ok: true };
 }
