@@ -1,0 +1,18 @@
+# dependències
+/node_modules
+
+# next
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# entorn: MAI al repositori
+.env
+.env.local
+.env.*.local
+
+# altres
+.DS_Store
+.vercel
+npm-debug.log*
