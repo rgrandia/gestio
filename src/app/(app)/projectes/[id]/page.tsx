@@ -15,6 +15,8 @@ import { Formulari } from "@/components/Formulari";
 import { MouFase } from "@/components/MouFase";
 import { ReplanificaProjecte } from "@/components/ReplanificaProjecte";
 import { Retard, estatFila } from "@/components/Retard";
+import { Persona } from "@/components/Persona";
+import { EtiquetaEstat } from "@/components/EtiquetaEstat";
 import type {
   Contacte,
   Entregable,
@@ -58,38 +60,53 @@ export default async function DetallProjecte({
 
   return (
     <>
-      <h1>{p.titol}</h1>
+      <div className="cap-pagina">
+        <div>
+          <div className="molla">
+            <Link href="/projectes">projectes</Link> /{" "}
+            {p.clients ? <Link href={`/clients/${p.clients.id}`}>{p.clients.nom}</Link> : "—"}
+          </div>
+          <h1>{p.titol}</h1>
+          <div className="sub flex gap-2 items-center mt-2">
+            <span className={`etiqueta ${p.tipus === "estudi" ? "tag-accent" : ""}`}>{p.tipus}</span>
+            {p.subtipus && <span className="etiqueta">{p.subtipus}</span>}
+            <EtiquetaEstat estat={p.estat} />
+          </div>
+        </div>
+      </div>
 
       <dl className="capcalera">
-        <dt>client</dt>
-        <dd>{p.clients ? <Link href={`/clients/${p.clients.id}`}>{p.clients.nom}</Link> : "—"}</dd>
-        <dt>tipus</dt>
-        <dd>{p.tipus}{p.subtipus ? ` · ${p.subtipus}` : ""}</dd>
-        <dt>responsable</dt>
-        <dd>{noms.get(p.responsable_id) ?? "—"}</dd>
-        <dt>estat</dt>
-        <dd>{p.estat}</dd>
-        <dt>inici</dt>
-        <dd>{dataCurta(p.data_inici)}</dd>
-        <dt>fi prevista</dt>
-        <dd>
-          {dataCurta(p.data_fi_prevista)}{" "}
-          {!p.data_fi_real && p.data_fi_prevista && <Retard prevista={p.data_fi_prevista} real={null} hui={hui} />}
-          {p.estat === "actiu" && <ReplanificaProjecte id={p.id} tePrevista={Boolean(p.data_fi_prevista)} />}
-        </dd>
-        <dt>fi real</dt>
-        <dd>
-          {dataCurta(p.data_fi_real)}{" "}
-          {p.data_fi_real && <Retard prevista={p.data_fi_prevista} real={p.data_fi_real} hui={hui} />}
-        </dd>
+        <div>
+          <dt>responsable</dt>
+          <dd><Persona nom={noms.get(p.responsable_id)} /></dd>
+        </div>
+        <div>
+          <dt>inici</dt>
+          <dd>{dataCurta(p.data_inici)}</dd>
+        </div>
+        <div>
+          <dt>fi prevista</dt>
+          <dd>
+            {dataCurta(p.data_fi_prevista)}
+            {!p.data_fi_real && p.data_fi_prevista && <Retard prevista={p.data_fi_prevista} real={null} hui={hui} />}
+            {p.estat === "actiu" && <ReplanificaProjecte id={p.id} tePrevista={Boolean(p.data_fi_prevista)} />}
+          </dd>
+        </div>
+        <div>
+          <dt>fi real</dt>
+          <dd>
+            {dataCurta(p.data_fi_real)}
+            {p.data_fi_real && <Retard prevista={p.data_fi_prevista} real={p.data_fi_real} hui={hui} />}
+          </dd>
+        </div>
         {p.tipus === "consultoria" && (
-          <>
-            <dt>silenci màx.</dt>
+          <div>
+            <dt>silenci màxim</dt>
             <dd>{p.dies_silenci_max} dies</dd>
-          </>
+          </div>
         )}
       </dl>
-      {p.notes && <p className="prosa mb-6">{p.notes}</p>}
+      {p.notes && <p className="prosa notes">{p.notes}</p>}
 
       <nav className="pestanyes" aria-label="seccions del projecte">
         <Link href={base} aria-current={pestanya === "detall" ? "page" : undefined}>detall</Link>
@@ -158,7 +175,7 @@ async function Detall({
       {p.tipus === "estudi" && (
         <section className="seccio">
           <header>
-            <span>fases</span>
+            <span className="titol">fases</span>
             <span className="meta">les actualitza el responsable del projecte; l&apos;app no sap si una fase ha acabat</span>
           </header>
           <div className="desplacable">
@@ -193,7 +210,7 @@ async function Detall({
                     <td className="num">
                       {f.estat !== "cancellat" && <Retard prevista={f.data_prevista} real={f.data_real} hui={hui} />}
                     </td>
-                    <td className="suau">{f.estat === "cancellat" ? "cancel·lada" : f.data_real ? "fet" : f.estat}</td>
+                    <td><EtiquetaEstat estat={f.data_real ? "fet" : f.estat} /></td>
                   </FilaAccionable>
                 ))}
               </tbody>
@@ -210,7 +227,7 @@ async function Detall({
       {(p.tipus === "consultoria" || entregablesTots.length > 0) && (
         <section className="seccio">
           <header>
-            <span>entregables</span>
+            <span className="titol">entregables</span>
             <span className="meta">{entregables.length} oberts</span>
           </header>
           {entregables.length === 0 ? (
@@ -247,7 +264,7 @@ async function Detall({
                         )}
                       </td>
                       <td className="suau">{e.tipus ?? ""}</td>
-                      <td>{noms.get(e.responsable_id ?? p.responsable_id) ?? "—"}</td>
+                      <td><Persona nom={noms.get(e.responsable_id ?? p.responsable_id)} /></td>
                       <td className="num">{dataCurta(e.data_prevista)}</td>
                       <td className="num">{dataCurta(e.data_real)}</td>
                       <td className="num">
@@ -279,7 +296,7 @@ async function Detall({
       {p.tipus === "consultoria" && (
         <section className="seccio">
           <header>
-            <span>contactes</span>
+            <span className="titol">contactes</span>
             <span className="meta">
               darrer: {contactes[0] ? dataCurta(contactes[0].data) : "cap"}
             </span>
@@ -294,7 +311,7 @@ async function Detall({
                     <td className="num nowrap">{dataCurta(c.data)}</td>
                     <td className="suau nowrap">{c.tipus ?? ""}</td>
                     <td className="font-sans">{c.resum ?? ""}</td>
-                    <td className="suau nowrap">{noms.get(c.usuari_id ?? "") ?? ""}</td>
+                    <td className="nowrap"><Persona nom={noms.get(c.usuari_id ?? "")} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -313,7 +330,7 @@ async function Detall({
 
       <section className="seccio">
         <header>
-          <span>tasques</span>
+          <span className="titol">tasques</span>
           <span className="meta">
             {amagats > 0 || mostraTancats ? (
               mostraTancats ? (
@@ -357,7 +374,7 @@ async function Detall({
                     <td className="suau">
                       {t.fase_id ? nomFase.get(t.fase_id) : t.entregable_id ? nomEntregable.get(t.entregable_id) : ""}
                     </td>
-                    <td>{noms.get(t.assignada_a ?? "") ?? "—"}</td>
+                    <td><Persona nom={noms.get(t.assignada_a ?? "")} /></td>
                     <td className="num">{dataCurta(t.data_prevista)}</td>
                     <td className="num">{dataCurta(t.data_real)}</td>
                     <td className="num">
@@ -407,7 +424,7 @@ async function Historial({ projecteId }: { projecteId: string }) {
       .order("creat_el", { ascending: false }),
   ) as Replanificacio[];
 
-  if (files.length === 0) return <div className="buit">cap canvi de data registrat</div>;
+  if (files.length === 0) return <section className="seccio"><div className="buit">cap canvi de data registrat</div></section>;
 
   const nomTaula: Record<string, string> = {
     projectes: "projecte",
@@ -417,6 +434,7 @@ async function Historial({ projecteId }: { projecteId: string }) {
   };
 
   return (
+    <section className="seccio">
     <div className="desplacable">
       <table className="taula">
         <thead>
@@ -445,6 +463,7 @@ async function Historial({ projecteId }: { projecteId: string }) {
         </tbody>
       </table>
     </div>
+    </section>
   );
 }
 

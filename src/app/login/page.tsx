@@ -7,8 +7,13 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
   return (
     <main className="entrada">
       <div className="caixa">
-        <h1>gestió</h1>
-        <p className="sub">supervisió de projectes · estudis polítics i estratègia</p>
+        <div className="marca">
+          <span className="logo" aria-hidden>g</span>
+          <div>
+            <h1>gestió</h1>
+            <div className="sub">estudis polítics i estratègia</div>
+          </div>
+        </div>
         {PROVEIDOR_AUTH === "azure" ? (
           <form action={iniciaSessioEntra} className="formulari">
             <button className="boto boto-primari">entrar amb el compte de GESOP</button>

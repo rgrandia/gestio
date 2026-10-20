@@ -16,7 +16,7 @@ export function FormulariContrasenya() {
         <input name="password" type="password" autoComplete="current-password" required />
       </label>
       <div className="flex items-center gap-2">
-        <button className="boto boto-primari" disabled={pendent}>entrar</button>
+        <button className="boto boto-primari w-full justify-center" disabled={pendent}>entrar</button>
         {estat.error && <span className="error" role="alert">{estat.error}</span>}
       </div>
       <p className="petit suau">

@@ -2,6 +2,7 @@
 
 import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { CalendarClock, Check, Clock, X } from "lucide-react";
 import { accioItem } from "@/lib/accions";
 import { avui } from "@/lib/dates";
 import type { TaulaItem } from "@/lib/tipus";
@@ -76,27 +77,28 @@ export function FilaAccionable({
         {!acabat && obert === null && (
           <>
             <button className="boto boto-fet" disabled={pendent} onClick={() => setObert("fet")}>
-              fet
+              <Check className="icona-petita" aria-hidden /> fet
             </button>
-            <button className="boto boto-suau" disabled={pendent} onClick={() => setObert("replanificar")}>
-              {tePrevista ? "replanificar" : "planificar"}
+            <button className="boto boto-suau" disabled={pendent} onClick={() => setObert("replanificar")} title={tePrevista ? "replanificar" : "planificar"}>
+              <CalendarClock className="icona-petita" aria-hidden /> <span className="text-boto">{tePrevista ? "replanificar" : "planificar"}</span>
             </button>
             {ambRevisat && (
               <button
                 className="boto boto-suau"
                 disabled={pendent}
-                title="amaga-ho 7 dies"
+                title="encara viu: amaga-ho 7 dies"
                 onClick={() => executa(() => accioItem({ accio: "revisat", taula, id }), true)}
               >
-                revisat
+                <Clock className="icona-petita" aria-hidden /> <span className="text-boto">revisat</span>
               </button>
             )}
             <button
-              className="boto boto-suau"
+              className="boto boto-suau boto-perill"
+              title="cancel·lar"
               disabled={pendent}
               onClick={() => executa(() => accioItem({ accio: "cancellar", taula, id }), true)}
             >
-              cancel·lar
+              <X className="icona-petita" aria-hidden /> <span className="text-boto">cancel·lar</span>
             </button>
           </>
         )}
@@ -119,8 +121,8 @@ export function FilaAccionable({
               autoFocus
               onChange={(e) => setDataReal(e.target.value)}
             />
-            <button className="boto boto-primari" disabled={pendent}>marcar fet</button>
-            <button type="button" className="boto boto-suau" aria-label="tanca" onClick={() => setObert(null)}>×</button>
+            <button className="boto boto-fet" disabled={pendent}><Check className="icona-petita" aria-hidden /> marcar fet</button>
+            <button type="button" className="boto boto-suau boto-icona" aria-label="tanca" onClick={() => setObert(null)}><X className="icona-petita" aria-hidden /></button>
           </form>
         )}
 
@@ -156,7 +158,7 @@ export function FilaAccionable({
               />
             )}
             <button className="boto boto-primari" disabled={pendent}>desar</button>
-            <button type="button" className="boto boto-suau" aria-label="tanca" onClick={() => setObert(null)}>×</button>
+            <button type="button" className="boto boto-suau boto-icona" aria-label="tanca" onClick={() => setObert(null)}><X className="icona-petita" aria-hidden /></button>
           </form>
         )}
 

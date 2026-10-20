@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { CalendarClock } from "lucide-react";
 import { accioItem } from "@/lib/accions";
 
 // La data de fi prevista d'un projecte també passa per replanificar() (§4.2).
@@ -15,8 +16,8 @@ export function ReplanificaProjecte({ id, tePrevista }: { id: string; tePrevista
 
   if (!obert)
     return (
-      <button className="boto ml-2" onClick={() => setObert(true)}>
-        {tePrevista ? "replanificar" : "planificar"}
+      <button className="boto boto-suau" onClick={() => setObert(true)}>
+        <CalendarClock className="icona-petita" aria-hidden /> {tePrevista ? "replanificar" : "planificar"}
       </button>
     );
 

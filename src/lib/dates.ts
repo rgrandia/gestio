@@ -19,7 +19,7 @@ export function diesEntre(desDe: string, fins: string): number {
   );
 }
 
-// Desplaçament signat respecte d'avui (§11.5): -14d = fa 14 dies, +2d = d'aquí 2.
+// Desplaçament signat respecte d'avui: -14d = fa 14 dies, +2d = d'aquí 2.
 export function desplacament(dies: number): string {
   if (dies === 0) return "0d";
   return `${dies > 0 ? "+" : "-"}${Math.abs(dies)}d`;
