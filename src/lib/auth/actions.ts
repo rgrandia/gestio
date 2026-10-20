@@ -23,6 +23,22 @@ export async function iniciaSessioContrasenya(
     // concreta. Abans tot sortia com a "contrasenya incorrecta" i amagava
     // errors de configuració.
     console.error("login:", error.code, error.status, error.message);
+    // TEMPORAL (diagnòstic d'invalid_credentials): què arriba al servidor.
+    // Mai la contrasenya; només la llargada i si té caràcters no ASCII.
+    const noAscii = (s: string) =>
+      [...s].filter((c) => c.codePointAt(0)! > 126).map((c) => "U+" + c.codePointAt(0)!.toString(16));
+    console.error(
+      "login-diag:",
+      JSON.stringify({
+        email,
+        emailLlargada: email.length,
+        emailNoAscii: noAscii(email),
+        pwLlargada: password.length,
+        pwNoAscii: noAscii(password).length,
+        pwVoraBlanca: password !== password.trim(),
+        supabase: new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).host,
+      }),
+    );
     return { error: missatgeLogin(error.code, error.status) };
   }
 
