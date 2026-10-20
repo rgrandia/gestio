@@ -11,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { count } = await supabase
     .from("v_safata")
     .select("id", { count: "exact", head: true })
-    .eq("responsable_id", perfil.id);
+    .contains("responsables", [perfil.id]);
 
   return (
     <div className="app">

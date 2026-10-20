@@ -1,7 +1,7 @@
 // Tipus escrits a mà a partir de supabase/migrations. Si l'esquema canvia,
 // s'han d'actualitzar aquí (o generar-los amb `supabase gen types`).
 
-export type TipusProjecte = "estudi" | "consultoria";
+export type TipusProjecte = "estudi" | "consultoria" | "altre";
 export type EstatItem = "pendent" | "en_curs" | "fet" | "cancellat";
 export type EstatProjecte = "actiu" | "pausat" | "tancat" | "cancellat";
 export type EstatIdea = "proposada" | "valorada" | "assignada" | "descartada";

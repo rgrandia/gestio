@@ -12,8 +12,10 @@ begin;
 -- Usuaris de prova
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'membre@prova.test'),
-  ('00000000-0000-0000-0000-00000000000b', 'inactiu@prova.test');
-update perfils set actiu = true where id = '00000000-0000-0000-0000-00000000000a';
+  ('00000000-0000-0000-0000-00000000000b', 'inactiu@prova.test'),
+  ('00000000-0000-0000-0000-00000000000c', 'company@prova.test');
+update perfils set actiu = true
+  where id in ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000c');
 
 -- Comprovació 0: els perfils neixen inactius
 do $$ begin
@@ -226,6 +228,63 @@ begin
   end;
 end $$;
 
+-- ------------------------------------------------------------
+-- 0006: projectes "altre" i co-responsables
+-- ------------------------------------------------------------
+insert into projectes (id, client_id, titol, tipus, responsable_id) values
+  ('20000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000001',
+   'Formació interna', 'altre', '00000000-0000-0000-0000-00000000000a');
+do $$ begin
+  assert (select count(*) from fases where projecte_id = '20000000-0000-0000-0000-000000000004') = 0,
+    'un projecte "altre" no ha de tenir fases';
+end $$;
+
+-- el company passa a co-responsable de l'estudi: veu el que és del projecte
+insert into projecte_responsables (projecte_id, perfil_id) values
+  ('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-00000000000c');
+do $$ begin
+  assert (select responsables_projecte('20000000-0000-0000-0000-000000000001'))
+         = array['00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000c']::uuid[],
+    'responsables_projecte no retorna principal + co-responsable';
+  -- tasca assignada a un extern: la veuen tots dos
+  assert (select '00000000-0000-0000-0000-00000000000c'::uuid = any(responsables)
+            from v_safata where id = '30000000-0000-0000-0000-000000000005'),
+    'el co-responsable no veu una tasca d''un extern del projecte';
+  -- tasca sense assignar: també
+  assert (select '00000000-0000-0000-0000-00000000000c'::uuid = any(responsables)
+            from v_safata where id = '30000000-0000-0000-0000-000000000002'),
+    'el co-responsable no veu una tasca sense assignar del projecte';
+end $$;
+
+-- desactivar el co-responsable el treu
+update projecte_responsables set actiu = false
+  where projecte_id = '20000000-0000-0000-0000-000000000001'
+    and perfil_id = '00000000-0000-0000-0000-00000000000c';
+do $$ begin
+  assert (select responsables_projecte('20000000-0000-0000-0000-000000000001'))
+         = array['00000000-0000-0000-0000-00000000000a']::uuid[],
+    'un co-responsable desactivat continua comptant';
+end $$;
+
+-- un extern no pot ser responsable de projecte, ni principal ni co-
+do $$
+declare ext uuid := (select id from perfils where extern and actiu limit 1);
+begin
+  begin
+    insert into projecte_responsables (projecte_id, perfil_id)
+      values ('20000000-0000-0000-0000-000000000001', ext);
+    raise exception 'FALLA: un extern ha pogut ser co-responsable';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+  begin
+    update projectes set responsable_id = ext where id = '20000000-0000-0000-0000-000000000004';
+    raise exception 'FALLA: un extern ha pogut ser responsable principal';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+end $$;
+
 -- historial: cap client hi pot escriure
 do $$ begin
   begin
@@ -247,7 +306,8 @@ do $$
 declare t text;
 begin
   foreach t in array array['perfils', 'clients', 'projectes', 'fases', 'entregables',
-                           'tasques', 'contactes', 'idees', 'historial_dates']
+                           'tasques', 'contactes', 'idees', 'historial_dates',
+                           'projecte_responsables']
   loop
     begin
       execute format('delete from %I', t);

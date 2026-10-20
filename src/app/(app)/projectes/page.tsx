@@ -21,18 +21,32 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
 
   let q = supabase
     .from("projectes")
-    .select("*, clients(nom)")
+    .select("*, clients(nom), projecte_responsables(perfil_id, actiu)")
     .order("data_fi_prevista", { ascending: true, nullsFirst: false })
     .order("titol");
-  if (f.tipus === "estudi" || f.tipus === "consultoria") q = q.eq("tipus", f.tipus);
+  if (f.tipus === "estudi" || f.tipus === "consultoria" || f.tipus === "altre") q = q.eq("tipus", f.tipus);
   if (f.client) q = q.eq("client_id", f.client);
-  if (f.responsable) q = q.eq("responsable_id", f.responsable);
+  if (f.responsable) {
+    // principal o co-responsable
+    const { data: co } = await supabase
+      .from("projecte_responsables")
+      .select("projecte_id")
+      .eq("perfil_id", f.responsable)
+      .eq("actiu", true);
+    const ids = (co ?? []).map((r) => r.projecte_id);
+    q = ids.length
+      ? q.or(`responsable_id.eq.${f.responsable},id.in.(${ids.join(",")})`)
+      : q.eq("responsable_id", f.responsable);
+  }
   // Per defecte, fora tancats i cancel·lats (§7.2)
   if (estat === "obert") q = q.in("estat", ["actiu", "pausat"]);
   else if (estat !== "tots") q = q.eq("estat", estat);
 
   const [projectes, clients, perfils] = await Promise.all([q, obteClientsActius(), obtePerfils()]);
-  const files = comprova(projectes) as (Projecte & { clients: { nom: string } | null })[];
+  const files = comprova(projectes) as (Projecte & {
+    clients: { nom: string } | null;
+    projecte_responsables: { perfil_id: string; actiu: boolean }[];
+  })[];
   const noms = new Map(perfils.map((p) => [p.id, p.nom]));
   const hui = avui();
 
@@ -51,6 +65,7 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
           <option value="">tots els tipus</option>
           <option value="estudi">estudi</option>
           <option value="consultoria">consultoria</option>
+          <option value="altre">altre</option>
         </select>
         <select name="client" defaultValue={f.client ?? ""} aria-label="client">
           <option value="">tots els clients</option>
@@ -96,7 +111,14 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
                   </td>
                   <td><span className={`etiqueta ${p.tipus === "estudi" ? "tag-accent" : ""}`}>{p.tipus}</span></td>
                   <td>{p.clients?.nom}</td>
-                  <td><Persona nom={noms.get(p.responsable_id)} /></td>
+                  <td>
+                    <span className="flex items-center gap-1">
+                      <Persona nom={noms.get(p.responsable_id)} />
+                      {p.projecte_responsables
+                        .filter((r) => r.actiu && r.perfil_id !== p.responsable_id)
+                        .map((r) => <Persona key={r.perfil_id} nom={noms.get(r.perfil_id)} nomesAvatar />)}
+                    </span>
+                  </td>
                   <td><EtiquetaEstat estat={p.estat} /></td>
                   <td className="num">{dataCurta(p.data_fi_prevista)}</td>
                   <td className="num">{dataCurta(p.data_fi_real)}</td>

@@ -43,7 +43,7 @@ export default async function LaMevaSetmana({
     .select("*")
     .order("data_prevista")
     .order("projecte");
-  if (!veureTot) consultaSafata = consultaSafata.eq("responsable_id", perfil.id);
+  if (!veureTot) consultaSafata = consultaSafata.contains("responsables", [perfil.id]);
 
   const [safata, setmana, muts, idees] = await Promise.all([
     consultaSafata,
@@ -57,7 +57,7 @@ export default async function LaMevaSetmana({
       .gte("data_prevista", hui)
       .lte("data_prevista", fiSetmana)
       .order("data_prevista"),
-    supabase.from("v_projectes_muts").select("*").eq("responsable_id", perfil.id).order("darrer_senyal"),
+    supabase.from("v_projectes_muts").select("*").contains("responsables", [perfil.id]).order("darrer_senyal"),
     supabase
       .from("idees")
       .select("id, titol, data_objectiu")

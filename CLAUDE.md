@@ -307,6 +307,17 @@ Un projecte de tipus `consultoria` **no genera cap fase**.
 - Per això `perfils.id` ja no és clau forana d'`auth.users`. Esborrar un usuari
   d'auth desactiva el seu perfil en lloc d'esborrar-lo.
 
+### 4.4 ter Ampliacions (octubre 2026, migració 0006)
+
+- **Tipus `altre`** a `tipus_projecte`: ni estudi ni consultoria. No genera
+  fases, té entregables i tasques i no pot ser "mut".
+- **Co-responsables** (`projecte_responsables`, amb `actiu` en lloc d'esborrar):
+  `projectes.responsable_id` continua sent el principal. Els co-responsables
+  veuen a la seva safata el que és del projecte (sense assignar o d'un extern);
+  el que està assignat a un membre concret només el veu ell. Ni el principal ni
+  els co-responsables poden ser externs (trigger). La safata exposa
+  `responsables uuid[]` i "els meus" filtra per pertinença.
+
 ### 4.5 Qui actualitza les fases
 
 **Només el responsable del projecte** (membre del departament). El camp i la
