@@ -11,14 +11,21 @@ export function Persona({
   nom,
   nomesAvatar = false,
   gran = false,
+  extern = false,
 }: {
   nom: string | null | undefined;
   nomesAvatar?: boolean;
   gran?: boolean;
+  extern?: boolean; // sense accés a l'app: avatar buit amb vora discontínua
 }) {
   if (!nom) return <span className="fluix">—</span>;
   const avatar = (
-    <span className={gran ? "avatar gran" : "avatar"} style={{ background: colorDe(nom) }} aria-hidden={!nomesAvatar} title={nom}>
+    <span
+      className={["avatar", gran ? "gran" : "", extern ? "extern" : ""].join(" ")}
+      style={extern ? { color: colorDe(nom), borderColor: colorDe(nom) } : { background: colorDe(nom) }}
+      aria-hidden={!nomesAvatar}
+      title={extern ? `${nom} (extern, sense accés)` : nom}
+    >
       {nom.slice(0, 1).toUpperCase()}
     </span>
   );

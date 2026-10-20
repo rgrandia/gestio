@@ -368,3 +368,25 @@ textarea { font-family: var(--font-sans); font-size: 15px; line-height: 1.55; }
 
 /* títol de pàgina sense capçalera composta */
 .contingut > h1 { margin-bottom: 20px; }
+
+/* persona externa: sense accés a l'app */
+.avatar.extern { background: var(--panell); border: 1px dashed; }
+
+/* ---------------- fases desplegables ---------------- */
+
+.desplega { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.desplega:focus-visible + label { outline: 2px solid var(--accent); }
+.fletxa { transition: transform 120ms; }
+tr.fase-detall { display: none; }
+tbody.fase:has(.desplega:checked) tr.fase-detall { display: table-row; }
+tbody.fase:has(.desplega:checked) .fletxa { transform: rotate(90deg); }
+tbody.fase:has(.desplega:checked) > tr:first-child td { background: var(--hover); }
+.taula tr.fase-detall > td { padding: 0; background: var(--hover); }
+.taula tr.fase-detall:hover > td { background: var(--hover); }
+.fase-panell { padding: 4px 16px 16px 56px; }
+.taula-interior { background: var(--panell); border: 1px solid var(--linia); }
+.taula-interior td { padding: 7px 10px; }
+.fase-forms { display: grid; gap: 10px; margin-top: 12px; }
+@media (prefers-reduced-motion: reduce) { .fletxa { transition: none; } }
+.taula-fases .boto-suau .text-boto { display: none; }
+.taula-fases .boto-suau { width: 30px; padding: 0; justify-content: center; }

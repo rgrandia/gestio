@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { comprova, obtePerfils } from "@/lib/dades";
+import { assignables, comprova, etiquetaPersona, membres, obtePerfils } from "@/lib/dades";
 import { avui, dataCurta } from "@/lib/dates";
 import {
   actualitzaProjecte,
   creaContacte,
   creaEntregable,
+  actualitzaFase,
   creaFase,
   creaTasca,
 } from "@/lib/accions";
@@ -16,8 +17,10 @@ import { MouFase } from "@/components/MouFase";
 import { ReplanificaProjecte } from "@/components/ReplanificaProjecte";
 import { Retard, estatFila } from "@/components/Retard";
 import { Persona } from "@/components/Persona";
+import { ChevronRight } from "lucide-react";
 import { EtiquetaEstat } from "@/components/EtiquetaEstat";
 import type {
+  Perfil,
   Contacte,
   Entregable,
   Fase,
@@ -68,6 +71,7 @@ export default async function DetallProjecte({
           </div>
           <h1>{p.titol}</h1>
           <div className="sub flex gap-2 items-center mt-2">
+            {p.numero_estudi && <span className="etiqueta tag-accent">núm. {p.numero_estudi}</span>}
             <span className={`etiqueta ${p.tipus === "estudi" ? "tag-accent" : ""}`}>{p.tipus}</span>
             {p.subtipus && <span className="etiqueta">{p.subtipus}</span>}
             <EtiquetaEstat estat={p.estat} />
@@ -136,7 +140,7 @@ async function Detall({
   p: Projecte;
   hui: string;
   noms: Map<string, string>;
-  perfils: { id: string; nom: string }[];
+  perfils: Perfil[];
   mostraTancats: boolean;
   base: string;
 }) {
@@ -168,6 +172,7 @@ async function Detall({
     entregablesTots.length - entregables.length + (tasquesTotes.length - tasques.length);
 
   const nomFase = new Map(fases.map((f) => [f.id, f.nom]));
+  const externs = new Set(perfils.filter((x) => x.extern).map((x) => x.id));
   const nomEntregable = new Map(entregablesTots.map((e) => [e.id, e.titol]));
 
   return (
@@ -179,47 +184,132 @@ async function Detall({
             <span className="meta">les actualitza el responsable del projecte; l&apos;app no sap si una fase ha acabat</span>
           </header>
           <div className="desplacable">
-            <table className="taula">
+            <table className="taula taula-fases">
               <thead>
                 <tr>
                   <th></th>
                   <th>fase</th>
-                  <th className="num">previst</th>
+                  <th>qui la fa</th>
+                  <th className="num">inici</th>
+                  <th className="num">final previst</th>
                   <th className="num">real</th>
                   <th className="num">retard</th>
-                  <th>estat</th>
                   <th></th>
                 </tr>
               </thead>
-              <tbody>
-                {fases.map((f, i) => (
-                  <FilaAccionable
-                    key={f.id}
-                    taula="fases"
-                    id={f.id}
-                    estat={estatFila(f.data_prevista, f.data_real, f.estat, hui)}
-                    tePrevista={Boolean(f.data_prevista)}
-                    acabat={Boolean(f.data_real) || f.estat === "cancellat"}
-                  >
-                    <td className="nowrap">
-                      <MouFase id={f.id} primera={i === 0} darrera={i === fases.length - 1} />
-                    </td>
-                    <td>{f.nom}</td>
-                    <td className="num">{dataCurta(f.data_prevista)}</td>
-                    <td className="num">{dataCurta(f.data_real)}</td>
-                    <td className="num">
-                      {f.estat !== "cancellat" && <Retard prevista={f.data_prevista} real={f.data_real} hui={hui} />}
-                    </td>
-                    <td><EtiquetaEstat estat={f.data_real ? "fet" : f.estat} /></td>
-                  </FilaAccionable>
-                ))}
-              </tbody>
+              {fases.map((f, i) => {
+                const tasquesFase = tasquesTotes.filter((t) => t.fase_id === f.id);
+                const obertes = tasquesFase.filter((t) => !t.data_real && t.estat !== "cancellat").length;
+                const qui = f.responsable_id ?? p.responsable_id;
+                return (
+                  // Un tbody per fase: la fila i el seu desplegable van junts.
+                  <tbody key={f.id} className="fase">
+                    <FilaAccionable
+                      taula="fases"
+                      id={f.id}
+                      estat={estatFila(f.data_prevista, f.data_real, f.estat, hui)}
+                      tePrevista={Boolean(f.data_prevista)}
+                      acabat={Boolean(f.data_real) || f.estat === "cancellat"}
+                    >
+                      <td className="nowrap">
+                        <input type="checkbox" id={`desplega-${f.id}`} className="desplega" />
+                        <label htmlFor={`desplega-${f.id}`} className="boto boto-suau boto-icona" title="tasques i detalls de la fase">
+                          <ChevronRight className="icona-petita fletxa" aria-hidden />
+                          <span className="sr-only">desplega {f.nom}</span>
+                        </label>
+                        <MouFase id={f.id} primera={i === 0} darrera={i === fases.length - 1} />
+                      </td>
+                      <td className="element">
+                        <div className="titol-el">{f.nom}</div>
+                        <div className="context">
+                          {tasquesFase.length === 0
+                            ? "cap tasca"
+                            : `${tasquesFase.length} ${tasquesFase.length === 1 ? "tasca" : "tasques"}${obertes ? ` · ${obertes} obertes` : ""}`}
+                          {f.estat === "cancellat" && " · cancel·lada"}
+                        </div>
+                      </td>
+                      <td>
+                        <Persona nom={noms.get(qui)} extern={externs.has(qui)} />
+                        
+                      </td>
+                      <td className="num">{dataCurta(f.data_inici)}</td>
+                      <td className="num">{dataCurta(f.data_prevista)}</td>
+                      <td className="num">{dataCurta(f.data_real)}</td>
+                      <td className="num">
+                        {f.estat !== "cancellat" && <Retard prevista={f.data_prevista} real={f.data_real} hui={hui} />}
+                      </td>
+                    </FilaAccionable>
+                    <tr className="fase-detall">
+                      <td colSpan={9}>
+                        <div className="fase-panell">
+                          {tasquesFase.length === 0 ? (
+                            <p className="suau petit">Aquesta fase encara no té tasques.</p>
+                          ) : (
+                            <table className="taula taula-interior">
+                              <tbody>
+                                {tasquesFase.map((t) => (
+                                  <tr key={t.id} data-estat={estatFila(t.data_prevista, t.data_real, t.estat, hui)}>
+                                    <td className="ample">
+                                      {t.titol}{" "}
+                                      {t.prioritat === "alta" && <span className="etiqueta tag-vencut">alta</span>}
+                                    </td>
+                                    <td><Persona nom={noms.get(t.assignada_a ?? "")} extern={externs.has(t.assignada_a ?? "")} /></td>
+                                    <td className="num">{dataCurta(t.data_prevista)}</td>
+                                    <td className="num">
+                                      {t.estat === "cancellat" ? (
+                                        <EtiquetaEstat estat="cancellat" />
+                                      ) : (
+                                        <Retard prevista={t.data_prevista} real={t.data_real} hui={hui} />
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                          <div className="fase-forms">
+                            <Formulari accio={creaTasca} boto="afegir tasca" className="flex flex-wrap gap-2 items-center" buidaEnDesar>
+                              <input type="hidden" name="projecte_id" value={p.id} />
+                              <input type="hidden" name="ancora" value={`fase:${f.id}`} />
+                              <input name="titol" placeholder={`nova tasca de ${f.nom.toLowerCase()}`} aria-label="títol" required />
+                              <SelectPersona nom="assignada_a" perfils={perfils} buit="sense assignar" />
+                              <input name="data_prevista" type="date" aria-label="data prevista" />
+                            </Formulari>
+                            <Formulari accio={actualitzaFase} boto="desar fase" className="flex flex-wrap gap-2 items-center">
+                              <input type="hidden" name="id" value={f.id} />
+                              <input type="hidden" name="projecte_id" value={p.id} />
+                              <label className="petit suau flex items-center gap-2">
+                                inici
+                                <input name="data_inici" type="date" defaultValue={f.data_inici ?? ""} aria-label="inici de la fase" />
+                              </label>
+                              <label className="petit suau flex items-center gap-2">
+                                qui la fa
+                                <SelectPersona
+                                  nom="responsable_id"
+                                  perfils={perfils}
+                                  valor={f.responsable_id ?? ""}
+                                  buit="el responsable del projecte"
+                                />
+                              </label>
+                            </Formulari>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                );
+              })}
             </table>
           </div>
           <Formulari accio={creaFase} boto="afegir fase" className="en-linia" buidaEnDesar>
             <input type="hidden" name="projecte_id" value={p.id} />
             <input name="nom" placeholder="nova fase" aria-label="nom de la fase" required />
-            <input name="data_prevista" type="date" aria-label="data prevista" />
+            <label className="petit suau flex items-center gap-2">
+              inici <input name="data_inici" type="date" aria-label="inici" />
+            </label>
+            <label className="petit suau flex items-center gap-2">
+              final <input name="data_prevista" type="date" aria-label="final previst" />
+            </label>
           </Formulari>
         </section>
       )}
@@ -264,7 +354,7 @@ async function Detall({
                         )}
                       </td>
                       <td className="suau">{e.tipus ?? ""}</td>
-                      <td><Persona nom={noms.get(e.responsable_id ?? p.responsable_id)} /></td>
+                      <td><Persona nom={noms.get(e.responsable_id ?? p.responsable_id)} extern={externs.has(e.responsable_id ?? "")} /></td>
                       <td className="num">{dataCurta(e.data_prevista)}</td>
                       <td className="num">{dataCurta(e.data_real)}</td>
                       <td className="num">
@@ -286,7 +376,7 @@ async function Detall({
             <input name="data_prevista" type="date" aria-label="data prevista" />
             <select name="responsable_id" aria-label="responsable" defaultValue="">
               <option value="">responsable del projecte</option>
-              {perfils.map((x) => <option key={x.id} value={x.id}>{x.nom}</option>)}
+              {assignables(perfils).map((x) => <option key={x.id} value={x.id}>{etiquetaPersona(x)}</option>)}
             </select>
             <input name="enllac" type="url" placeholder="https:// (SharePoint/Drive)" aria-label="enllaç" />
           </Formulari>
@@ -374,7 +464,7 @@ async function Detall({
                     <td className="suau">
                       {t.fase_id ? nomFase.get(t.fase_id) : t.entregable_id ? nomEntregable.get(t.entregable_id) : ""}
                     </td>
-                    <td><Persona nom={noms.get(t.assignada_a ?? "")} /></td>
+                    <td><Persona nom={noms.get(t.assignada_a ?? "")} extern={externs.has(t.assignada_a ?? "")} /></td>
                     <td className="num">{dataCurta(t.data_prevista)}</td>
                     <td className="num">{dataCurta(t.data_real)}</td>
                     <td className="num">
@@ -391,7 +481,7 @@ async function Detall({
           <input name="titol" placeholder="nova tasca" aria-label="títol" required />
           <select name="assignada_a" aria-label="assignada a" defaultValue="">
             <option value="">sense assignar</option>
-            {perfils.map((x) => <option key={x.id} value={x.id}>{x.nom}</option>)}
+            {assignables(perfils).map((x) => <option key={x.id} value={x.id}>{etiquetaPersona(x)}</option>)}
           </select>
           <input name="data_prevista" type="date" aria-label="data prevista" />
           <select name="ancora" aria-label="penja de" defaultValue="">
@@ -467,14 +557,27 @@ async function Historial({ projecteId }: { projecteId: string }) {
   );
 }
 
-function Editar({ p, perfils }: { p: Projecte; perfils: { id: string; nom: string }[] }) {
+function Editar({ p, perfils }: { p: Projecte; perfils: Perfil[] }) {
   return (
     <Formulari accio={actualitzaProjecte} boto="desar canvis">
       <input type="hidden" name="id" value={p.id} />
-      <label>
-        títol
-        <input name="titol" required defaultValue={p.titol} />
-      </label>
+      <div className="grid gap-4" style={{ gridTemplateColumns: "120px 1fr" }}>
+        <label>
+          núm. d&apos;estudi
+          <input
+            name="numero_estudi"
+            inputMode="numeric"
+            pattern="[0-9]{4}"
+            maxLength={4}
+            placeholder="0000"
+            defaultValue={p.numero_estudi ?? ""}
+          />
+        </label>
+        <label>
+          títol
+          <input name="titol" required defaultValue={p.titol} />
+        </label>
+      </div>
       <div className="fila-camps">
         <label>
           subtipus
@@ -483,7 +586,7 @@ function Editar({ p, perfils }: { p: Projecte; perfils: { id: string; nom: strin
         <label>
           responsable
           <select name="responsable_id" defaultValue={p.responsable_id}>
-            {perfils.map((x) => <option key={x.id} value={x.id}>{x.nom}</option>)}
+            {membres(perfils).map((x) => <option key={x.id} value={x.id}>{x.nom}</option>)}
           </select>
         </label>
         <label>
@@ -515,5 +618,33 @@ function Editar({ p, perfils }: { p: Projecte; perfils: { id: string; nom: strin
         <textarea name="notes" rows={4} defaultValue={p.notes ?? ""} />
       </label>
     </Formulari>
+  );
+}
+
+// Desplegable de persones: membres primer i externs marcats.
+function SelectPersona({
+  nom,
+  perfils,
+  valor,
+  buit,
+}: {
+  nom: string;
+  perfils: Perfil[];
+  valor?: string;
+  buit: string;
+}) {
+  const llista = assignables(perfils);
+  return (
+    <select name={nom} defaultValue={valor ?? ""} aria-label={nom === "responsable_id" ? "qui la fa" : "assignada a"}>
+      <option value="">{buit}</option>
+      <optgroup label="equip">
+        {llista.filter((x) => !x.extern).map((x) => <option key={x.id} value={x.id}>{x.nom}</option>)}
+      </optgroup>
+      {llista.some((x) => x.extern) && (
+        <optgroup label="externs (sense accés)">
+          {llista.filter((x) => x.extern).map((x) => <option key={x.id} value={x.id}>{etiquetaPersona(x)}</option>)}
+        </optgroup>
+      )}
+    </select>
   );
 }

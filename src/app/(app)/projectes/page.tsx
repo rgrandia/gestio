@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { comprova, obteClientsActius, obtePerfils } from "@/lib/dades";
+import { comprova, membres, obteClientsActius, obtePerfils } from "@/lib/dades";
 import { avui, dataCurta } from "@/lib/dates";
 import { Retard } from "@/components/Retard";
 import { Persona } from "@/components/Persona";
@@ -58,7 +58,7 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
         </select>
         <select name="responsable" defaultValue={f.responsable ?? ""} aria-label="responsable">
           <option value="">tots els responsables</option>
-          {perfils.map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
+          {membres(perfils).map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
         </select>
         <select name="estat" defaultValue={estat} aria-label="estat">
           {ESTATS.map((e) => (
@@ -75,6 +75,7 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
           <table className="taula">
             <thead>
               <tr>
+                <th className="num">núm.</th>
                 <th>projecte</th>
                 <th>tipus</th>
                 <th>client</th>
@@ -88,6 +89,7 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
             <tbody>
               {files.map((p) => (
                 <tr key={p.id} data-estat={p.estat === "cancellat" ? "cancellat" : undefined}>
+                  <td className="num suau">{p.numero_estudi ?? ""}</td>
                   <td className="element">
                     <div className="titol-el"><Link href={`/projectes/${p.id}`}>{p.titol}</Link></div>
                     {p.subtipus && <div className="context">{p.subtipus}</div>}

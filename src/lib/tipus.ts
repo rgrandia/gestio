@@ -18,7 +18,15 @@ export const TAULA_DE: Record<TipusItem, TaulaItem> = {
   tasca: "tasques",
 };
 
-export type Perfil = { id: string; nom: string; email: string; actiu: boolean };
+// `extern`: persona sense accés a l'app (p. ex. algú de dades), només per assignar-li feina.
+export type Perfil = {
+  id: string;
+  nom: string;
+  email: string | null;
+  actiu: boolean;
+  extern: boolean;
+  area: string | null;
+};
 
 export type Client = {
   id: string;
@@ -38,6 +46,7 @@ export type Projecte = {
   subtipus: string | null;
   responsable_id: string;
   estat: EstatProjecte;
+  numero_estudi: string | null;
   data_inici: string | null;
   data_fi_prevista: string | null;
   data_fi_real: string | null;
@@ -50,7 +59,8 @@ export type Fase = {
   projecte_id: string;
   nom: string;
   ordre: number;
-  data_prevista: string | null;
+  data_inici: string | null;
+  data_prevista: string | null; // final previst
   data_real: string | null;
   estat: EstatItem;
   revisat_el: string | null;

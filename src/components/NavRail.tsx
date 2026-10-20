@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, CalendarCheck, FolderKanban, Lightbulb } from "lucide-react";
+import { Building2, CalendarCheck, FolderKanban, Lightbulb, Users } from "lucide-react";
 
 const ENLLACOS = [
   { href: "/", text: "la meva setmana", Icona: CalendarCheck },
   { href: "/projectes", text: "projectes", Icona: FolderKanban },
   { href: "/idees", text: "idees", Icona: Lightbulb },
   { href: "/clients", text: "clients", Icona: Building2 },
+  { href: "/equip", text: "equip", Icona: Users },
 ];
 
 // `pendents`: elements meus a la safata, perquè es vegi des de qualsevol pantalla.

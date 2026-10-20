@@ -15,7 +15,7 @@ export const obteSessio = cache(async (): Promise<Sessio | null> => {
   // Si l'usuari no és membre actiu, l'RLS no li retorna ni el seu perfil.
   const { data: perfil } = await supabase
     .from("perfils")
-    .select("id, nom, email, actiu")
+    .select("id, nom, email, actiu, extern, area")
     .eq("id", sub)
     .maybeSingle();
 

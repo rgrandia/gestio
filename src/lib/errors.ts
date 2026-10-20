@@ -7,9 +7,17 @@ export function missatgeError(error: ErrorPg): string {
     case "23514":
       if (error.message?.includes("fet_te_data_real"))
         return "Per marcar-ho fet cal una data real.";
+      if (error.message?.includes("fases_inici_abans_final"))
+        return "L'inici de la fase ha de ser anterior o igual al final previst.";
+      if (error.message?.includes("projectes_numero_estudi_format"))
+        return "El número d'estudi ha de tenir exactament 4 xifres.";
       if (error.message?.includes("tasca_una_sola_ancora"))
         return "Una tasca pot penjar d'una fase o d'un entregable, no de tots dos.";
       return "Algun valor no és vàlid. Revisa el formulari.";
+    case "23505":
+      if (error.message?.includes("numero_estudi"))
+        return "Aquest número d'estudi ja el fa servir un altre projecte.";
+      return "Ja existeix un registre amb aquestes dades.";
     case "23502":
       return "Falta un camp obligatori.";
     case "23503":
