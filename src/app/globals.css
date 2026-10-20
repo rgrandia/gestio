@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ==========================================================
-   Estil (CLAUDE.md §11): IBM Plex Mono i cantonades rectes.
+   Estil (CLAUDE.md §11): Montserrat i cantonades rectes.
    La resta és lliure.
    ========================================================== */
 
@@ -35,8 +35,8 @@
 }
 
 @theme inline {
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
-  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
 }
 
 *, *::before, *::after { border-radius: 0 !important; }
@@ -44,8 +44,10 @@
 html, body { background: var(--fons); color: var(--text); }
 
 body {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 13px;
+  /* xifres d'amplada fixa: dates i retards alineats a les taules */
+  font-variant-numeric: tabular-nums;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }

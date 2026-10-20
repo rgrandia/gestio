@@ -628,6 +628,6 @@ ho seran, i les que faltin de debò es veuran de seguida.
 
 ## 11. Estil visual
 
-Lliure. Només dues constants: tipografia **IBM Plex Mono** i **cantonades rectes**
+Lliure. Només dues constants: tipografia **Montserrat** i **cantonades rectes**
 (`border-radius: 0`). La resta (color, jerarquia, icones, ombres) s'ha de decidir
 per fer l'app clara i agradable d'utilitzar.

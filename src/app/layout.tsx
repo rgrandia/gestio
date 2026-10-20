@@ -1,18 +1,13 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import "./globals.css";
 
-// next/font descarrega les fonts en compilar i les serveix des de l'app:
+// next/font descarrega la font en compilar i la serveix des de l'app:
 // el navegador no fa cap petició a Google.
-const mono = IBM_Plex_Mono({
+const montserrat = Montserrat({
   subsets: ["latin"],
-  weight: ["400", "600"],
-  variable: "--font-plex-mono",
-});
-const sans = IBM_Plex_Sans({
-  subsets: ["latin"],
-  weight: ["400", "600"],
-  variable: "--font-plex-sans",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-montserrat",
 });
 
 export const metadata: Metadata = {
@@ -22,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ca" className={`${mono.variable} ${sans.variable}`}>
+    <html lang="ca" className={montserrat.variable}>
       <body>{children}</body>
     </html>
   );
