@@ -1,6 +1,7 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { supabaseClau, supabaseUrl } from "./config";
 
 // Client de Supabase per a Server Components, Server Actions i Route
 // Handlers. Fa servir NOMÉS la clau pública: tot el que pot fer ho decideix
@@ -9,8 +10,8 @@ export async function createClient() {
   const cookieStore = await cookies();
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl(),
+    supabaseClau(),
     {
       cookies: {
         getAll() {
