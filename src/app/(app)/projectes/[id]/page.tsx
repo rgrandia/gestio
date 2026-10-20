@@ -18,6 +18,7 @@ import { ReplanificaProjecte } from "@/components/ReplanificaProjecte";
 import { Retard, estatFila } from "@/components/Retard";
 import { Persona } from "@/components/Persona";
 import { ChevronRight } from "lucide-react";
+import { CampCoresponsables } from "@/components/CampCoresponsables";
 import { EtiquetaEstat } from "@/components/EtiquetaEstat";
 import type {
   Perfil,
@@ -50,11 +51,17 @@ export default async function DetallProjecte({
   const supabase = await createClient();
   const { data: projecte } = await supabase
     .from("projectes")
-    .select("*, clients(id, nom)")
+    .select("*, clients(id, nom), projecte_responsables(perfil_id, actiu)")
     .eq("id", id)
     .maybeSingle();
   if (!projecte) notFound();
-  const p = projecte as Projecte & { clients: { id: string; nom: string } | null };
+  const p = projecte as Projecte & {
+    clients: { id: string; nom: string } | null;
+    projecte_responsables: { perfil_id: string; actiu: boolean }[];
+  };
+  const coresponsables = p.projecte_responsables
+    .filter((r) => r.actiu && r.perfil_id !== p.responsable_id)
+    .map((r) => r.perfil_id);
 
   const perfils = await obtePerfils();
   const noms = new Map(perfils.map((x) => [x.id, x.nom]));
@@ -81,8 +88,11 @@ export default async function DetallProjecte({
 
       <dl className="capcalera">
         <div>
-          <dt>responsable</dt>
-          <dd><Persona nom={noms.get(p.responsable_id)} /></dd>
+          <dt>{coresponsables.length ? "responsables" : "responsable"}</dt>
+          <dd>
+            <Persona nom={noms.get(p.responsable_id)} />
+            {coresponsables.map((id) => <Persona key={id} nom={noms.get(id)} />)}
+          </dd>
         </div>
         <div>
           <dt>inici</dt>
@@ -121,7 +131,7 @@ export default async function DetallProjecte({
       </nav>
 
       {pestanya === "historial" && <Historial projecteId={id} />}
-      {pestanya === "editar" && <Editar p={p} perfils={perfils} />}
+      {pestanya === "editar" && <Editar p={p} perfils={perfils} coresponsables={coresponsables} />}
       {pestanya === "detall" && (
         <Detall p={p} hui={hui} noms={noms} perfils={perfils} mostraTancats={mostraTancats} base={base} />
       )}
@@ -314,7 +324,7 @@ async function Detall({
         </section>
       )}
 
-      {(p.tipus === "consultoria" || entregablesTots.length > 0) && (
+      {(p.tipus !== "estudi" || entregablesTots.length > 0) && (
         <section className="seccio">
           <header>
             <span className="titol">entregables</span>
@@ -557,7 +567,7 @@ async function Historial({ projecteId }: { projecteId: string }) {
   );
 }
 
-function Editar({ p, perfils }: { p: Projecte; perfils: Perfil[] }) {
+function Editar({ p, perfils, coresponsables }: { p: Projecte; perfils: Perfil[]; coresponsables: string[] }) {
   return (
     <Formulari accio={actualitzaProjecte} boto="desar canvis">
       <input type="hidden" name="id" value={p.id} />
@@ -584,7 +594,7 @@ function Editar({ p, perfils }: { p: Projecte; perfils: Perfil[] }) {
           <input name="subtipus" defaultValue={p.subtipus ?? ""} />
         </label>
         <label>
-          responsable
+          responsable principal
           <select name="responsable_id" defaultValue={p.responsable_id}>
             {membres(perfils).map((x) => <option key={x.id} value={x.id}>{x.nom}</option>)}
           </select>
@@ -596,6 +606,7 @@ function Editar({ p, perfils }: { p: Projecte; perfils: Perfil[] }) {
           </select>
         </label>
       </div>
+      <CampCoresponsables membres={membres(perfils)} marcats={coresponsables} />
       <div className="fila-camps">
         <label>
           data d&apos;inici

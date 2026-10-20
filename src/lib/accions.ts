@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { avui, esDataValida } from "@/lib/dates";
 import { missatgeError } from "@/lib/errors";
 import type { EstatIdea, EstatProjecte, TaulaItem } from "@/lib/tipus";
@@ -16,6 +17,7 @@ const TAULES_ITEM: TaulaItem[] = ["fases", "entregables", "tasques"];
 const ESTATS_PROJECTE: EstatProjecte[] = ["actiu", "pausat", "tancat", "cancellat"];
 const ESTATS_IDEA: EstatIdea[] = ["proposada", "valorada", "assignada", "descartada"];
 const TIPUS_CLIENT = ["municipi", "partit", "institucio", "altre"];
+const TIPUS_PROJECTE = ["estudi", "consultoria", "altre"];
 
 function text(fd: FormData, clau: string): string {
   return String(fd.get(clau) ?? "").trim();
@@ -152,7 +154,7 @@ export async function creaProjecte(_p: Resultat, fd: FormData): Promise<Resultat
   if (!titol) return { error: "El projecte necessita un títol." };
   if (numero_estudi && !/^[0-9]{4}$/.test(numero_estudi))
     return { error: "El número d'estudi ha de tenir exactament 4 xifres." };
-  if (tipus !== "estudi" && tipus !== "consultoria") return { error: "Tria estudi o consultoria." };
+  if (!TIPUS_PROJECTE.includes(tipus)) return { error: "Tria estudi, consultoria o altre." };
   if (!client_id) return { error: "Tria un client." };
   if (!responsable_id) return { error: "Tria un responsable." };
   if (data_inici === "invalida" || data_fi_prevista === "invalida")
@@ -180,6 +182,14 @@ export async function creaProjecte(_p: Resultat, fd: FormData): Promise<Resultat
     .select("id")
     .single();
   if (error) return { error: missatgeError(error) };
+
+  // El projecte ja existeix: si falla el desat de co-responsables, no tornem al
+  // formulari (es duplicaria en reenviar-lo); anem a editar-lo per reintentar.
+  const errCo = await desaCoresponsables(supabase, data.id, responsable_id, fd.getAll("coresponsables"));
+  if (errCo) {
+    console.error("coresponsables:", errCo);
+    redirect(`/projectes/${data.id}?pestanya=editar`);
+  }
 
   if (idea_id) {
     await supabase.from("idees").update({ projecte_id: data.id, client_id }).eq("id", idea_id);
@@ -221,8 +231,38 @@ export async function actualitzaProjecte(_p: Resultat, fd: FormData): Promise<Re
     })
     .eq("id", id);
   if (error) return { error: missatgeError(error) };
+
+  const errCo = await desaCoresponsables(supabase, id, text(fd, "responsable_id"), fd.getAll("coresponsables"));
+  if (errCo) return { error: errCo };
+
   revalidatePath(`/projectes/${id}`);
   return { ok: true };
+}
+
+// Deixa actius exactament els co-responsables marcats (sense el principal).
+// Els que es desmarquen es desactiven, no s'esborren (§7.2).
+async function desaCoresponsables(
+  supabase: SupabaseClient,
+  projecteId: string,
+  principal: string,
+  valors: FormDataEntryValue[],
+): Promise<string | null> {
+  const marcats = [...new Set(valors.map(String))].filter((v) => v && v !== principal);
+
+  const { error: e1 } = await supabase
+    .from("projecte_responsables")
+    .update({ actiu: false })
+    .eq("projecte_id", projecteId)
+    .not("perfil_id", "in", `(${marcats.length ? marcats.join(",") : "00000000-0000-0000-0000-000000000000"})`);
+  if (e1) return missatgeError(e1);
+
+  if (marcats.length) {
+    const { error: e2 } = await supabase
+      .from("projecte_responsables")
+      .upsert(marcats.map((perfil_id) => ({ projecte_id: projecteId, perfil_id, actiu: true })));
+    if (e2) return missatgeError(e2);
+  }
+  return null;
 }
 
 // ------------------------------------------------------------------

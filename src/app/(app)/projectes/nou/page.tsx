@@ -4,6 +4,7 @@ import { requereixMembre } from "@/lib/auth/session";
 import { membres, obteClientsActius, obtePerfils } from "@/lib/dades";
 import { creaProjecte } from "@/lib/accions";
 import { Formulari } from "@/components/Formulari";
+import { CampCoresponsables } from "@/components/CampCoresponsables";
 
 export default async function NouProjecte({
   searchParams,
@@ -66,6 +67,7 @@ export default async function NouProjecte({
               <option value="" disabled>tria…</option>
               <option value="estudi">estudi (genera 6 fases)</option>
               <option value="consultoria">consultoria (sense fases)</option>
+              <option value="altre">altre (sense fases)</option>
             </select>
           </label>
           <label>
@@ -87,12 +89,13 @@ export default async function NouProjecte({
             </select>
           </label>
           <label>
-            responsable
+            responsable principal
             <select name="responsable_id" required defaultValue={perfil.id}>
               {membres(perfils).map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
             </select>
           </label>
         </div>
+        <CampCoresponsables membres={membres(perfils)} />
         <div className="fila-camps">
           <label>
             data d&apos;inici
