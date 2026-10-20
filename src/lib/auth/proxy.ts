@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { RUTES_PUBLIQUES } from "./config";
+import { supabaseClau, supabaseUrl } from "@/lib/supabase/config";
 
 // Refresca la sessió de Supabase a cada petició i envia a /login qui no
 // n'hagi iniciat. No decideix qui és membre: això ho fa l'RLS (es_membre())
@@ -9,8 +10,8 @@ export async function actualitzaSessio(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl(),
+    supabaseClau(),
     {
       cookies: {
         getAll() {

@@ -19,8 +19,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci
+          GESTIO_SUPABASE_URL: http://127.0.0.1:54321
+          GESTIO_SUPABASE_ANON_KEY: ci
 
   sql:
     runs-on: ubuntu-latest

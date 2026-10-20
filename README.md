@@ -45,7 +45,12 @@ src/app/(app)/         les quatre pantalles: setmana, projectes, idees, clients
    update perfils set actiu = true, nom = 'Aina'  where email = '...';
    ```
 6. **Vercel**: importa el repositori i defineix les variables de
-   `.env.example`. `vercel.json` fixa les funcions a `fra1` perquè les
+   `.env.example`. La connexió a Supabase va per `GESTIO_SUPABASE_URL` i
+   `GESTIO_SUPABASE_ANON_KEY`, no per les `NEXT_PUBLIC_SUPABASE_*`
+   habituals: la integració de Supabase del Marketplace de Vercel injecta
+   aquestes últimes apuntant al seu propi projecte i trepitja les teves sense
+   que es vegi. **No connectis aquesta integració**: també posa la clau
+   `service_role` a les variables de Vercel. `vercel.json` fixa les funcions a `fra1` perquè les
    dades no surtin de la UE en trànsit. **No** afegeixis mai la clau
    `service_role`: l'app no la necessita.
 
