@@ -691,3 +691,27 @@ Minúscula en etiquetes i capçaleres de secció, frase normal en prosa. Verbs
 directes: "marcar fet", "replanificar", "revisat". Els estats buits diuen què
 fer, no celebren: "cap element a revisar" i prou. Els errors diuen què ha fallat
 i com arreglar-ho; no demanen perdó.
+
+### 11.8 Revisió d'octubre de 2026 — més amable, mateixa idea
+
+Es manté tot el que hi ha a dalt (angles rectes, cap ombra ni degradat, mono per
+a les dades, files i no targetes, colors d'estat fora del fons de fila). S'hi
+afegeix, a petició del client, perquè la primera versió era massa austera:
+
+- **Jerarquia als botons.** "fet" és l'acció destacada (vora i text `--fet`);
+  "replanificar", "revisat" i "cancel·lar" són discrets (text suau, sense vora)
+  fins que hi passes per sobre. Les accions principals d'una pantalla ("+ nou
+  projecte", "desar") són plenes amb `--accent`. Substitueix el botó únic de §11.6.
+- **Tints suaus** (`--vencut-suau`, `--risc-suau`, `--mut-suau`, `--fet-suau`)
+  només com a fons de l'etiqueta d'estat i dels comptadors, mai de la fila.
+- **Capçalera de "la meva setmana"** amb salutació, data i un resum de comptes
+  (vençuts, en risc, muts, tasques de la setmana) que porta a cada secció. Són
+  recomptes, no percentatges ni gràfics: §2 continua vigent.
+- **Comptadors** al costat del títol de cada secció i, al rail, el nombre
+  d'elements meus a revisar.
+- **Files d'una sola línia**: els textos llargs es tallen amb "…" i el text
+  sencer va al `title`. En mòbil, les llistes de la pàgina d'inici s'apilen i
+  les accions passen a sota.
+- **Hover de fila** amb `--hover` (gris gairebé blanc) i files de 36 px.
+- **Estats buits amb el pas següent** ("cap tasca… · afegeix-ne des d'un projecte").
+

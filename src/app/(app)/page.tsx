@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requereixMembre } from "@/lib/auth/session";
 import { comprova } from "@/lib/dades";
-import { avui, desplacament, diaCurt, sumaDies, dataCurta } from "@/lib/dates";
+import { avui, dataCurta, dataLlarga, desplacament, diaCurt, salutacio, sumaDies } from "@/lib/dates";
 import { FilaAccionable } from "@/components/FilaAccionable";
 import { TAULA_DE, type FilaSafata, type ProjecteMut } from "@/lib/tipus";
 
@@ -61,23 +61,47 @@ export default async function LaMevaSetmana({
   const filesMuts = comprova(muts) as ProjecteMut[];
   const filesIdees = comprova(idees) as { id: string; titol: string; data_objectiu: string | null }[];
 
+  const vencuts = filesSafata.filter((f) => f.motiu === "vencut").length;
+  const enRisc = filesSafata.length - vencuts;
+
   return (
     <>
-      <h1>la meva setmana</h1>
+      <div className="cap-pagina">
+        <h1>{salutacio()}, {perfil.nom}</h1>
+        <div className="data">{dataLlarga(hui)}</div>
+        <div className="resum">
+          {filesSafata.length === 0 && filesMuts.length === 0 ? (
+            <span className="r-ok">res pendent de revisar</span>
+          ) : (
+            <>
+              {vencuts > 0 && <a href="#a-revisar" className="r-vencut"><b>{vencuts}</b> vençuts</a>}
+              {enRisc > 0 && <a href="#a-revisar" className="r-risc"><b>{enRisc}</b> en risc</a>}
+              {filesMuts.length > 0 && <a href="#muts" className="r-mut"><b>{filesMuts.length}</b> {filesMuts.length === 1 ? "projecte mut" : "projectes muts"}</a>}
+            </>
+          )}
+          <a href="#setmana"><b>{filesSetmana.length}</b> {filesSetmana.length === 1 ? "tasca" : "tasques"} aquesta setmana</a>
+        </div>
+      </div>
 
-      <section className="seccio">
+      <section className="seccio" id="a-revisar">
         <header>
-          <span>a revisar</span>
+          <span className="titol">
+            a revisar
+            {filesSafata.length > 0 && <span className="comptador c-vencut">{filesSafata.length}</span>}
+          </span>
           <span className="meta">
-            {filesSafata.length} {filesSafata.length === 1 ? "element" : "elements"} ·{" "}
+            {veureTot ? "de tot l'equip · " : "on soc responsable · "}
             {veureTot ? <Link href="/">només els meus</Link> : <Link href="/?tot=1">veure-ho tot</Link>}
           </span>
         </header>
         {filesSafata.length === 0 ? (
-          <div className="buit">cap element a revisar</div>
+          <div className="buit">
+            cap element a revisar
+            {!veureTot && <Link href="/?tot=1">mira els de l&apos;equip</Link>}
+          </div>
         ) : (
           <div className="desplacable">
-            <table className="taula">
+            <table className="taula taula-mobil">
               <tbody>
                 {filesSafata.map((f) => (
                   <FilaAccionable
@@ -91,18 +115,22 @@ export default async function LaMevaSetmana({
                     ambRevisat
                   >
                     <td className="nowrap">
-                      <span className={`tag ${f.motiu === "vencut" ? "tag-vencut" : "tag-risc"}`}>
-                        {f.motiu === "vencut" ? "vencut" : "risc"}
+                      <span className={`tag etiqueta ${f.motiu === "vencut" ? "tag-vencut" : "tag-risc"}`}>
+                        {f.motiu === "vencut" ? "vençut" : "risc"}
                       </span>
                     </td>
                     <td className="num">{desplacament(-f.dies_retard)}</td>
-                    <td>
-                      {f.titol} <span className="petit suau">{f.tipus_item}</span>
+                    <td className="principal">
+                      <span className="trunc" title={f.titol}>
+                        {f.titol} <span className="petit suau">{f.tipus_item}</span>
+                      </span>
                     </td>
-                    <td>
-                      <Link href={`/projectes/${f.projecte_id}`}>{f.projecte}</Link>
+                    <td className="secundari">
+                      <Link href={`/projectes/${f.projecte_id}`} className="trunc trunc-curt" title={f.projecte}>
+                        {f.projecte}
+                      </Link>
                     </td>
-                    <td className="suau">{f.client}</td>
+                    <td className="suau amaga-mobil"><span className="trunc trunc-curt" title={f.client}>{f.client}</span></td>
                   </FilaAccionable>
                 ))}
               </tbody>
@@ -111,28 +139,38 @@ export default async function LaMevaSetmana({
         )}
       </section>
 
-      <section className="seccio">
+      <section className="seccio" id="setmana">
         <header>
-          <span>aquesta setmana</span>
+          <span className="titol">
+            aquesta setmana
+            {filesSetmana.length > 0 && <span className="comptador">{filesSetmana.length}</span>}
+          </span>
           <span className="meta">les meves tasques fins al {dataCurta(sumaDies(hui, 7))}</span>
         </header>
         {filesSetmana.length === 0 ? (
-          <div className="buit">cap tasca assignada per als propers 7 dies</div>
+          <div className="buit">
+            cap tasca assignada per als propers 7 dies
+            <Link href="/projectes">afegeix-ne des d&apos;un projecte</Link>
+          </div>
         ) : (
           <div className="desplacable">
-            <table className="taula">
+            <table className="taula taula-mobil">
               <tbody>
                 {filesSetmana.map((t) => (
                   <FilaAccionable key={t.id} taula="tasques" id={t.id} tePrevista acabat={false} desapareix>
                     <td className="nowrap">{diaCurt(t.data_prevista)}</td>
-                    <td>
-                      {t.titol}
-                      {t.prioritat === "alta" && <span className="tag tag-vencut"> alta</span>}
+                    <td className="principal">
+                      <span className="trunc" title={t.titol}>
+                        {t.titol}
+                        {t.prioritat === "alta" && <span className="tag tag-vencut"> alta</span>}
+                      </span>
                     </td>
-                    <td>
-                      <Link href={`/projectes/${t.projecte_id}`}>{t.projectes?.titol}</Link>
+                    <td className="secundari">
+                      <Link href={`/projectes/${t.projecte_id}`} className="trunc trunc-curt" title={t.projectes?.titol}>
+                        {t.projectes?.titol}
+                      </Link>
                     </td>
-                    <td className="suau">{t.projectes?.clients?.nom}</td>
+                    <td className="suau amaga-mobil"><span className="trunc trunc-curt">{t.projectes?.clients?.nom}</span></td>
                   </FilaAccionable>
                 ))}
               </tbody>
@@ -142,21 +180,23 @@ export default async function LaMevaSetmana({
       </section>
 
       {filesMuts.length > 0 && (
-        <section className="seccio">
+        <section className="seccio" id="muts">
           <header>
-            <span>projectes muts</span>
+            <span className="titol">
+              projectes muts <span className="comptador c-mut">{filesMuts.length}</span>
+            </span>
             <span className="meta">consultories sense contacte ni entregable recent</span>
           </header>
           <div className="desplacable">
-            <table className="taula">
+            <table className="taula taula-mobil">
               <tbody>
                 {filesMuts.map((m) => (
                   <tr key={m.id} data-estat="mut">
-                    <td className="nowrap"><span className="tag tag-mut">mut</span></td>
+                    <td className="nowrap"><span className="tag etiqueta tag-mut">mut</span></td>
                     <td className="num">{desplacament(-m.dies_silenci)}</td>
-                    <td><Link href={`/projectes/${m.id}`}>{m.titol}</Link></td>
-                    <td className="suau">{m.client}</td>
-                    <td className="petit suau nowrap">llindar {m.dies_silenci_max}d</td>
+                    <td className="principal"><Link href={`/projectes/${m.id}`}>{m.titol}</Link></td>
+                    <td className="suau amaga-mobil">{m.client}</td>
+                    <td className="petit suau nowrap amaga-mobil">llindar {m.dies_silenci_max}d</td>
                   </tr>
                 ))}
               </tbody>
@@ -167,17 +207,23 @@ export default async function LaMevaSetmana({
 
       <section className="seccio">
         <header>
-          <span>les meves idees</span>
+          <span className="titol">
+            les meves idees
+            {filesIdees.length > 0 && <span className="comptador">{filesIdees.length}</span>}
+          </span>
           <span className="meta"><Link href="/idees">totes les idees</Link></span>
         </header>
         {filesIdees.length === 0 ? (
-          <div className="buit">cap idea proposada pendent de valorar</div>
+          <div className="buit">
+            cap idea proposada pendent de valorar
+            <Link href="/idees">proposa&apos;n una</Link>
+          </div>
         ) : (
-          <table className="taula">
+          <table className="taula taula-mobil">
             <tbody>
               {filesIdees.map((i) => (
                 <tr key={i.id}>
-                  <td>{i.titol}</td>
+                  <td className="principal">{i.titol}</td>
                   <td className="num suau">{i.data_objectiu ? dataCurta(i.data_objectiu) : ""}</td>
                 </tr>
               ))}

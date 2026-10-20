@@ -19,8 +19,16 @@
   --fet:         #2E6B3E;
 
   --accent:      #1B4FA0;
+  --accent-fort: #143C7A;
 
-  --fila: 34px;
+  /* Tints suaus: només dins els tags d'estat i comptadors, mai com a fons de fila */
+  --vencut-suau: #FBEAE8;
+  --risc-suau:   #FBF1DC;
+  --mut-suau:    #E6E9EE;
+  --fet-suau:    #E5F0E8;
+  --hover:       #F5F6F7;
+
+  --fila: 36px;
 }
 
 @theme inline {
@@ -69,21 +77,48 @@ a:hover { text-decoration: underline; }
   border-right: 1px solid var(--linia);
   display: flex;
   flex-direction: column;
-  padding: 16px 0;
+  padding: 0 0 12px;
 }
-.rail a, .rail button.enllac {
-  display: block;
-  padding: 4px 16px;
+.rail .marca {
+  padding: 16px 16px 14px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--linia);
+}
+.rail .marca strong { display: block; font-size: 15px; }
+.rail .marca strong::before { content: "▍"; color: var(--accent); }
+.rail .marca span { display: block; font-size: 11px; color: var(--text-suau); margin-top: 2px; }
+.rail nav a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 16px 7px 13px;
   color: var(--text);
+  border-left: 3px solid transparent;
 }
-.rail a[aria-current="page"] {
-  border-left: 3px solid var(--text);
-  padding-left: 13px;
+.rail nav a:hover { background: var(--hover); text-decoration: none; }
+.rail nav a[aria-current="page"] {
+  border-left-color: var(--accent);
+  background: var(--base);
   font-weight: 600;
 }
-.rail .marca { padding: 0 16px 16px; color: var(--text-suau); font-size: 11px; }
-.rail .peu { margin-top: auto; border-top: 1px solid var(--linia); padding-top: 8px; font-size: 11px; }
-.rail .peu .nom { padding: 4px 16px; color: var(--text-suau); }
+.rail .peu {
+  margin-top: auto;
+  border-top: 1px solid var(--linia);
+  padding: 12px 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.rail .peu .avatar {
+  width: 24px; height: 24px;
+  display: grid; place-items: center;
+  background: var(--accent); color: var(--base);
+  font-weight: 600; font-size: 12px;
+}
+.rail .peu .nom { flex: 1; }
+.rail .peu button.enllac { font-size: 11px; color: var(--text-suau); }
+.rail .peu button.enllac:hover { color: var(--text); text-decoration: underline; }
 
 .contingut { padding: 16px 24px 48px; min-width: 0; }
 
@@ -101,11 +136,23 @@ a:hover { text-decoration: underline; }
   }
   .rail .marca { display: none; }
   .rail nav { display: flex; flex-wrap: wrap; }
-  .rail a, .rail button.enllac { padding: 4px 8px; }
-  .rail a[aria-current="page"] { border-left: 0; padding-left: 8px; text-decoration: underline; }
-  .rail .peu { margin: 0 0 0 auto; border: 0; padding: 0; display: flex; align-items: center; }
-  .rail .peu .nom { display: none; }
+  .rail nav a { padding: 8px 10px 5px; gap: 6px; border-left: 0; border-bottom: 3px solid transparent; }
+  .rail nav a[aria-current="page"] { border-bottom-color: var(--accent); background: transparent; }
+  .rail .peu { margin: 0 0 0 auto; border: 0; padding: 0 12px 0 0; }
+  .rail .peu .nom, .rail .peu .avatar { display: none; }
   .contingut { padding: 12px 16px 48px; }
+
+  /* llistes accionables: cada fila en línies apilades, accions a sota */
+  .taula.taula-mobil tr { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; padding: 8px 8px 8px 8px; border-bottom: 1px solid var(--linia); border-left: 3px solid transparent; }
+  .taula.taula-mobil td, .taula.taula-mobil td:first-child { border: 0; height: auto; padding: 0; background: transparent; }
+  .taula.taula-mobil tr[data-estat="vencut"] { border-left-color: var(--vencut); }
+  .taula.taula-mobil tr[data-estat="risc"]   { border-left-color: var(--risc); }
+  .taula.taula-mobil tr[data-estat="mut"]    { border-left-color: var(--mut); }
+  .taula.taula-mobil td.principal { flex: 1 1 0; min-width: 0; }
+  .taula.taula-mobil td.secundari { flex-basis: 100%; font-size: 12px; margin-top: 2px; }
+  .taula.taula-mobil td.accions { flex-basis: 100%; text-align: left; margin-top: 8px; white-space: normal; }
+  .taula.taula-mobil .amaga-mobil { display: none; }
+  .taula.taula-mobil .trunc { max-width: 100%; white-space: normal; }
 }
 
 h1 {
@@ -115,6 +162,24 @@ h1 {
   border-bottom: 1px solid var(--linia-forta);
   margin-bottom: 16px;
 }
+
+/* capçalera de "la meva setmana": salutació, data i resum del dia */
+.cap-pagina { border-bottom: 1px solid var(--linia-forta); padding-bottom: 14px; margin-bottom: 24px; }
+.cap-pagina h1 { border: 0; padding: 0; margin: 0; }
+.cap-pagina .data { color: var(--text-suau); margin-top: 2px; }
+.resum { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.resum > * {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--linia);
+  color: var(--text);
+}
+.resum a:hover { border-color: var(--text); text-decoration: none; }
+.resum b { font-size: 15px; }
+.resum .r-vencut b { color: var(--vencut); }
+.resum .r-risc b   { color: var(--risc); }
+.resum .r-mut b    { color: var(--mut); }
+.resum .r-ok       { color: var(--fet); border-color: var(--fet-suau); background: var(--fet-suau); }
 
 .seccio { margin-bottom: 32px; }
 .seccio > header {
@@ -127,6 +192,19 @@ h1 {
   font-weight: 600;
 }
 .seccio > header .meta { font-weight: 400; color: var(--text-suau); font-size: 11px; }
+.seccio > header .titol { display: inline-flex; align-items: baseline; gap: 8px; }
+.comptador {
+  display: inline-block;
+  min-width: 20px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  background: var(--superficie);
+  color: var(--text);
+}
+.comptador.c-vencut { background: var(--vencut-suau); color: var(--vencut); }
+.comptador.c-mut    { background: var(--mut-suau); color: var(--mut); }
 
 .prosa {
   font-family: var(--font-sans);
@@ -167,8 +245,13 @@ h1 {
 .taula .nowrap { white-space: nowrap; }
 .taula .accions { text-align: right; white-space: nowrap; }
 .taula tr.expandida td { height: auto; padding-top: 4px; padding-bottom: 4px; }
+.taula tbody tr:hover td { background: var(--hover); }
+/* textos llargs en una sola línia, amb el text sencer al title */
+.trunc { display: block; max-width: 30ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trunc-curt { max-width: 19ch; }
 
-.buit { padding: 8px 11px; color: var(--text-suau); border-bottom: 1px solid var(--linia); }
+.buit { padding: 10px 11px; color: var(--text-suau); border-bottom: 1px solid var(--linia); }
+.buit a { margin-left: 8px; }
 
 /* contenidor amb scroll horitzontal per a mòbil, sense que la pàgina en tingui */
 .desplacable { overflow-x: auto; }
@@ -180,25 +263,42 @@ h1 {
 .tag-risc   { color: var(--risc); }
 .tag-mut    { color: var(--mut); }
 .tag-fet    { color: var(--fet); }
+/* versió etiqueta, per a l'estat principal d'una fila */
+.etiqueta { display: inline-block; padding: 1px 6px; font-weight: 600; min-width: 56px; text-align: center; }
+.etiqueta.tag-vencut { background: var(--vencut-suau); }
+.etiqueta.tag-risc   { background: var(--risc-suau); }
+.etiqueta.tag-mut    { background: var(--mut-suau); }
+.etiqueta.tag-fet    { background: var(--fet-suau); }
 
 /* ---------- controls ---------- */
 
 .boto {
   font: inherit;
-  font-size: 11px;
-  border: 1px solid var(--text);
-  background: transparent;
+  font-size: 12px;
+  height: 26px;
+  border: 1px solid var(--linia);
+  background: var(--base);
   color: var(--text);
-  padding: 2px 6px;
+  padding: 0 8px;
   cursor: pointer;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
 }
-.boto:hover { background: var(--text); color: var(--base); }
+.boto:hover { border-color: var(--text); background: var(--superficie); text-decoration: none; }
 .boto:disabled { opacity: 0.5; cursor: default; }
-.boto:disabled:hover { background: transparent; color: var(--text); }
-.boto-primari { border-color: var(--accent); color: var(--accent); }
-.boto-primari:hover { background: var(--accent); color: var(--base); }
-.boto + .boto { margin-left: 4px; }
+.boto:disabled:hover { border-color: var(--linia); background: var(--base); }
+/* acció principal: plena */
+.boto-primari { background: var(--accent); border-color: var(--accent); color: var(--base); }
+.boto-primari:hover { background: var(--accent-fort); border-color: var(--accent-fort); color: var(--base); }
+.boto-primari:disabled:hover { background: var(--accent); border-color: var(--accent); }
+/* "fet": l'acció que més es repeteix, destacada però no plena */
+.boto-fet { border-color: var(--fet); color: var(--fet); font-weight: 600; }
+.boto-fet:hover { background: var(--fet); border-color: var(--fet); color: var(--base); }
+/* accions secundàries: discretes fins que hi passes per sobre */
+.boto-suau { border-color: transparent; color: var(--text-suau); background: transparent; }
+.boto-suau:hover { border-color: var(--linia); color: var(--text); background: var(--base); }
+.boto + .boto { margin-left: 2px; }
 
 .enllac {
   font: inherit;
@@ -214,11 +314,12 @@ input, select, textarea {
   border: 1px solid var(--linia);
   background: var(--base);
   color: var(--text);
-  padding: 4px 6px;
-  min-height: 28px;
+  padding: 4px 8px;
+  min-height: 32px;
 }
+input:hover, select:hover, textarea:hover { border-color: var(--text-suau); }
 textarea { font-family: var(--font-sans); font-size: 15px; line-height: 1.55; }
-input:focus, select:focus, textarea:focus { border-color: var(--text); }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 
 .formulari { display: grid; gap: 12px; max-width: 640px; }
 .formulari label { display: grid; gap: 4px; font-size: 11px; color: var(--text-suau); }
@@ -228,7 +329,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
 .formulari .fila-camps { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
 .formulari .check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--text); }
 
-.en-linia { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--linia); }
+.en-linia { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 8px; background: var(--superficie); border-bottom: 1px solid var(--linia); }
 .en-linia input, .en-linia select { font-size: 13px; }
 
 .error { color: var(--vencut); font-size: 11px; }
@@ -236,8 +337,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
 .filtres { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
 
 .pestanyes { display: flex; gap: 0; border-bottom: 1px solid var(--linia-forta); margin-bottom: 12px; }
-.pestanyes a { padding: 4px 12px; color: var(--text); border: 1px solid transparent; border-bottom: 0; }
-.pestanyes a[aria-current="page"] { border-color: var(--linia-forta); background: var(--base); margin-bottom: -1px; }
+.pestanyes a { padding: 6px 14px; color: var(--text-suau); border-bottom: 3px solid transparent; margin-bottom: -1px; }
+.pestanyes a:hover { color: var(--text); text-decoration: none; }
+.pestanyes a[aria-current="page"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
 
 .capcalera {
   display: grid;
@@ -247,6 +349,13 @@ input:focus, select:focus, textarea:focus { border-color: var(--text); }
 }
 .capcalera dt { color: var(--text-suau); font-size: 11px; line-height: 18px; }
 .capcalera dd { line-height: 18px; }
+
+/* ---------- pantalla d'entrada ---------- */
+
+.entrada { min-height: 100vh; display: grid; place-items: center; background: var(--superficie); padding: 16px; }
+.entrada .caixa { width: 100%; max-width: 380px; background: var(--base); border: 1px solid var(--linia); border-top: 3px solid var(--accent); padding: 24px; }
+.entrada h1 { border: 0; padding: 0; margin: 0 0 2px; }
+.entrada .sub { color: var(--text-suau); font-size: 12px; margin-bottom: 20px; }
 
 /* ---------- moviment: només el fos de confirmació (§11.6) ---------- */
 

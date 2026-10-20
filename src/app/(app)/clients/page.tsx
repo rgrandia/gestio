@@ -21,7 +21,7 @@ export default async function Clients({ searchParams }: { searchParams: Promise<
       <h1>clients</h1>
       <div className="filtres">
         {ambInactius ? <Link href="/clients">amaga inactius</Link> : <Link href="/clients?inactius=1">mostra inactius</Link>}
-        <span className="ml-auto"><Link href="/clients/nou">+ nou client</Link></span>
+        <span className="ml-auto"><Link href="/clients/nou" className="boto boto-primari">+ nou client</Link></span>
       </div>
       {clients.length === 0 ? (
         <div className="buit">cap client. <Link href="/clients/nou">crea el primer</Link></div>
