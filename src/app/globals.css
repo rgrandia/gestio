@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ==========================================================
-   Estil (CLAUDE.md §11): IBM Plex Mono i cantonades rectes.
+   Estil (CLAUDE.md §11): Montserrat i cantonades rectes.
    La resta és lliure.
    ========================================================== */
 
@@ -35,8 +35,8 @@
 }
 
 @theme inline {
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
-  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
 }
 
 *, *::before, *::after { border-radius: 0 !important; }
@@ -44,8 +44,10 @@
 html, body { background: var(--fons); color: var(--text); }
 
 body {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 13px;
+  /* xifres d'amplada fixa: dates i retards alineats a les taules */
+  font-variant-numeric: tabular-nums;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }
@@ -394,3 +396,12 @@ tbody.fase:has(.desplega:checked) > tr:first-child td { background: var(--hover)
 /* avisos de projecte arxivat / a la paperera */
 .notes.avis-vencut { border-left-color: var(--vencut); background: var(--vencut-suau); font-family: var(--font-mono); font-size: 13px; }
 .notes.avis-mut    { border-left-color: var(--mut); background: var(--mut-suau); font-family: var(--font-mono); font-size: 13px; }
+
+/* selector de color de persona */
+.selector-color { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.selector-color label { position: relative; cursor: pointer; }
+.selector-color input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.selector-color span { display: block; width: 22px; height: 22px; border: 2px solid var(--panell); outline: 1px solid var(--linia); }
+.selector-color input:checked + span { outline: 2px solid var(--text); }
+.selector-color input:focus-visible + span { outline: 2px solid var(--accent); }
+.selector-color input:disabled + span { opacity: 0.2; cursor: not-allowed; }

@@ -13,7 +13,7 @@ export function CampCoresponsables({ membres, marcats = [] }: { membres: Perfil[
         {membres.map((m) => (
           <label key={m.id} className="check">
             <input type="checkbox" name="coresponsables" value={m.id} defaultChecked={marcats.includes(m.id)} />
-            <Persona nom={m.nom} />
+            <Persona p={m} />
           </label>
         ))}
       </div>

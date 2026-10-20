@@ -318,6 +318,13 @@ Un projecte de tipus `consultoria` **no genera cap fase**.
   els co-responsables poden ser externs (trigger). La safata exposa
   `responsables uuid[]` i "els meus" filtra per pertinença.
 
+### 4.4 quater Colors de persona (migració 0008)
+
+`perfils.color`: cada persona té un color propi de la paleta (`paleta_colors()`),
+assignat automàticament en donar-la d'alta. Entre membres actius no es pot
+repetir (trigger). Cadascú canvia el seu des de la pantalla d'equip; els
+externs, per RPC. Serveix per distingir persones amb la mateixa inicial.
+
 ### 4.5 Qui actualitza les fases
 
 **Només el responsable del projecte** (membre del departament). El camp i la
@@ -621,6 +628,6 @@ ho seran, i les que faltin de debò es veuran de seguida.
 
 ## 11. Estil visual
 
-Lliure. Només dues constants: tipografia **IBM Plex Mono** i **cantonades rectes**
+Lliure. Només dues constants: tipografia **Montserrat** i **cantonades rectes**
 (`border-radius: 0`). La resta (color, jerarquia, icones, ombres) s'ha de decidir
 per fer l'app clara i agradable d'utilitzar.

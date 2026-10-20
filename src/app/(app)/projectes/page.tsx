@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { comprova, membres, obteClientsActius, obtePerfils } from "@/lib/dades";
+import { comprova, mapaPersones, membres, obteClientsActius, obtePerfils } from "@/lib/dades";
 import { avui, dataCurta } from "@/lib/dates";
 import { Retard } from "@/components/Retard";
 import { Persona } from "@/components/Persona";
@@ -61,7 +61,7 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
     clients: { nom: string } | null;
     projecte_responsables: { perfil_id: string; actiu: boolean }[];
   })[];
-  const noms = new Map(perfils.map((p) => [p.id, p.nom]));
+  const persones = mapaPersones(perfils);
   const hui = avui();
 
   return (
@@ -127,10 +127,10 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
                   <td>{p.clients?.nom}</td>
                   <td>
                     <span className="flex items-center gap-1">
-                      <Persona nom={noms.get(p.responsable_id)} />
+                      <Persona p={persones.get(p.responsable_id)} />
                       {p.projecte_responsables
                         .filter((r) => r.actiu && r.perfil_id !== p.responsable_id)
-                        .map((r) => <Persona key={r.perfil_id} nom={noms.get(r.perfil_id)} nomesAvatar />)}
+                        .map((r) => <Persona key={r.perfil_id} p={persones.get(r.perfil_id)} nomesAvatar />)}
                     </span>
                   </td>
                   <td><EtiquetaEstat estat={p.estat} /></td>

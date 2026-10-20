@@ -7,7 +7,7 @@ export const obtePerfils = cache(async (): Promise<Perfil[]> => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("perfils")
-    .select("id, nom, email, actiu, extern, area")
+    .select("id, nom, email, actiu, extern, area, color")
     .order("extern")
     .order("nom");
   return data ?? [];
@@ -15,6 +15,11 @@ export const obtePerfils = cache(async (): Promise<Perfil[]> => {
 
 export async function nomsPerfils(): Promise<Map<string, string>> {
   return new Map((await obtePerfils()).map((p) => [p.id, p.nom]));
+}
+
+export const mapaPersones = (perfils: Perfil[]) => new Map(perfils.map((p) => [p.id, p]));
+export async function obtePersones(): Promise<Map<string, Perfil>> {
+  return mapaPersones(await obtePerfils());
 }
 
 // Responsables de projecte i de client: només membres amb accés.

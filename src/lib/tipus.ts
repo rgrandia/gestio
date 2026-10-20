@@ -26,6 +26,7 @@ export type Perfil = {
   actiu: boolean;
   extern: boolean;
   area: string | null;
+  color: string | null;
 };
 
 export type Client = {
