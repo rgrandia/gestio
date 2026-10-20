@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Plus } from "lucide-react";
+import { Persona } from "@/components/Persona";
 import { createClient } from "@/lib/supabase/server";
 import { comprova, nomsPerfils } from "@/lib/dades";
 import type { Client } from "@/lib/tipus";
@@ -18,11 +20,17 @@ export default async function Clients({ searchParams }: { searchParams: Promise<
 
   return (
     <>
-      <h1>clients</h1>
-      <div className="filtres">
-        {ambInactius ? <Link href="/clients">amaga inactius</Link> : <Link href="/clients?inactius=1">mostra inactius</Link>}
-        <span className="ml-auto"><Link href="/clients/nou" className="boto boto-primari">+ nou client</Link></span>
+      <div className="cap-pagina">
+        <div>
+          <h1>clients</h1>
+          <div className="sub">
+            {clients.length} {clients.length === 1 ? "client" : "clients"} ·{" "}
+            {ambInactius ? <Link href="/clients">amaga inactius</Link> : <Link href="/clients?inactius=1">mostra inactius</Link>}
+          </div>
+        </div>
+        <Link href="/clients/nou" className="boto boto-primari"><Plus className="icona-petita" aria-hidden /> nou client</Link>
       </div>
+      <section className="seccio">
       {clients.length === 0 ? (
         <div className="buit">cap client. <Link href="/clients/nou">crea el primer</Link></div>
       ) : (
@@ -41,9 +49,9 @@ export default async function Clients({ searchParams }: { searchParams: Promise<
               {clients.map((c) => (
                 <tr key={c.id} data-estat={c.actiu ? undefined : "cancellat"}>
                   <td><Link href={`/clients/${c.id}`}>{c.nom}</Link></td>
-                  <td className="suau">{c.tipus}</td>
+                  <td><span className="etiqueta">{c.tipus}</span></td>
                   <td className="suau">{c.territori ?? ""}</td>
-                  <td>{noms.get(c.responsable_id ?? "") ?? "—"}</td>
+                  <td><Persona nom={noms.get(c.responsable_id ?? "")} /></td>
                   <td className="num">{c.projectes.filter((p) => p.estat === "actiu").length}</td>
                 </tr>
               ))}
@@ -51,6 +59,7 @@ export default async function Clients({ searchParams }: { searchParams: Promise<
           </table>
         </div>
       )}
+      </section>
     </>
   );
 }

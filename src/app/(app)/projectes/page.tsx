@@ -3,6 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { comprova, obteClientsActius, obtePerfils } from "@/lib/dades";
 import { avui, dataCurta } from "@/lib/dates";
 import { Retard } from "@/components/Retard";
+import { Persona } from "@/components/Persona";
+import { EtiquetaEstat } from "@/components/EtiquetaEstat";
+import { Plus } from "lucide-react";
 import type { EstatProjecte, Projecte } from "@/lib/tipus";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +38,14 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
 
   return (
     <>
-      <h1>projectes</h1>
+      <div className="cap-pagina">
+        <div>
+          <h1>projectes</h1>
+          <div className="sub">{files.length} {files.length === 1 ? "projecte" : "projectes"}</div>
+        </div>
+        <Link href="/projectes/nou" className="boto boto-primari"><Plus className="icona-petita" aria-hidden /> nou projecte</Link>
+      </div>
+      <section className="seccio">
       <form className="filtres" method="get">
         <select name="tipus" defaultValue={f.tipus ?? ""} aria-label="tipus">
           <option value="">tots els tipus</option>
@@ -56,7 +66,6 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
           ))}
         </select>
         <button className="boto">filtrar</button>
-        <span className="ml-auto"><Link href="/projectes/nou" className="boto boto-primari">+ nou projecte</Link></span>
       </form>
 
       {files.length === 0 ? (
@@ -79,11 +88,14 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
             <tbody>
               {files.map((p) => (
                 <tr key={p.id} data-estat={p.estat === "cancellat" ? "cancellat" : undefined}>
-                  <td><Link href={`/projectes/${p.id}`}>{p.titol}</Link></td>
-                  <td className="suau">{p.tipus}{p.subtipus ? ` · ${p.subtipus}` : ""}</td>
+                  <td className="element">
+                    <div className="titol-el"><Link href={`/projectes/${p.id}`}>{p.titol}</Link></div>
+                    {p.subtipus && <div className="context">{p.subtipus}</div>}
+                  </td>
+                  <td><span className={`etiqueta ${p.tipus === "estudi" ? "tag-accent" : ""}`}>{p.tipus}</span></td>
                   <td>{p.clients?.nom}</td>
-                  <td>{noms.get(p.responsable_id) ?? "—"}</td>
-                  <td>{p.estat}</td>
+                  <td><Persona nom={noms.get(p.responsable_id)} /></td>
+                  <td><EtiquetaEstat estat={p.estat} /></td>
                   <td className="num">{dataCurta(p.data_fi_prevista)}</td>
                   <td className="num">{dataCurta(p.data_fi_real)}</td>
                   <td className="num">
@@ -97,6 +109,7 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
           </table>
         </div>
       )}
+      </section>
     </>
   );
 }

@@ -116,7 +116,7 @@ text no tancava. Cap amplia l'abast. Estan comentades al codi on s'apliquen.
 11. **`fet` exigeix `data_real`** (check a la base de dades). És la regla
     central de §4.1 feta impossible de saltar.
 12. **Marcar fet = dos clics** (obrir + confirmar la data). §5 demana la
-    data i §11.6 diu que una acció de dos clics no es farà servir: són
+    data i l'antic contracte visual deia que una acció de dos clics no es farà servir: són
     incompatibles. La data ve posada a avui, així que és clic + Enter.
     "revisat" i "cancel·lar" són d'un sol clic, sense confirmació.
 

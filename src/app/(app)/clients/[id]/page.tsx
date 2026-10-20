@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Plus } from "lucide-react";
+import { Persona } from "@/components/Persona";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { comprova, obtePerfils } from "@/lib/dades";
@@ -54,42 +56,61 @@ export default async function FitxaClient({
 
   return (
     <>
-      <h1>
-        {client.nom} {!client.actiu && <span className="tag suau">inactiu</span>}
-      </h1>
+      <div className="cap-pagina">
+        <div>
+          <div className="molla"><Link href="/clients">clients</Link></div>
+          <h1>{client.nom}</h1>
+          <div className="sub flex gap-2 items-center mt-2">
+            <span className="etiqueta">{client.tipus}</span>
+            {client.territori && <span className="etiqueta">{client.territori}</span>}
+            {!client.actiu && <span className="etiqueta tag-mut">inactiu</span>}
+          </div>
+        </div>
+        <Link href={`/projectes/nou?client=${client.id}`} className="boto boto-primari">
+          <Plus className="icona-petita" aria-hidden /> nou projecte
+        </Link>
+      </div>
 
       <dl className="capcalera">
-        <dt>tipus</dt>
-        <dd>{client.tipus}</dd>
-        <dt>territori</dt>
-        <dd>{client.territori ?? "—"}</dd>
-        <dt>responsable</dt>
-        <dd>{noms.get(client.responsable_id ?? "") ?? "—"}</dd>
-        <dt>darrer contacte</dt>
-        <dd>
-          {darrerContacte ? (
-            <>
-              {dataCurta(darrerContacte)}{" "}
-              <span className="suau">{desplacament(diesEntre(hui, darrerContacte))}</span>
-            </>
-          ) : (
-            "cap registrat"
-          )}
-        </dd>
+        <div>
+          <dt>responsable</dt>
+          <dd><Persona nom={noms.get(client.responsable_id ?? "")} /></dd>
+        </div>
+        <div>
+          <dt>darrer contacte</dt>
+          <dd>
+            {darrerContacte ? (
+              <>
+                {dataCurta(darrerContacte)}
+                <span className="suau">{desplacament(diesEntre(hui, darrerContacte))}</span>
+              </>
+            ) : (
+              "cap registrat"
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>projectes actius</dt>
+          <dd>{actius.length}</dd>
+        </div>
+        <div>
+          <dt>idees obertes</dt>
+          <dd>{idees.length}</dd>
+        </div>
       </dl>
-      {client.notes && <p className="prosa mb-6">{client.notes}</p>}
+      {client.notes && <p className="prosa notes">{client.notes}</p>}
 
       <section className="seccio">
         <header>
-          <span>projectes actius</span>
-          <span className="meta"><Link href={`/projectes/nou?client=${client.id}`}>+ nou projecte</Link></span>
+          <span className="titol">projectes actius</span>
+          
         </header>
         <LlistaProjectes projectes={actius} noms={noms} buit="cap projecte actiu" />
       </section>
 
       <section className="seccio">
         <header>
-          <span>idees obertes</span>
+          <span className="titol">idees obertes</span>
           <span className="meta"><Link href="/idees">idees</Link></span>
         </header>
         {idees.length === 0 ? (
@@ -111,7 +132,7 @@ export default async function FitxaClient({
 
       <section className="seccio">
         <header>
-          <span>projectes tancats</span>
+          <span className="titol">projectes tancats</span>
           <span className="meta">{tancats.length}</span>
         </header>
         <LlistaProjectes projectes={tancats} noms={noms} buit="cap projecte tancat" />
@@ -119,13 +140,13 @@ export default async function FitxaClient({
 
       <section className="seccio">
         <header>
-          <span>dades del client</span>
+          <span className="titol">dades del client</span>
           <span className="meta">
             {editar === "1" ? <Link href={`/clients/${id}`}>tanca</Link> : <Link href={`/clients/${id}?editar=1`}>editar</Link>}
           </span>
         </header>
         {editar === "1" && (
-          <div className="pt-3">
+          <div className="cos">
             <Formulari accio={actualitzaClient} boto="desar canvis">
               <input type="hidden" name="id" value={client.id} />
               <CampsClient client={client} perfils={perfils} />
@@ -158,7 +179,7 @@ function LlistaProjectes({
             <tr key={p.id} data-estat={p.estat === "cancellat" ? "cancellat" : undefined}>
               <td><Link href={`/projectes/${p.id}`}>{p.titol}</Link></td>
               <td className="suau">{p.tipus}{p.subtipus ? ` · ${p.subtipus}` : ""}</td>
-              <td>{noms.get(p.responsable_id) ?? "—"}</td>
+              <td><Persona nom={noms.get(p.responsable_id)} /></td>
               <td className="suau">{p.estat}</td>
               <td className="num">{dataCurta(p.data_fi_real ?? p.data_fi_prevista)}</td>
             </tr>

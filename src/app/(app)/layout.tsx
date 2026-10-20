@@ -1,7 +1,9 @@
+import { LogOut } from "lucide-react";
 import { requereixMembre } from "@/lib/auth/session";
 import { tancaSessio } from "@/lib/auth/actions";
 import { createClient } from "@/lib/supabase/server";
 import { NavRail } from "@/components/NavRail";
+import { Persona } from "@/components/Persona";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const perfil = await requereixMembre();
@@ -15,15 +17,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="app">
       <aside className="rail">
         <div className="marca">
-          <strong>gestió</strong>
-          <span>estudis polítics i estratègia</span>
+          <span className="logo" aria-hidden>g</span>
+          <div>
+            <strong>gestió</strong>
+            <span>estudis polítics i estratègia</span>
+          </div>
         </div>
+        <div className="seccio-nav">menú</div>
         <NavRail pendents={count ?? 0} />
         <div className="peu">
-          <span className="avatar" aria-hidden>{perfil.nom.slice(0, 1).toUpperCase()}</span>
-          <span className="nom">{perfil.nom}</span>
+          <Persona nom={perfil.nom} nomesAvatar gran />
+          <span className="nom">
+            {perfil.nom}
+            <small>{perfil.email}</small>
+          </span>
           <form action={tancaSessio}>
-            <button className="enllac">sortir</button>
+            <button title="sortir" aria-label="sortir">
+              <LogOut className="icona" aria-hidden />
+            </button>
           </form>
         </div>
       </aside>

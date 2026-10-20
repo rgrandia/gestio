@@ -1,4 +1,4 @@
-// Els errors diuen què ha fallat i com arreglar-ho; no demanen perdó (§11.7).
+// Els errors diuen què ha fallat i com arreglar-ho; no demanen perdó.
 type ErrorPg = { code?: string; message?: string } | null | undefined;
 
 export function missatgeError(error: ErrorPg): string {

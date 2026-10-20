@@ -394,8 +394,7 @@ Si cal navegar al detall del projecte per resoldre una línia, el disseny falla.
 
 ## 6. Pantalles de l'MVP
 
-Quatre. Cap més sense preguntar. L'estil visual de totes és el de la secció 11 i
-no és negociable: files, angles rectes, monoespaiada, sense targetes.
+Quatre. Cap més sense preguntar. Estil visual: secció 11.
 
 ### 6.1 La meva setmana (pàgina d'inici)
 
@@ -588,130 +587,10 @@ ho seran, i les que faltin de debò es veuran de seguida.
 
 ---
 
+---
+
 ## 11. Estil visual
 
-Direcció fixada pel client: **estètica d'editor de codi**. Rectangular, sense
-cantonades arrodonides, sense degradats, sense ombres. Densa i legible. Aquesta
-secció no és orientativa: és el contracte visual de l'app.
-
-### 11.1 Decisió prèvia — base clara, no terminal fosc
-
-La temptació amb "estil code" és copiar un IDE fosc. No ho fem, per dues raons
-pràctiques: la pantalla principal es llegeix cada matí en una oficina il·luminada,
-i els senyals de vençut i en risc es distingeixen pitjor sobre fons negre.
-
-El que es pren de l'editor és **l'estructura**, no la foscor: angles rectes,
-línies d'1 px, monoespaiada per a tota dada, densitat alta, zero decoració.
-Mode fosc opcional més endavant, amb els mateixos tokens invertits.
-
-### 11.2 Tokens de color
-
-```css
-:root {
-  --base:        #FFFFFF;  /* fons de contingut */
-  --superficie:  #EEF0F2;  /* rail lateral, capçaleres de taula */
-  --linia:       #C9CFD4;  /* totes les vores, 1px */
-  --linia-forta: #000000;  /* separadors estructurals */
-  --text:        #000000;
-  --text-suau:   #5A646E;  /* metadades, etiquetes */
-
-  --vencut:      #C2261B;
-  --risc:        #A86B00;
-  --mut:         #3D4A5C;
-  --fet:         #2E6B3E;
-
-  --accent:      #1B4FA0;  /* enllaços, focus, acció primària */
-}
-```
-
-Negre pur per al text, no un negre tenyit. Els quatre colors d'estat només
-apareixen en el filet esquerre de la fila i en el seu tag; mai com a fons de
-fila, perquè una safata de vint línies acolorides deixa de llegir-se.
-
-### 11.3 Tipografia
-
-| Rol | Família |
-|---|---|
-| Tota dada: dates, estats, noms de projecte, comptadors, taules | IBM Plex Mono |
-| Prosa: descripcions, notes, motius de replanificació | IBM Plex Sans |
-
-Escala: 11px (metadades) / 13px (base de taula) / 15px (prosa) / 20px (títol de
-pàgina). Interlineat 1.4 en mono, 1.55 en prosa.
-
-Etiquetes en **minúscula**, mai en majúscules ni amb lletra espaiada. En una
-interfície monoespaiada les majúscules trenquen la graella i afegeixen soroll.
-
-### 11.4 Estructura
-
-- **Files, no targetes.** Tota llista és una taula amb files separades per
-  `1px solid var(--linia)`. Cap contenidor amb vora pròpia dins d'una llista.
-- `border-radius: 0` a tot arreu: botons, camps, modals, menús. Sense excepcions.
-- `box-shadow: none` a tot arreu. La jerarquia la fan les vores i l'espai.
-- Cap degradat, ni de fons ni d'accent.
-- Alçada de fila 34px. L'objectiu és veure ~20 línies de safata sense desplaçar.
-- Espaiat en múltiples de 4px.
-- Rail esquerre fix de 180px, fons `--superficie`, enllaços de text sense icones.
-
-### 11.5 Senyal d'estat
-
-Filet esquerre de 3px amb el color d'estat, més un tag monoespaiat en minúscula
-dins de la fila. Res de píndoles arrodonides.
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│ la meva setmana                                              │
-├──────────────────────────────────────────────────────────────┤
-│ a revisar                                        12 elements │
-│ ┃ vencut  -14d  Informe onada 2      Mataró    [fet][repl.]  │
-│ ┃ vencut   -3d  Qüestionari          Mollet    [fet][repl.]  │
-│ ┃ risc     +2d  Nota de posicionament Vilanova [fet][repl.]  │
-├──────────────────────────────────────────────────────────────┤
-│ aquesta setmana                                              │
-│   dc 22   Revisar literals           Tarragona               │
-└──────────────────────────────────────────────────────────────┘
-```
-
-El retard es mostra sempre com a desplaçament signat (`-14d`, `+2d`), no com a
-data absoluta: a la safata el que importa és la magnitud, no el dia.
-
-### 11.6 Interacció
-
-- Botons: rectangle amb `1px solid var(--text)`, fons transparent; en hover,
-  fons `--text` i text `--base`. Sense transició.
-- Focus: `outline: 2px solid var(--accent); outline-offset: 0`. Sempre visible.
-- Les quatre accions de la safata són botons de text en línia dins de la fila,
-  no un menú desplegable. Una acció que requereixi dos clics no es farà servir.
-- Sense animació d'entrada de cap mena. L'única motion admesa és la que confirma
-  un canvi: una fila que es marca feta desapareix amb un fos de 120 ms.
-- `prefers-reduced-motion` respectat.
-
-### 11.7 Copy
-
-Minúscula en etiquetes i capçaleres de secció, frase normal en prosa. Verbs
-directes: "marcar fet", "replanificar", "revisat". Els estats buits diuen què
-fer, no celebren: "cap element a revisar" i prou. Els errors diuen què ha fallat
-i com arreglar-ho; no demanen perdó.
-
-### 11.8 Revisió d'octubre de 2026 — més amable, mateixa idea
-
-Es manté tot el que hi ha a dalt (angles rectes, cap ombra ni degradat, mono per
-a les dades, files i no targetes, colors d'estat fora del fons de fila). S'hi
-afegeix, a petició del client, perquè la primera versió era massa austera:
-
-- **Jerarquia als botons.** "fet" és l'acció destacada (vora i text `--fet`);
-  "replanificar", "revisat" i "cancel·lar" són discrets (text suau, sense vora)
-  fins que hi passes per sobre. Les accions principals d'una pantalla ("+ nou
-  projecte", "desar") són plenes amb `--accent`. Substitueix el botó únic de §11.6.
-- **Tints suaus** (`--vencut-suau`, `--risc-suau`, `--mut-suau`, `--fet-suau`)
-  només com a fons de l'etiqueta d'estat i dels comptadors, mai de la fila.
-- **Capçalera de "la meva setmana"** amb salutació, data i un resum de comptes
-  (vençuts, en risc, muts, tasques de la setmana) que porta a cada secció. Són
-  recomptes, no percentatges ni gràfics: §2 continua vigent.
-- **Comptadors** al costat del títol de cada secció i, al rail, el nombre
-  d'elements meus a revisar.
-- **Files d'una sola línia**: els textos llargs es tallen amb "…" i el text
-  sencer va al `title`. En mòbil, les llistes de la pàgina d'inici s'apilen i
-  les accions passen a sota.
-- **Hover de fila** amb `--hover` (gris gairebé blanc) i files de 36 px.
-- **Estats buits amb el pas següent** ("cap tasca… · afegeix-ne des d'un projecte").
-
+Lliure. Només dues constants: tipografia **IBM Plex Mono** i **cantonades rectes**
+(`border-radius: 0`). La resta (color, jerarquia, icones, ombres) s'ha de decidir
+per fer l'app clara i agradable d'utilitzar.
