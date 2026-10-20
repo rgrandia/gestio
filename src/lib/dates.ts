@@ -63,3 +63,11 @@ export function salutacio(): string {
   if (hora >= 14 && hora < 21) return "bona tarda";
   return "bona nit";
 }
+
+// "avui · dimarts 20 d'octubre", "demà · dimecres 21 d'octubre", "dijous 23 d'octubre"
+export function diaRelatiu(iso: string, hui: string): string {
+  const d = diesEntre(hui, iso);
+  if (d === 0) return `avui · ${dataLlarga(iso)}`;
+  if (d === 1) return `demà · ${dataLlarga(iso)}`;
+  return dataLlarga(iso);
+}

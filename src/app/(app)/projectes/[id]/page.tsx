@@ -1,8 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { assignables, comprova, etiquetaPersona, mapaPersones, membres, obtePerfils } from "@/lib/dades";
-import { avui, dataCurta } from "@/lib/dates";
+import {
+  assignables,
+  comprova,
+  comptaReplanificacions,
+  etiquetaPersona,
+  mapaPersones,
+  membres,
+  obtePerfils,
+} from "@/lib/dades";
+import { Replanificat } from "@/components/Replanificat";
+import { TiraFases } from "@/components/TiraFases";
+import { avui, dataCurta, desplacament, diesEntre } from "@/lib/dates";
 import {
   actualitzaProjecte,
   creaContacte,
@@ -190,6 +200,11 @@ async function Detall({
   const entregablesTots = comprova(entregablesR) as Entregable[];
   const tasquesTotes = comprova(tasquesR) as Tasca[];
   const contactes = comprova(contactesR) as Contacte[];
+  const replans = await comptaReplanificacions([
+    ...fases.map((x) => x.id),
+    ...entregablesTots.map((x) => x.id),
+    ...tasquesTotes.map((x) => x.id),
+  ]);
 
   // Cancel·lats i fets fora per defecte (tasques i entregables), amb filtre per recuperar-los.
   const visible = (x: { estat: string; data_real: string | null }) =>
@@ -210,6 +225,7 @@ async function Detall({
             <span className="titol">fases</span>
             <span className="meta">les actualitza el responsable del projecte; l&apos;app no sap si una fase ha acabat</span>
           </header>
+          <TiraFases fases={fases} hui={hui} />
           <div className="desplacable">
             <table className="taula taula-fases">
               <thead>
@@ -247,7 +263,10 @@ async function Detall({
                         <MouFase id={f.id} primera={i === 0} darrera={i === fases.length - 1} />
                       </td>
                       <td className="element">
-                        <div className="titol-el">{f.nom}</div>
+                        <div className="titol-el">
+                          {f.nom}
+                          <Replanificat n={replans.get(f.id)} />
+                        </div>
                         <div className="context">
                           {tasquesFase.length === 0
                             ? "cap tasca"
@@ -279,6 +298,7 @@ async function Detall({
                                     <td className="ample">
                                       {t.titol}{" "}
                                       {t.prioritat === "alta" && <span className="etiqueta tag-vencut">alta</span>}
+                                      <Replanificat n={replans.get(t.id)} />
                                     </td>
                                     <td><Persona p={persones.get(t.assignada_a ?? "")} /></td>
                                     <td className="num">{dataCurta(t.data_prevista)}</td>
@@ -379,6 +399,7 @@ async function Detall({
                         ) : (
                           e.titol
                         )}
+                        <Replanificat n={replans.get(e.id)} />
                       </td>
                       <td className="suau">{e.tipus ?? ""}</td>
                       <td><Persona p={persones.get(e.responsable_id ?? p.responsable_id)} /></td>
@@ -486,7 +507,8 @@ async function Detall({
                   >
                     <td>
                       {t.titol}
-                      {t.prioritat === "alta" && <span className="tag tag-vencut"> alta</span>}
+                      {t.prioritat === "alta" && <span className="etiqueta tag-vencut ml-1">alta</span>}
+                      <Replanificat n={replans.get(t.id)} />
                     </td>
                     <td className="suau">
                       {t.fase_id ? nomFase.get(t.fase_id) : t.entregable_id ? nomEntregable.get(t.entregable_id) : ""}
@@ -560,6 +582,7 @@ async function Historial({ projecteId }: { projecteId: string }) {
             <th>element</th>
             <th className="num">de</th>
             <th className="num">a</th>
+            <th className="num">canvi</th>
             <th>motiu</th>
             <th>qui</th>
           </tr>
@@ -573,6 +596,15 @@ async function Historial({ projecteId }: { projecteId: string }) {
               </td>
               <td className="num">{dataCurta(h.data_antiga)}</td>
               <td className="num">{dataCurta(h.data_nova)}</td>
+              <td className="num">
+                {h.data_antiga && h.data_nova ? (
+                  <span className={`dies ${h.data_nova > h.data_antiga ? "tag-vencut" : "tag-fet"}`}>
+                    {desplacament(diesEntre(h.data_antiga, h.data_nova))}
+                  </span>
+                ) : (
+                  <span className="fluix">—</span>
+                )}
+              </td>
               <td className="font-sans">{h.motiu}</td>
               <td className="suau nowrap">{h.usuari ?? ""}</td>
             </tr>

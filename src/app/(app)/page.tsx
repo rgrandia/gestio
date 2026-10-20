@@ -10,8 +10,10 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requereixMembre } from "@/lib/auth/session";
-import { comprova } from "@/lib/dades";
-import { avui, dataCurta, dataLlarga, desplacament, diaCurt, salutacio, sumaDies } from "@/lib/dates";
+import { Fragment } from "react";
+import { comprova, comptaReplanificacions } from "@/lib/dades";
+import { Replanificat } from "@/components/Replanificat";
+import { avui, dataCurta, dataLlarga, desplacament, diaCurt, diaRelatiu, salutacio, sumaDies } from "@/lib/dates";
 import { FilaAccionable } from "@/components/FilaAccionable";
 import { TAULA_DE, type FilaSafata, type ProjecteMut } from "@/lib/tipus";
 
@@ -72,6 +74,15 @@ export default async function LaMevaSetmana({
   const filesSetmana = comprova(setmana) as unknown as TascaSetmana[];
   const filesMuts = comprova(muts) as ProjecteMut[];
   const filesIdees = comprova(idees) as { id: string; titol: string; data_objectiu: string | null }[];
+
+  const replans = await comptaReplanificacions([
+    ...filesSafata.map((f) => f.id),
+    ...filesSetmana.map((t) => t.id),
+  ]);
+
+  // Agenda: tasques de la setmana agrupades per dia.
+  const perDia = new Map<string, TascaSetmana[]>();
+  for (const t of filesSetmana) perDia.set(t.data_prevista, [...(perDia.get(t.data_prevista) ?? []), t]);
 
   const vencuts = filesSafata.filter((f) => f.motiu === "vencut").length;
   const enRisc = filesSafata.length - vencuts;
@@ -138,7 +149,10 @@ export default async function LaMevaSetmana({
                       {desplacament(-f.dies_retard)}
                     </td>
                     <td className="ample element">
-                      <div className="titol-el trunc" title={f.titol}>{f.titol}</div>
+                      <div className="titol-el trunc" title={f.titol}>
+                        {f.titol}
+                        <Replanificat n={replans.get(f.id)} />
+                      </div>
                       <div className="context">
                         <span>{f.tipus_item}</span>
                         <span className="sep">·</span>
@@ -171,21 +185,28 @@ export default async function LaMevaSetmana({
           <div className="desplacable">
             <table className="taula taula-mobil">
               <tbody>
-                {filesSetmana.map((t) => (
-                  <FilaAccionable key={t.id} taula="tasques" id={t.id} tePrevista acabat={false} desapareix>
-                    <td className="nowrap dies">{diaCurt(t.data_prevista)}</td>
-                    <td className="ample element">
-                      <div className="titol-el trunc" title={t.titol}>
-                        {t.titol}{" "}
-                        {t.prioritat === "alta" && <span className="etiqueta tag-vencut">alta</span>}
-                      </div>
-                      <div className="context">
-                        <Link href={`/projectes/${t.projecte_id}`}>{t.projectes?.titol}</Link>
-                        <span className="sep">·</span>
-                        <span>{t.projectes?.clients?.nom}</span>
-                      </div>
-                    </td>
-                  </FilaAccionable>
+                {[...perDia].map(([dia, tasques]) => (
+                  <Fragment key={dia}>
+                    <tr className={`dia ${dia === hui ? "avui" : ""}`}>
+                      <td colSpan={3}>{diaRelatiu(dia, hui)}</td>
+                    </tr>
+                    {tasques.map((t) => (
+                      <FilaAccionable key={t.id} taula="tasques" id={t.id} tePrevista acabat={false} desapareix>
+                        <td className="ample element">
+                          <div className="titol-el trunc" title={t.titol}>
+                            {t.titol}{" "}
+                            {t.prioritat === "alta" && <span className="etiqueta tag-vencut">alta</span>}
+                            <Replanificat n={replans.get(t.id)} />
+                          </div>
+                          <div className="context">
+                            <Link href={`/projectes/${t.projecte_id}`}>{t.projectes?.titol}</Link>
+                            <span className="sep">·</span>
+                            <span>{t.projectes?.clients?.nom}</span>
+                          </div>
+                        </td>
+                      </FilaAccionable>
+                    ))}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

@@ -5,12 +5,13 @@ import { avui, dataCurta } from "@/lib/dates";
 import { Retard } from "@/components/Retard";
 import { Persona } from "@/components/Persona";
 import { EtiquetaEstat } from "@/components/EtiquetaEstat";
-import { Plus } from "lucide-react";
-import type { EstatProjecte, Projecte } from "@/lib/tipus";
+import { Plus, Search } from "lucide-react";
+import { TiraFases } from "@/components/TiraFases";
+import type { Entregable, EstatProjecte, Fase, Projecte } from "@/lib/tipus";
 
 export const dynamic = "force-dynamic";
 
-type Filtres = { tipus?: string; client?: string; responsable?: string; estat?: string };
+type Filtres = { tipus?: string; client?: string; responsable?: string; estat?: string; q?: string };
 
 const ESTATS: (EstatProjecte | "obert" | "tots" | "arxivats" | "paperera")[] = [
   "obert", "actiu", "pausat", "tancat", "cancellat", "tots", "arxivats", "paperera",
@@ -29,11 +30,17 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
 
   let q = supabase
     .from("projectes")
-    .select("*, clients(nom), projecte_responsables(perfil_id, actiu)")
+    .select(
+      "*, clients(nom), projecte_responsables(perfil_id, actiu), fases(id, nom, ordre, data_inici, data_prevista, data_real, estat), entregables(id, titol, data_prevista, data_real, estat)",
+    )
     .order("data_fi_prevista", { ascending: true, nullsFirst: false })
     .order("titol");
   if (f.tipus === "estudi" || f.tipus === "consultoria" || f.tipus === "altre") q = q.eq("tipus", f.tipus);
   if (f.client) q = q.eq("client_id", f.client);
+  // Cerca per títol o número d'estudi. Es treuen els caràcters que tenen
+  // significat dins del filtre `or` de PostgREST.
+  const cerca = (f.q ?? "").replace(/[,()%*\\]/g, " ").trim();
+  if (cerca) q = q.or(`titol.ilike.%${cerca}%,numero_estudi.ilike.%${cerca}%`);
   if (f.responsable) {
     // principal o co-responsable
     const { data: co } = await supabase
@@ -60,6 +67,8 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
   const files = comprova(projectes) as (Projecte & {
     clients: { nom: string } | null;
     projecte_responsables: { perfil_id: string; actiu: boolean }[];
+    fases: Pick<Fase, "id" | "nom" | "ordre" | "data_inici" | "data_prevista" | "data_real" | "estat">[];
+    entregables: Pick<Entregable, "id" | "titol" | "data_prevista" | "data_real" | "estat">[];
   })[];
   const persones = mapaPersones(perfils);
   const hui = avui();
@@ -75,6 +84,10 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
       </div>
       <section className="seccio">
       <form className="filtres" method="get">
+        <label className="cerca">
+          <Search className="icona-petita suau" aria-hidden />
+          <input name="q" type="search" defaultValue={f.q ?? ""} placeholder="títol o núm. d'estudi" aria-label="cerca" />
+        </label>
         <select name="tipus" defaultValue={f.tipus ?? ""} aria-label="tipus">
           <option value="">tots els tipus</option>
           <option value="estudi">estudi</option>
@@ -110,8 +123,8 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
                 <th>client</th>
                 <th>responsable</th>
                 <th>estat</th>
-                <th className="num">fi prevista</th>
-                <th className="num">fi real</th>
+                <th>on és</th>
+                <th className="num" title="fi real si n'hi ha; si no, la prevista">fi</th>
                 <th className="num">desv.</th>
               </tr>
             </thead>
@@ -134,8 +147,8 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
                     </span>
                   </td>
                   <td><EtiquetaEstat estat={p.estat} /></td>
-                  <td className="num">{dataCurta(p.data_fi_prevista)}</td>
-                  <td className="num">{dataCurta(p.data_fi_real)}</td>
+                  <td className="nowrap"><OnEs p={p} hui={hui} /></td>
+                  <td className="num">{dataCurta(p.data_fi_real ?? p.data_fi_prevista)}</td>
                   <td className="num">
                     {p.estat === "actiu" || p.data_fi_real ? (
                       <Retard prevista={p.data_fi_prevista} real={p.data_fi_real} hui={hui} />
@@ -149,5 +162,28 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
       )}
       </section>
     </>
+  );
+}
+
+// Estudis: tira de fases i fase actual. La resta: el pròxim entregable obert.
+function OnEs({
+  p,
+  hui,
+}: {
+  p: { tipus: string; fases: Parameters<typeof TiraFases>[0]["fases"]; entregables: Pick<Entregable, "id" | "titol" | "data_prevista" | "data_real" | "estat">[] };
+  hui: string;
+}) {
+  if (p.tipus === "estudi") return <TiraFases fases={p.fases} hui={hui} compacte />;
+  const proper = p.entregables
+    .filter((e) => !e.data_real && e.estat !== "cancellat" && e.data_prevista)
+    .sort((a, b) => (a.data_prevista! < b.data_prevista! ? -1 : 1))[0];
+  if (!proper) return <span className="fluix petit">cap entregable pendent</span>;
+  return (
+    <span className="element">
+      <span className="titol-el trunc" style={{ maxWidth: "22ch" }} title={proper.titol}>{proper.titol}</span>
+      <span className="context">
+        {dataCurta(proper.data_prevista)} <Retard prevista={proper.data_prevista} real={null} hui={hui} />
+      </span>
+    </span>
   );
 }
