@@ -11,7 +11,9 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { requereixMembre } from "@/lib/auth/session";
 import { Fragment } from "react";
-import { comprova, comptaReplanificacions } from "@/lib/dades";
+import { comprova, comptaReplanificacions, membres, obtePersones } from "@/lib/dades";
+import { FilaRevisio } from "@/components/FilaRevisio";
+import { Persona } from "@/components/Persona";
 import { Replanificat } from "@/components/Replanificat";
 import { avui, dataCurta, dataLlarga, desplacament, diaCurt, diaRelatiu, salutacio, sumaDies } from "@/lib/dates";
 import { FilaAccionable } from "@/components/FilaAccionable";
@@ -47,7 +49,7 @@ export default async function LaMevaSetmana({
     .order("projecte");
   if (!veureTot) consultaSafata = consultaSafata.contains("responsables", [perfil.id]);
 
-  const [safata, setmana, muts, idees] = await Promise.all([
+  const [safata, setmana, muts, idees, revisionsR, persones] = await Promise.all([
     consultaSafata,
     supabase
       .from("tasques")
@@ -68,7 +70,29 @@ export default async function LaMevaSetmana({
       .eq("proposada_per", perfil.id)
       .eq("estat", "proposada")
       .order("creat_el", { ascending: false }),
+    supabase
+      .from("revisions")
+      .select("id, revisor_id, demanada_per, creat_el, tasques(titol, projecte_id, data_real, projectes(titol))")
+      .eq("estat", "pendent")
+      .or(`revisor_id.eq.${perfil.id},demanada_per.eq.${perfil.id}`)
+      .order("creat_el"),
+    obtePersones(),
   ]);
+
+  type Revisio = {
+    id: string;
+    revisor_id: string;
+    demanada_per: string;
+    creat_el: string;
+    tasques: { titol: string; projecte_id: string; data_real: string | null; projectes: { titol: string } | null } | null;
+  };
+  const revisions = comprova(revisionsR) as unknown as Revisio[];
+  const perRevisar = revisions.filter((r) => r.revisor_id === perfil.id);
+  const esperant = revisions.filter((r) => r.demanada_per === perfil.id);
+  // A qui puc enviar a revisar: membres actius, menys jo.
+  const revisors = membres([...persones.values()])
+    .filter((p) => p.id !== perfil.id)
+    .map((p) => ({ id: p.id, nom: p.nom }));
 
   const filesSafata = comprova(safata) as FilaSafata[];
   const filesSetmana = comprova(setmana) as unknown as TascaSetmana[];
@@ -139,6 +163,7 @@ export default async function LaMevaSetmana({
                     acabat={false}
                     desapareix
                     ambRevisat
+                    revisors={f.tipus_item === "tasca" ? revisors : undefined}
                   >
                     <td className="nowrap">
                       <span className={`etiqueta ${f.motiu === "vencut" ? "tag-vencut" : "tag-risc"}`}>
@@ -169,6 +194,56 @@ export default async function LaMevaSetmana({
         )}
       </section>
 
+      {revisions.length > 0 && (
+        <section className="seccio" id="revisions">
+          <header>
+            <span className="titol">
+              revisions
+              {perRevisar.length > 0 && <span className="comptador c-vencut">{perRevisar.length}</span>}
+            </span>
+            <span className="meta">tasques fetes que algú ha de revisar</span>
+          </header>
+          <div className="desplacable">
+            <table className="taula taula-mobil">
+              <tbody>
+                {perRevisar.length > 0 && (
+                  <tr className="dia avui"><td colSpan={3}>et toca revisar</td></tr>
+                )}
+                {perRevisar.map((r) => (
+                  <FilaRevisio key={r.id} id={r.id} soc="revisor">
+                    <td className="nowrap"><Persona p={persones.get(r.demanada_per)} nomesAvatar /></td>
+                    <td className="ample element">
+                      <div className="titol-el trunc" title={r.tasques?.titol}>{r.tasques?.titol}</div>
+                      <div className="context">
+                        <span>t&apos;ho demana {persones.get(r.demanada_per)?.nom}</span>
+                        <span className="sep">·</span>
+                        <Link href={`/projectes/${r.tasques?.projecte_id}`}>{r.tasques?.projectes?.titol}</Link>
+                      </div>
+                    </td>
+                  </FilaRevisio>
+                ))}
+                {esperant.length > 0 && (
+                  <tr className="dia"><td colSpan={3}>esperant revisió</td></tr>
+                )}
+                {esperant.map((r) => (
+                  <FilaRevisio key={r.id} id={r.id} soc="demanant">
+                    <td className="nowrap"><Persona p={persones.get(r.revisor_id)} nomesAvatar /></td>
+                    <td className="ample element">
+                      <div className="titol-el trunc" title={r.tasques?.titol}>{r.tasques?.titol}</div>
+                      <div className="context">
+                        <span>la revisa {persones.get(r.revisor_id)?.nom}</span>
+                        <span className="sep">·</span>
+                        <Link href={`/projectes/${r.tasques?.projecte_id}`}>{r.tasques?.projectes?.titol}</Link>
+                      </div>
+                    </td>
+                  </FilaRevisio>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       <section className="seccio" id="setmana">
         <header>
           <span className="titol">
@@ -191,7 +266,7 @@ export default async function LaMevaSetmana({
                       <td colSpan={3}>{diaRelatiu(dia, hui)}</td>
                     </tr>
                     {tasques.map((t) => (
-                      <FilaAccionable key={t.id} taula="tasques" id={t.id} tePrevista acabat={false} desapareix>
+                      <FilaAccionable key={t.id} taula="tasques" id={t.id} tePrevista acabat={false} desapareix revisors={revisors}>
                         <td className="ample element">
                           <div className="titol-el trunc" title={t.titol}>
                             {t.titol}{" "}

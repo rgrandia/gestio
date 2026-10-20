@@ -9,7 +9,7 @@ import { Persona } from "@/components/Persona";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const perfil = await requereixMembre();
   const supabase = await createClient();
-  const [{ count }, { count: avisos }] = await Promise.all([
+  const [{ count }, { count: avisos }, { count: perRevisar }] = await Promise.all([
     supabase
       .from("v_safata")
       .select("id", { count: "exact", head: true })
@@ -18,6 +18,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .from("notificacions")
       .select("id", { count: "exact", head: true })
       .is("llegida_el", null),
+    supabase
+      .from("revisions")
+      .select("id", { count: "exact", head: true })
+      .eq("estat", "pendent")
+      .eq("revisor_id", perfil.id),
   ]);
 
   return (
@@ -32,7 +37,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
         <CercaGlobal />
         <div className="seccio-nav">menú</div>
-        <NavRail pendents={count ?? 0} avisos={avisos ?? 0} />
+        <NavRail pendents={(count ?? 0) + (perRevisar ?? 0)} avisos={avisos ?? 0} />
         <div className="peu">
           <Persona p={perfil} nomesAvatar gran />
           <span className="nom">

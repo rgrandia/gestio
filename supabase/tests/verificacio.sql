@@ -405,6 +405,106 @@ do $$ begin
 end $$;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';
 
+-- ------------------------------------------------------------
+-- 0011: revisions
+-- ------------------------------------------------------------
+-- una tasca no feta no es pot enviar a revisar
+do $$ begin
+  begin
+    insert into revisions (tasca_id, revisor_id)
+      values ('30000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-00000000000c');
+    raise exception 'FALLA: s''ha enviat a revisar una tasca no feta';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+end $$;
+
+update tasques set estat = 'fet', data_real = current_date where id = '30000000-0000-0000-0000-000000000009';
+
+do $$ begin
+  -- a si mateix, no
+  begin
+    insert into revisions (tasca_id, revisor_id)
+      values ('30000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-00000000000a');
+    raise exception 'FALLA: algú s''ha enviat una revisió a si mateix';
+  exception when check_violation then null;
+  end;
+  -- a un extern, no
+  begin
+    insert into revisions (tasca_id, revisor_id)
+      values ('30000000-0000-0000-0000-000000000009', (select id from perfils where extern limit 1));
+    raise exception 'FALLA: s''ha enviat a revisar a un extern';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+  -- en nom d'un altre, no
+  begin
+    insert into revisions (tasca_id, revisor_id, demanada_per)
+      values ('30000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-00000000000a',
+              '00000000-0000-0000-0000-00000000000c');
+    raise exception 'FALLA: s''ha demanat una revisió en nom d''un altre';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+insert into revisions (id, tasca_id, revisor_id) values
+  ('40000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000009',
+   '00000000-0000-0000-0000-00000000000c');
+
+do $$ begin
+  -- dues de pendents per a la mateixa tasca, no
+  begin
+    insert into revisions (tasca_id, revisor_id)
+      values ('30000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-00000000000c');
+    raise exception 'FALLA: dues revisions pendents per a la mateixa tasca';
+  exception when unique_violation then null;
+  end;
+  -- qui la demana no la pot aprovar
+  begin
+    update revisions set estat = 'aprovada' where id = '40000000-0000-0000-0000-000000000001';
+    raise exception 'FALLA: qui demana la revisió l''ha pogut aprovar';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+end $$;
+
+-- el revisor la retorna: cal comentari, i la tasca es reobre
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000c"}';
+do $$ begin
+  begin
+    update revisions set estat = 'retornada' where id = '40000000-0000-0000-0000-000000000001';
+    raise exception 'FALLA: s''ha retornat sense comentari';
+  exception when check_violation then null;
+  end;
+end $$;
+update revisions set estat = 'retornada', comentari = 'falta la taula de quotes'
+  where id = '40000000-0000-0000-0000-000000000001';
+do $$ begin
+  assert (select data_real is null and estat = 'en_curs' from tasques
+           where id = '30000000-0000-0000-0000-000000000009'),
+    'retornar la revisió no ha reobert la tasca';
+  assert (select resolta_el is not null from revisions where id = '40000000-0000-0000-0000-000000000001'),
+    'la revisió resolta no té data de resolució';
+  begin
+    update revisions set estat = 'aprovada' where id = '40000000-0000-0000-0000-000000000001';
+    -- l'RLS (estat = 'pendent') fa que no afecti cap fila
+    assert (select estat from revisions where id = '40000000-0000-0000-0000-000000000001') = 'retornada',
+      'una revisió resolta s''ha pogut tornar a canviar';
+  end;
+end $$;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';
+
+reset role;
+do $$ begin
+  assert exists (select 1 from notificacions where perfil_id = '00000000-0000-0000-0000-00000000000c'
+                   and tipus = 'revisio' and text like '%et demana que revisis%'),
+    'el revisor no ha rebut l''avís';
+  assert exists (select 1 from notificacions where perfil_id = '00000000-0000-0000-0000-00000000000a'
+                   and tipus = 'revisio' and text like '%falta la taula de quotes%'),
+    'qui la demanava no ha rebut l''avís de retorn amb el comentari';
+end $$;
+set local role authenticated;
+
 -- historial: cap client hi pot escriure
 do $$ begin
   begin
@@ -427,7 +527,7 @@ declare t text;
 begin
   foreach t in array array['perfils', 'clients', 'projectes', 'fases', 'entregables',
                            'tasques', 'contactes', 'idees', 'historial_dates',
-                           'projecte_responsables', 'notificacions']
+                           'projecte_responsables', 'notificacions', 'revisions']
   loop
     begin
       execute format('delete from %I', t);

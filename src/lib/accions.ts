@@ -36,7 +36,7 @@ function dataOpcional(fd: FormData, clau: string): string | null | "invalida" {
 // ------------------------------------------------------------------
 
 export type AccioItem =
-  | { accio: "fet"; taula: TaulaItem; id: string; data: string }
+  | { accio: "fet"; taula: TaulaItem; id: string; data: string; revisor?: string }
   | { accio: "replanificar"; taula: TaulaItem | "projectes"; id: string; data: string; motiu: string }
   | { accio: "revisat"; taula: TaulaItem; id: string }
   | { accio: "cancellar"; taula: TaulaItem; id: string };
@@ -59,6 +59,10 @@ export async function accioItem(a: AccioItem): Promise<Resultat> {
       .eq("id", a.id);
     if (error) return { error: missatgeError(error) };
     if (!count) return { error: "No s'ha trobat l'element. Recarrega la pàgina." };
+    if (a.taula === "tasques" && a.revisor) {
+      const { error: e2 } = await supabase.from("revisions").insert({ tasca_id: a.id, revisor_id: a.revisor });
+      if (e2) return { error: `Tasca marcada com a feta, però no s'ha pogut enviar a revisar: ${missatgeError(e2)}` };
+    }
     return { ok: true };
   }
 
@@ -587,4 +591,38 @@ export async function cercaGlobal(consulta: string): Promise<ResultatCerca[]> {
       href: "/idees",
     })),
   ];
+}
+
+// ------------------------------------------------------------------
+// Revisions de tasques fetes
+// ------------------------------------------------------------------
+
+export async function enviaARevisar(tascaId: string, revisorId: string): Promise<Resultat> {
+  if (!revisorId) return { error: "Tria qui l'ha de revisar." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("revisions").insert({ tasca_id: tascaId, revisor_id: revisorId });
+  if (error) {
+    if (error.code === "23505") return { error: "Aquesta tasca ja té una revisió pendent." };
+    return { error: missatgeError(error) };
+  }
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function resolRevisio(
+  id: string,
+  estat: "aprovada" | "retornada" | "cancellada",
+  comentari = "",
+): Promise<Resultat> {
+  if (estat === "retornada" && !comentari.trim())
+    return { error: "Explica què cal canviar abans de retornar-la." };
+  const supabase = await createClient();
+  const { error, count } = await supabase
+    .from("revisions")
+    .update({ estat, comentari: comentari.trim() || null }, { count: "exact" })
+    .eq("id", id);
+  if (error) return { error: missatgeError(error) };
+  if (!count) return { error: "Aquesta revisió ja s'ha resolt. Recarrega la pàgina." };
+  revalidatePath("/", "layout");
+  return { ok: true };
 }
