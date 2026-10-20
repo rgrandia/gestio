@@ -2,29 +2,45 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, CalendarCheck, FolderKanban, Lightbulb, Users } from "lucide-react";
+import {
+  Bell,
+  Building2,
+  CalendarCheck,
+  CalendarRange,
+  FolderKanban,
+  Lightbulb,
+  Users,
+  UsersRound,
+} from "lucide-react";
 
 const ENLLACOS = [
-  { href: "/", text: "la meva setmana", Icona: CalendarCheck },
+  { href: "/", text: "la meva setmana", Icona: CalendarCheck, compte: "pendents" as const },
+  { href: "/avisos", text: "avisos", Icona: Bell, compte: "avisos" as const },
   { href: "/projectes", text: "projectes", Icona: FolderKanban },
+  { href: "/cronograma", text: "cronograma", Icona: CalendarRange },
+  { href: "/feina", text: "feina de l'equip", Icona: UsersRound },
   { href: "/idees", text: "idees", Icona: Lightbulb },
   { href: "/clients", text: "clients", Icona: Building2 },
   { href: "/equip", text: "equip", Icona: Users },
 ];
 
-// `pendents`: elements meus a la safata, perquè es vegi des de qualsevol pantalla.
-export function NavRail({ pendents }: { pendents: number }) {
+// `pendents`: elements meus a la safata. `avisos`: notificacions sense llegir.
+export function NavRail({ pendents, avisos }: { pendents: number; avisos: number }) {
   const ruta = usePathname();
+  const comptes = { pendents, avisos };
   return (
     <nav aria-label="principal">
-      {ENLLACOS.map(({ href, text, Icona }) => {
+      {ENLLACOS.map(({ href, text, Icona, compte }) => {
         const actiu = href === "/" ? ruta === "/" : ruta.startsWith(href);
+        const n = compte ? comptes[compte] : 0;
         return (
           <Link key={href} href={href} aria-current={actiu ? "page" : undefined} title={text}>
             <Icona className="icona" aria-hidden />
             <span className="text">{text}</span>
-            {href === "/" && pendents > 0 && (
-              <span className="comptador" title={`${pendents} elements a revisar`}>{pendents}</span>
+            {n > 0 && (
+              <span className={`comptador ${compte === "avisos" ? "c-avis" : ""}`} title={`${n} ${compte === "avisos" ? "avisos sense llegir" : "elements a revisar"}`}>
+                {n}
+              </span>
             )}
           </Link>
         );

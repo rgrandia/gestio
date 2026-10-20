@@ -48,7 +48,7 @@ do $$ begin
     'una consultoria no ha de tenir fases';
   assert (select string_agg(nom, ',' order by ordre) from fases
           where projecte_id = '20000000-0000-0000-0000-000000000001')
-         = 'Qüestionari,Camp,Tabulació,Revisió,Informe,Presentació',
+         = 'Qüestionari i mostra,Briefing,Camp,Dades,Informe,Presentació',
     'les fases per defecte no coincideixen amb §4.4';
 end $$;
 
@@ -348,6 +348,63 @@ begin
     'un membre ha pogut canviar el color d''un altre';
 end $$;
 
+-- ------------------------------------------------------------
+-- 0009: notificacions
+-- ------------------------------------------------------------
+insert into tasques (id, projecte_id, titol, assignada_a, data_prevista) values
+  ('30000000-0000-0000-0000-000000000009', '20000000-0000-0000-0000-000000000001',
+   'Tasca per al company', '00000000-0000-0000-0000-00000000000c', current_date + 10);
+-- una tasca que m'assigno jo mateix no em notifica
+insert into tasques (projecte_id, titol, assignada_a)
+  values ('20000000-0000-0000-0000-000000000001', 'Tasca meva', '00000000-0000-0000-0000-00000000000a');
+select replanificar('tasques', '30000000-0000-0000-0000-000000000009', current_date + 15, 'ho demana el client');
+-- assignar a un extern no notifica ningú
+update tasques set assignada_a = (select id from perfils where extern limit 1)
+  where id = '30000000-0000-0000-0000-000000000002';
+
+do $$ begin
+  assert (select count(*) from notificacions) = 0, 'un membre veu notificacions que no són seves';
+  begin
+    update notificacions set text = 'manipulat';
+    raise exception 'FALLA: s''ha pogut modificar el text d''una notificació';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    insert into notificacions (perfil_id, tipus, text) values ('00000000-0000-0000-0000-00000000000c', 'x', 'x');
+    raise exception 'FALLA: un client ha pogut crear una notificació';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+reset role;
+do $$ begin
+  assert (select count(*) from notificacions
+           where perfil_id = '00000000-0000-0000-0000-00000000000c' and tipus = 'assignacio'
+             and text like '%Tasca per al company%') = 1,
+    'el company no ha rebut l''avís d''assignació';
+  assert (select count(*) from notificacions
+           where perfil_id = '00000000-0000-0000-0000-00000000000c' and tipus = 'replanificacio'
+             and text like '%(+5d)%') = 1,
+    'el company no ha rebut l''avís de replanificació amb el desplaçament';
+  assert not exists (select 1 from notificacions where perfil_id = '00000000-0000-0000-0000-00000000000a'
+                      and text like '%Tasca meva%'),
+    'algú ha rebut un avís d''una cosa que s''ha fet ell mateix';
+  assert not exists (select 1 from notificacions n join perfils p on p.id = n.perfil_id where p.extern),
+    'un extern ha rebut una notificació';
+end $$;
+set local role authenticated;
+
+-- el company veu les seves i les pot marcar com a llegides
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000c"}';
+do $$ begin
+  assert (select count(*) from notificacions) >= 2, 'el company no veu les seves notificacions';
+end $$;
+update notificacions set llegida_el = now();
+do $$ begin
+  assert not exists (select 1 from notificacions where llegida_el is null), 'no s''han pogut marcar com a llegides';
+end $$;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';
+
 -- historial: cap client hi pot escriure
 do $$ begin
   begin
@@ -370,7 +427,7 @@ declare t text;
 begin
   foreach t in array array['perfils', 'clients', 'projectes', 'fases', 'entregables',
                            'tasques', 'contactes', 'idees', 'historial_dates',
-                           'projecte_responsables']
+                           'projecte_responsables', 'notificacions']
   loop
     begin
       execute format('delete from %I', t);

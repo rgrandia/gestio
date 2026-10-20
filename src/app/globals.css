@@ -449,3 +449,92 @@ tbody.fase:has(.desplega:checked) > tr:first-child td { background: var(--hover)
 .cerca input { border: 0; min-height: 32px; padding: 0; outline: none; width: 170px; }
 .cerca input:focus { outline: none; }
 .cerca:focus-within { border-color: var(--accent); outline: 3px solid var(--accent-suau); }
+.rail nav a .comptador.c-avis { background: var(--accent); }
+
+/* avisos */
+.avis-nou td { background: var(--accent-suau); }
+.avis-nou .avis-text { font-weight: 600; }
+.avis-llegit .avis-text { color: var(--text-suau); font-weight: 400; }
+.avis-text { color: var(--text); display: inline-flex; gap: 6px; align-items: baseline; }
+.avis-icona { color: var(--accent); }
+
+/* ---------------- cerca global ---------------- */
+
+.cerca-global { position: relative; padding: 0 8px 12px; }
+.cerca-global .camp { display: flex; align-items: center; gap: 8px; background: var(--tinta-2); padding: 0 8px; color: #8592A6; }
+.cerca-global input { background: transparent; border: 0; color: #fff; min-height: 34px; padding: 0; flex: 1; min-width: 0; }
+.cerca-global input::placeholder { color: #8592A6; }
+.cerca-global input:focus { outline: none; }
+.cerca-global .camp:focus-within { outline: 2px solid var(--accent); }
+.cerca-global kbd { font: inherit; font-size: 11px; border: 1px solid #39465c; padding: 0 5px; color: #8592A6; }
+.cerca-global .resultats {
+  position: absolute; left: 8px; top: 38px; z-index: 30; width: 420px; max-width: calc(100vw - 32px);
+  list-style: none; margin: 0; padding: 4px 0; background: var(--panell); color: var(--text);
+  border: 1px solid var(--linia); box-shadow: var(--ombra-alta);
+}
+.cerca-global .resultats button {
+  width: 100%; display: grid; grid-template-columns: 16px 1fr; column-gap: 10px; align-items: center;
+  text-align: left; padding: 8px 12px; background: none; border: 0; cursor: pointer; font: inherit; color: var(--text);
+}
+.cerca-global .resultats button svg { grid-row: span 2; color: var(--text-suau); }
+.cerca-global .resultats .t { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cerca-global .resultats .d { font-size: 11px; color: var(--text-suau); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cerca-global [aria-selected="true"] button { background: var(--accent-suau); }
+.cerca-global .cap { padding: 10px 12px; color: var(--text-suau); }
+@media (max-width: 720px) { .cerca-global { display: none; } }
+
+/* ---------------- feina de l'equip ---------------- */
+
+.tauler { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(260px, 1fr); gap: 16px; overflow-x: auto; padding-bottom: 8px; align-items: start; }
+.columna { background: var(--panell); border: 1px solid var(--linia); box-shadow: var(--ombra); }
+.columna > header { padding: 12px 14px; border-bottom: 1px solid var(--linia); border-top: 3px solid var(--linia-forta); display: grid; gap: 6px; }
+.xifres-columna { display: flex; gap: 10px; font-size: 11px; color: var(--text-suau); }
+.xifres-columna > span:first-child { font-weight: 700; color: var(--text); }
+.columna ul { list-style: none; margin: 0; padding: 0; }
+.columna li { border-bottom: 1px solid var(--linia); border-left: 3px solid transparent; }
+.columna li:last-child { border-bottom: 0; }
+.columna li[data-estat="vencut"] { border-left-color: var(--vencut); }
+.columna li[data-estat="risc"] { border-left-color: var(--risc); }
+.columna li a { display: grid; gap: 2px; padding: 9px 12px; color: var(--text); }
+.columna li a:hover { background: var(--hover); }
+.columna li .t { font-weight: 500; }
+.columna li .d { font-size: 11px; color: var(--text-suau); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.columna li .q { font-size: 11px; color: var(--text-suau); }
+.columna li .q b { font-weight: 700; }
+
+/* ---------------- cronograma ---------------- */
+
+.gantt { overflow-x: auto; }
+.g-fila { display: grid; grid-template-columns: 260px minmax(720px, 1fr); border-bottom: 1px solid var(--linia); }
+.g-nom { display: flex; align-items: center; gap: 8px; padding: 0 12px; min-width: 0; border-right: 1px solid var(--linia); }
+.g-temps {
+  position: relative; height: 34px;
+  /* línies verticals: una per setmana */
+  background-image: repeating-linear-gradient(to right, var(--linia) 0 1px, transparent 1px calc(100% / var(--setmanes)));
+}
+.g-capcalera { position: sticky; top: 0; background: var(--hover); z-index: 2; }
+.g-capcalera .g-nom { font-size: 11px; color: var(--text-suau); }
+.g-capcalera .g-temps { height: 40px; }
+.g-setmana { position: absolute; bottom: 6px; padding-left: 4px; font-size: 11px; color: var(--text-suau); display: grid; line-height: 1.2; }
+.g-setmana b { color: var(--text); font-weight: 600; }
+.g-projecte { background: var(--panell); }
+.g-projecte .g-nom { font-weight: 500; }
+.g-projecte .g-nom a { color: var(--text); }
+.g-projecte .g-nom a:hover { color: var(--accent); }
+.g-fase .g-nom { padding-left: 44px; font-size: 12px; color: var(--text-suau); }
+.g-fase .g-temps { height: 26px; }
+.g-barra { position: absolute; top: 50%; transform: translateY(-50%); }
+.g-b-projecte { height: 12px; background: var(--accent); opacity: 0.85; }
+.g-b-projecte.obert { -webkit-mask-image: linear-gradient(to right, #000 70%, transparent); mask-image: linear-gradient(to right, #000 70%, transparent); }
+.g-b-fase { height: 10px; background: var(--linia-forta); }
+.g-b-fase.e-fet { background: var(--fet); }
+.g-b-fase.e-vencut { background: var(--vencut); }
+.g-b-fase.e-risc { background: var(--risc); }
+.g-fita { position: absolute; top: 50%; width: 10px; height: 10px; background: var(--text); transform: translate(-50%, -50%) rotate(45deg); outline: 2px solid var(--panell); }
+.g-fita.e-fet { background: var(--fet); }
+.g-fita.e-vencut { background: var(--vencut); }
+.g-fita.e-risc { background: var(--risc); }
+.g-avui { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--vencut); opacity: 0.6; z-index: 1; }
+.columna li.mes a { font-size: 11px; color: var(--accent); }
+.xifres-columna { flex-wrap: wrap; }
+.xifres-columna > span { white-space: nowrap; }
