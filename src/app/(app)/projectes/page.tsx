@@ -56,7 +56,7 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
           ))}
         </select>
         <button className="boto">filtrar</button>
-        <span className="ml-auto"><Link href="/projectes/nou">+ nou projecte</Link></span>
+        <span className="ml-auto"><Link href="/projectes/nou" className="boto boto-primari">+ nou projecte</Link></span>
       </form>
 
       {files.length === 0 ? (

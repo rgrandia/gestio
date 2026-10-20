@@ -75,15 +75,15 @@ export function FilaAccionable({
       <td className="accions">
         {!acabat && obert === null && (
           <>
-            <button className="boto" disabled={pendent} onClick={() => setObert("fet")}>
+            <button className="boto boto-fet" disabled={pendent} onClick={() => setObert("fet")}>
               fet
             </button>
-            <button className="boto" disabled={pendent} onClick={() => setObert("replanificar")}>
+            <button className="boto boto-suau" disabled={pendent} onClick={() => setObert("replanificar")}>
               {tePrevista ? "replanificar" : "planificar"}
             </button>
             {ambRevisat && (
               <button
-                className="boto"
+                className="boto boto-suau"
                 disabled={pendent}
                 title="amaga-ho 7 dies"
                 onClick={() => executa(() => accioItem({ accio: "revisat", taula, id }), true)}
@@ -92,7 +92,7 @@ export function FilaAccionable({
               </button>
             )}
             <button
-              className="boto"
+              className="boto boto-suau"
               disabled={pendent}
               onClick={() => executa(() => accioItem({ accio: "cancellar", taula, id }), true)}
             >
@@ -120,7 +120,7 @@ export function FilaAccionable({
               onChange={(e) => setDataReal(e.target.value)}
             />
             <button className="boto boto-primari" disabled={pendent}>marcar fet</button>
-            <button type="button" className="boto" onClick={() => setObert(null)}>×</button>
+            <button type="button" className="boto boto-suau" aria-label="tanca" onClick={() => setObert(null)}>×</button>
           </form>
         )}
 
@@ -156,7 +156,7 @@ export function FilaAccionable({
               />
             )}
             <button className="boto boto-primari" disabled={pendent}>desar</button>
-            <button type="button" className="boto" onClick={() => setObert(null)}>×</button>
+            <button type="button" className="boto boto-suau" aria-label="tanca" onClick={() => setObert(null)}>×</button>
           </form>
         )}
 

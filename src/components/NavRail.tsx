@@ -10,7 +10,8 @@ const ENLLACOS = [
   { href: "/clients", text: "clients" },
 ];
 
-export function NavRail() {
+// `pendents`: elements meus a la safata, perquè es vegi des de qualsevol pantalla.
+export function NavRail({ pendents }: { pendents: number }) {
   const ruta = usePathname();
   return (
     <nav aria-label="principal">
@@ -18,7 +19,10 @@ export function NavRail() {
         const actiu = e.href === "/" ? ruta === "/" : ruta.startsWith(e.href);
         return (
           <Link key={e.href} href={e.href} aria-current={actiu ? "page" : undefined}>
-            {e.text}
+            <span>{e.text}</span>
+            {e.href === "/" && pendents > 0 && (
+              <span className="comptador c-vencut" title={`${pendents} elements a revisar`}>{pendents}</span>
+            )}
           </Link>
         );
       })}

@@ -43,3 +43,23 @@ export function dataCurta(iso: string | null): string {
 export function esDataValida(s: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s + "T00:00:00Z"));
 }
+
+const DIES_LLARGS = ["diumenge", "dilluns", "dimarts", "dimecres", "dijous", "divendres", "dissabte"];
+const MESOS = ["gener", "febrer", "març", "abril", "maig", "juny", "juliol", "agost", "setembre", "octubre", "novembre", "desembre"];
+
+// "dimarts 20 d'octubre"
+export function dataLlarga(iso: string): string {
+  const d = new Date(iso + "T00:00:00Z");
+  const mes = MESOS[d.getUTCMonth()];
+  const de = /^[aeiou]/.test(mes) ? "d'" : "de ";
+  return `${DIES_LLARGS[d.getUTCDay()]} ${d.getUTCDate()} ${de}${mes}`;
+}
+
+export function salutacio(): string {
+  const hora = Number(
+    new Intl.DateTimeFormat("en-GB", { timeZone: ZONA, hour: "2-digit", hourCycle: "h23" }).format(new Date()),
+  );
+  if (hora >= 6 && hora < 14) return "bon dia";
+  if (hora >= 14 && hora < 21) return "bona tarda";
+  return "bona nit";
+}
