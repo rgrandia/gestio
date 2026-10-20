@@ -54,6 +54,8 @@ export default async function LaMevaSetmana({
       .is("data_real", null)
       .not("estat", "in", "(fet,cancellat)")
       .eq("projectes.estat", "actiu")
+      .is("projectes.arxivat_el", null)
+      .is("projectes.eliminat_el", null)
       .gte("data_prevista", hui)
       .lte("data_prevista", fiSetmana)
       .order("data_prevista"),

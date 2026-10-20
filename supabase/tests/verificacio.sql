@@ -285,6 +285,45 @@ begin
   end;
 end $$;
 
+-- ------------------------------------------------------------
+-- 0007: arxivar i paperera
+-- ------------------------------------------------------------
+do $$ begin
+  assert exists (select 1 from v_safata where projecte_id = '20000000-0000-0000-0000-000000000001'),
+    'precondició: l''estudi hauria de tenir elements a la safata';
+end $$;
+update projectes set arxivat_el = now() where id = '20000000-0000-0000-0000-000000000001';
+do $$ begin
+  assert not exists (select 1 from v_safata where projecte_id = '20000000-0000-0000-0000-000000000001'),
+    'un projecte arxivat no hauria de sortir a la safata';
+end $$;
+update projectes set arxivat_el = null where id = '20000000-0000-0000-0000-000000000001';
+
+-- consultoria muda: a la paperera deixa de ser muda i allibera el número
+update projectes set numero_estudi = '9999' where id = '20000000-0000-0000-0000-000000000003';
+update contactes set data = current_date - 100 where projecte_id = '20000000-0000-0000-0000-000000000002';
+do $$ begin
+  assert exists (select 1 from v_projectes_muts where id = '20000000-0000-0000-0000-000000000002'),
+    'precondició: la consultoria hauria de ser muda';
+end $$;
+update projectes set eliminat_el = now() where id in ('20000000-0000-0000-0000-000000000002',
+                                                     '20000000-0000-0000-0000-000000000003');
+do $$ begin
+  assert not exists (select 1 from v_projectes_muts where id = '20000000-0000-0000-0000-000000000002'),
+    'un projecte a la paperera no hauria de sortir com a mut';
+end $$;
+update projectes set numero_estudi = '9999' where id = '20000000-0000-0000-0000-000000000004';
+-- restaurar-lo amb el número ocupat ha de fallar
+do $$ begin
+  begin
+    update projectes set eliminat_el = null where id = '20000000-0000-0000-0000-000000000003';
+    raise exception 'FALLA: s''ha restaurat un projecte amb el número d''estudi repetit';
+  exception when unique_violation then null;
+  end;
+end $$;
+update projectes set eliminat_el = null where id = '20000000-0000-0000-0000-000000000002';
+update projectes set numero_estudi = null where id = '20000000-0000-0000-0000-000000000004';
+
 -- historial: cap client hi pot escriure
 do $$ begin
   begin

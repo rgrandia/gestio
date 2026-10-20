@@ -476,7 +476,11 @@ una convenció que es pugui oblidar, és una impossibilitat tècnica.
 El que es fa en lloc d'esborrar:
 
 - Tasques, fases i entregables → `estat = 'cancellat'`.
-- Projectes → `estat = 'cancellat'` o `'tancat'`.
+- Projectes → `estat = 'cancellat'` o `'tancat'`. A més (migració 0007):
+  **arxivar** (`arxivat_el`: fora de safata, llistes i comptadors; filtre
+  "arxivats") i **eliminar** (`eliminat_el`: a la paperera, amagat de tot
+  arreu i restaurable des del filtre "paperera"). Cap dels dos esborra res.
+  Un projecte a la paperera allibera el seu número d'estudi.
 - Clients i perfils → `actiu = false`.
 - Idees → `estat = 'descartada'`.
 

@@ -19,6 +19,7 @@ import { Retard, estatFila } from "@/components/Retard";
 import { Persona } from "@/components/Persona";
 import { ChevronRight } from "lucide-react";
 import { CampCoresponsables } from "@/components/CampCoresponsables";
+import { AccionsProjecte } from "@/components/AccionsProjecte";
 import { EtiquetaEstat } from "@/components/EtiquetaEstat";
 import type {
   Perfil,
@@ -82,9 +83,25 @@ export default async function DetallProjecte({
             <span className={`etiqueta ${p.tipus === "estudi" ? "tag-accent" : ""}`}>{p.tipus}</span>
             {p.subtipus && <span className="etiqueta">{p.subtipus}</span>}
             <EtiquetaEstat estat={p.estat} />
+            {p.arxivat_el && <span className="etiqueta tag-mut">arxivat</span>}
+            {p.eliminat_el && <span className="etiqueta tag-vencut">a la paperera</span>}
           </div>
         </div>
+        <AccionsProjecte id={p.id} titol={p.titol} arxivat={Boolean(p.arxivat_el)} eliminat={Boolean(p.eliminat_el)} />
       </div>
+
+      {p.eliminat_el && (
+        <p className="notes avis-vencut">
+          Aquest projecte és a la paperera des del {dataCurta(p.eliminat_el.slice(0, 10))}
+          {p.eliminat_per && noms.get(p.eliminat_per) ? ` (l'hi va enviar ${noms.get(p.eliminat_per)})` : ""}. No surt
+          enlloc més. Restaura&apos;l si ha estat un error.
+        </p>
+      )}
+      {p.arxivat_el && !p.eliminat_el && (
+        <p className="notes avis-mut">
+          Projecte arxivat el {dataCurta(p.arxivat_el.slice(0, 10))}: no surt a la safata ni a les llistes.
+        </p>
+      )}
 
       <dl className="capcalera">
         <div>

@@ -390,3 +390,7 @@ tbody.fase:has(.desplega:checked) > tr:first-child td { background: var(--hover)
 @media (prefers-reduced-motion: reduce) { .fletxa { transition: none; } }
 .taula-fases .boto-suau .text-boto { display: none; }
 .taula-fases .boto-suau { width: 30px; padding: 0; justify-content: center; }
+
+/* avisos de projecte arxivat / a la paperera */
+.notes.avis-vencut { border-left-color: var(--vencut); background: var(--vencut-suau); font-family: var(--font-mono); font-size: 13px; }
+.notes.avis-mut    { border-left-color: var(--mut); background: var(--mut-suau); font-family: var(--font-mono); font-size: 13px; }
