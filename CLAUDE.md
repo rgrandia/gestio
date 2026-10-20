@@ -43,8 +43,11 @@ resta (client, tasques, responsables, dates, idees) és compartida.
 
 - Sincronització bidireccional amb Planner, To Do, Asana o similars.
 - Lectura de correu electrònic.
-- Gràfics, percentatges d'avanç, diagrames de Gantt o mètriques agregades.
-- Notificacions per correu o Teams.
+- Gràfics, percentatges d'avanç o mètriques agregades. (El **cronograma**
+  —Gantt de projectes i fases— s'hi va afegir com a prova l'octubre de 2026,
+  per decisió del client.)
+- Notificacions per correu o Teams. (Hi ha **avisos dins de l'app** des de
+  l'octubre de 2026, migració 0009; el correu continua fora.)
 - Pujada de fitxers (només enllaços a SharePoint/Drive).
 - App mòbil nativa (només web responsive).
 
@@ -283,12 +286,15 @@ En crear un projecte de tipus `estudi`, es generen aquestes sis fases amb
 `ordre` 1..6. Són editables: se'n poden afegir, reordenar o cancel·lar (mai
 esborrar, vegeu 7.2). Aquest és el punt de partida:
 
-1. Qüestionari
-2. Camp
-3. Tabulació
-4. Revisió
+1. Qüestionari i mostra
+2. Briefing
+3. Camp
+4. Dades
 5. Informe
 6. Presentació
+
+(Canviades l'octubre de 2026, migració 0010; abans: Qüestionari, Camp,
+Tabulació, Revisió, Informe, Presentació. Els estudis ja creats no es toquen.)
 
 Un projecte de tipus `consultoria` **no genera cap fase**.
 
@@ -427,7 +433,10 @@ Si cal navegar al detall del projecte per resoldre una línia, el disseny falla.
 
 ## 6. Pantalles de l'MVP
 
-Quatre, més **equip** (membres i persones externes, afegida l'octubre de 2026). Cap més sense preguntar. Estil visual: secció 11.
+Quatre, més les afegides l'octubre de 2026: **equip** (membres i persones
+externes), **avisos** (notificacions dins de l'app), **cronograma** (prova de
+Gantt) i **feina de l'equip** (què té obert cadascú), a més d'una **cerca
+global** al menú (tecla `/`). Cap més sense preguntar. Estil visual: secció 11.
 
 ### 6.1 La meva setmana (pàgina d'inici)
 

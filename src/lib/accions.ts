@@ -517,3 +517,74 @@ export async function canviaElMeuColor(_p: Resultat, fd: FormData): Promise<Resu
   revalidatePath("/", "layout");
   return { ok: true };
 }
+
+// ------------------------------------------------------------------
+// Avisos
+// ------------------------------------------------------------------
+
+export async function marcaAvisosLlegits(): Promise<void> {
+  const supabase = await createClient();
+  await supabase.from("notificacions").update({ llegida_el: new Date().toISOString() }).is("llegida_el", null);
+  revalidatePath("/", "layout");
+}
+
+// ------------------------------------------------------------------
+// Cerca global (projectes, clients, tasques i idees)
+// ------------------------------------------------------------------
+
+export type ResultatCerca = { tipus: "projecte" | "client" | "tasca" | "idea"; titol: string; detall: string; href: string };
+
+export async function cercaGlobal(consulta: string): Promise<ResultatCerca[]> {
+  // Es treuen els caràcters amb significat dins dels filtres de PostgREST.
+  const q = consulta.replace(/[,()%*\\]/g, " ").trim();
+  if (q.length < 2) return [];
+  const supabase = await createClient();
+  const patro = `%${q}%`;
+
+  const [projectes, clients, tasques, idees] = await Promise.all([
+    supabase
+      .from("projectes")
+      .select("id, titol, numero_estudi, tipus, clients(nom)")
+      .or(`titol.ilike.${patro},numero_estudi.ilike.${patro}`)
+      .is("eliminat_el", null)
+      .limit(6),
+    supabase.from("clients").select("id, nom, territori").ilike("nom", patro).eq("actiu", true).limit(4),
+    supabase
+      .from("tasques")
+      .select("id, titol, projecte_id, projectes!inner(titol, eliminat_el)")
+      .ilike("titol", patro)
+      .neq("estat", "cancellat")
+      .is("projectes.eliminat_el", null)
+      .limit(5),
+    supabase.from("idees").select("id, titol, estat").ilike("titol", patro).neq("estat", "descartada").limit(3),
+  ]);
+
+  type P = { id: string; titol: string; numero_estudi: string | null; tipus: string; clients: { nom: string } | null };
+  type T = { id: string; titol: string; projecte_id: string; projectes: { titol: string } | null };
+  return [
+    ...((projectes.data ?? []) as unknown as P[]).map((p) => ({
+      tipus: "projecte" as const,
+      titol: (p.numero_estudi ? `${p.numero_estudi} · ` : "") + p.titol,
+      detall: [p.tipus, p.clients?.nom].filter(Boolean).join(" · "),
+      href: `/projectes/${p.id}`,
+    })),
+    ...(clients.data ?? []).map((c) => ({
+      tipus: "client" as const,
+      titol: c.nom,
+      detall: c.territori ?? "client",
+      href: `/clients/${c.id}`,
+    })),
+    ...((tasques.data ?? []) as unknown as T[]).map((t) => ({
+      tipus: "tasca" as const,
+      titol: t.titol,
+      detall: t.projectes?.titol ?? "",
+      href: `/projectes/${t.projecte_id}`,
+    })),
+    ...(idees.data ?? []).map((i) => ({
+      tipus: "idea" as const,
+      titol: i.titol,
+      detall: i.estat,
+      href: "/idees",
+    })),
+  ];
+}
