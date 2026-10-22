@@ -2,8 +2,8 @@
 
 import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarClock, Check, Clock, X } from "lucide-react";
-import { accioItem } from "@/lib/accions";
+import { ArrowRightLeft, CalendarClock, Check, Clock, X } from "lucide-react";
+import { accioItem, transfereix } from "@/lib/accions";
 import { avui } from "@/lib/dates";
 import type { TaulaItem } from "@/lib/tipus";
 
@@ -17,10 +17,12 @@ type Props = {
   ambRevisat?: boolean;
   // Tasques: a qui es pot enviar a revisar en marcar-la feta (membres, sense un mateix).
   revisors?: { id: string; nom: string }[];
+  // Tasques i entregables: a qui es poden passar (membres i externs actius).
+  persones?: { id: string; nom: string; extern: boolean; area: string | null }[];
   children: ReactNode;
 };
 
-type Obert = null | "fet" | "replanificar";
+type Obert = null | "fet" | "replanificar" | "passar";
 
 // Fila amb les accions de §5 en línia: res de menús, res de navegar.
 export function FilaAccionable({
@@ -32,6 +34,7 @@ export function FilaAccionable({
   desapareix = false,
   ambRevisat = false,
   revisors,
+  persones,
   children,
 }: Props) {
   const router = useRouter();
@@ -46,6 +49,9 @@ export function FilaAccionable({
   const [novaData, setNovaData] = useState("");
   const [motiu, setMotiu] = useState("");
   const [revisor, setRevisor] = useState("");
+  const [desti, setDesti] = useState("");
+  const [nota, setNota] = useState("");
+  const potPassar = (taula === "tasques" || taula === "entregables") && persones && persones.length > 0;
 
   function executa(crida: () => ReturnType<typeof accioItem>, treu: boolean) {
     setError(null);
@@ -94,6 +100,16 @@ export function FilaAccionable({
                 onClick={() => executa(() => accioItem({ accio: "revisat", taula, id }), true)}
               >
                 <Clock className="icona-petita" aria-hidden /> <span className="text-boto">revisat</span>
+              </button>
+            )}
+            {potPassar && (
+              <button
+                className="boto boto-suau"
+                disabled={pendent}
+                title="passar-la a una altra persona"
+                onClick={() => setObert("passar")}
+              >
+                <ArrowRightLeft className="icona-petita" aria-hidden /> <span className="text-boto">passar</span>
               </button>
             )}
             <button
@@ -174,6 +190,43 @@ export function FilaAccionable({
             )}
             <button className="boto boto-primari" disabled={pendent}>desar</button>
             <button type="button" className="boto boto-suau boto-icona" aria-label="tanca" onClick={() => setObert(null)}><X className="icona-petita" aria-hidden /></button>
+          </form>
+        )}
+
+        {obert === "passar" && persones && (
+          <form
+            className="inline-flex flex-wrap gap-1 items-center justify-end"
+            onSubmit={(e) => {
+              e.preventDefault();
+              executa(() => transfereix(taula as "tasques" | "entregables", id, desti, nota), false);
+            }}
+          >
+            <select required autoFocus value={desti} onChange={(e) => setDesti(e.target.value)} aria-label="a qui la passes">
+              <option value="" disabled>a qui la passes…</option>
+              <optgroup label="equip">
+                {persones.filter((p) => !p.extern).map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
+              </optgroup>
+              {persones.some((p) => p.extern) && (
+                <optgroup label="externs">
+                  {persones.filter((p) => p.extern).map((p) => (
+                    <option key={p.id} value={p.id}>{p.nom}{p.area ? ` · ${p.area}` : ""}</option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+            <input
+              type="text"
+              placeholder="nota (opcional)"
+              aria-label="nota"
+              value={nota}
+              onChange={(e) => setNota(e.target.value)}
+            />
+            <button className="boto boto-primari" disabled={pendent}>
+              <ArrowRightLeft className="icona-petita" aria-hidden /> passar
+            </button>
+            <button type="button" className="boto boto-suau boto-icona" aria-label="tanca" onClick={() => setObert(null)}>
+              <X className="icona-petita" aria-hidden />
+            </button>
           </form>
         )}
 

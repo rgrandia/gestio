@@ -11,7 +11,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { requereixMembre } from "@/lib/auth/session";
 import { Fragment } from "react";
-import { comprova, comptaReplanificacions, membres, obtePersones } from "@/lib/dades";
+import { assignables, comprova, comptaReplanificacions, membres, obtePersones } from "@/lib/dades";
 import { FilaRevisio } from "@/components/FilaRevisio";
 import { Persona } from "@/components/Persona";
 import { Replanificat } from "@/components/Replanificat";
@@ -99,6 +99,13 @@ export default async function LaMevaSetmana({
   const perRevisar = revisions.filter((r) => r.revisor_id === perfil.id);
   const esperant = revisions.filter((r) => r.demanada_per === perfil.id);
   // A qui puc enviar a revisar: membres actius, menys jo.
+  // A qui puc passar una tasca o un entregable: membres i externs actius.
+  const passables = assignables([...persones.values()]).map((p) => ({
+    id: p.id,
+    nom: p.nom,
+    extern: p.extern,
+    area: p.area,
+  }));
   const revisors = membres([...persones.values()])
     .filter((p) => p.id !== perfil.id)
     .map((p) => ({ id: p.id, nom: p.nom }));
@@ -173,6 +180,7 @@ export default async function LaMevaSetmana({
                     desapareix
                     ambRevisat
                     revisors={f.tipus_item === "tasca" ? revisors : undefined}
+                    persones={f.tipus_item === "fase" ? undefined : passables}
                   >
                     <td className="nowrap">
                       <span className={`etiqueta ${f.motiu === "vencut" ? "tag-vencut" : "tag-risc"}`}>
@@ -284,7 +292,7 @@ export default async function LaMevaSetmana({
                       <td colSpan={3}>{diaRelatiu(dia, hui)}</td>
                     </tr>
                     {tasques.map((t) => (
-                      <FilaAccionable key={t.id} taula="tasques" id={t.id} tePrevista acabat={false} desapareix revisors={revisors}>
+                      <FilaAccionable key={t.id} taula="tasques" id={t.id} tePrevista acabat={false} desapareix revisors={revisors} persones={passables}>
                         <td className="ample element">
                           <div className="titol-el trunc" title={t.titol}>
                             {t.titol}{" "}

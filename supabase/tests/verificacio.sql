@@ -518,6 +518,48 @@ do $$ begin
     'una tasca vençuda assignada a un altre no surt al responsable del projecte';
 end $$;
 
+-- ------------------------------------------------------------
+-- 0013: passar tasques
+-- ------------------------------------------------------------
+-- la tasca 0012 és del company (c); el membre (a) la passa a un extern amb nota
+select transfereix('tasques', '30000000-0000-0000-0000-000000000012',
+                   (select id from perfils where extern and actiu limit 1), 'tu tens les dades');
+do $$ begin
+  assert (select assignada_a from tasques where id = '30000000-0000-0000-0000-000000000012')
+         = (select id from perfils where extern and actiu limit 1),
+    'transfereix no ha canviat la persona assignada';
+  -- a la mateixa persona, no
+  begin
+    perform transfereix('tasques', '30000000-0000-0000-0000-000000000012',
+                        (select id from perfils where extern and actiu limit 1), null);
+    raise exception 'FALLA: s''ha passat una tasca a qui ja la tenia';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+  -- a una persona inactiva, no
+  begin
+    perform transfereix('tasques', '30000000-0000-0000-0000-000000000012',
+                        '00000000-0000-0000-0000-00000000000b', null);
+    raise exception 'FALLA: s''ha passat una tasca a una persona inactiva';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+end $$;
+-- ara la torna al company amb una altra nota
+select transfereix('tasques', '30000000-0000-0000-0000-000000000012',
+                   '00000000-0000-0000-0000-00000000000c', 'torna-hi tu');
+
+reset role;
+do $$ begin
+  assert exists (select 1 from notificacions where perfil_id = '00000000-0000-0000-0000-00000000000c'
+                   and text like '%ha passat la tasca «Vençuda del company» a %tu tens les dades%'),
+    'qui tenia la tasca no ha rebut l''avís que l''han passada (amb la nota)';
+  assert exists (select 1 from notificacions where perfil_id = '00000000-0000-0000-0000-00000000000c'
+                   and text like '%t''ha passat la tasca «Vençuda del company» (abans era de %torna-hi tu%'),
+    'qui rep la tasca no ha rebut l''avís amb de qui era i la nota';
+end $$;
+set local role authenticated;
+
 -- historial: cap client hi pot escriure
 do $$ begin
   begin
