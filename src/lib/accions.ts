@@ -626,3 +626,27 @@ export async function resolRevisio(
   revalidatePath("/", "layout");
   return { ok: true };
 }
+
+// ------------------------------------------------------------------
+// Passar una tasca o un entregable a una altra persona
+// ------------------------------------------------------------------
+
+export async function transfereix(
+  taula: "tasques" | "entregables",
+  id: string,
+  persona: string,
+  nota: string,
+): Promise<Resultat> {
+  if (taula !== "tasques" && taula !== "entregables") return { error: "Tipus d'element no vàlid." };
+  if (!persona) return { error: "Tria a qui la passes." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("transfereix", {
+    p_taula: taula,
+    p_id: id,
+    p_persona: persona,
+    p_nota: nota.trim() || null,
+  });
+  if (error) return { error: missatgeError(error) };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}

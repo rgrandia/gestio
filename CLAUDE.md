@@ -343,6 +343,13 @@ revisió pendent per tasca; cada ronda queda desada. Avisos a totes dues parts.
 A "la meva setmana" hi ha la secció **revisions** (et toca revisar / esperant
 revisió) i compta al número del menú.
 
+### 4.4 sexies Passar tasques i entregables (migració 0013)
+
+Una tasca o un entregable es pot **passar** a una altra persona (membre o
+extern actiu) amb una nota opcional, per RPC `transfereix()`. Avisa qui el
+rep (i de qui era, si no l'ha passat ell mateix) i qui el tenia, si no ha estat
+ell qui l'ha passat. La traça queda als avisos; no hi ha taula d'historial.
+
 ### 4.5 Qui actualitza les fases
 
 **Només el responsable del projecte** (membre del departament). El camp i la

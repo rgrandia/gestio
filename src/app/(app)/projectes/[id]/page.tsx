@@ -226,6 +226,7 @@ async function Detall({
     if (!revisions.has(r.tasca_id))
       revisions.set(r.tasca_id, { estat: r.estat, revisor: persones.get(r.revisor_id)?.nom ?? "?", comentari: r.comentari });
   }
+  const passables = assignables(perfils).map((x) => ({ id: x.id, nom: x.nom, extern: x.extern, area: x.area }));
   const revisors = membres(perfils)
     .filter((x) => x.id !== jo.id)
     .map((x) => ({ id: x.id, nom: x.nom }));
@@ -416,6 +417,7 @@ async function Detall({
                       estat={estatFila(e.data_prevista, e.data_real, e.estat, hui)}
                       tePrevista={Boolean(e.data_prevista)}
                       acabat={Boolean(e.data_real) || e.estat === "cancellat"}
+                      persones={passables}
                     >
                       <td>
                         {e.enllac ? (
@@ -529,6 +531,7 @@ async function Detall({
                     tePrevista={Boolean(t.data_prevista)}
                     acabat={Boolean(t.data_real) || t.estat === "cancellat"}
                     revisors={revisors}
+                    persones={passables}
                   >
                     <td>
                       {t.titol}
