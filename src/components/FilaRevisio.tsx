@@ -27,8 +27,8 @@ export function FilaRevisio({ id, soc, children }: { id: string; soc: "revisor" 
       {children}
       <td className="accions">
         {soc === "demanant" ? (
-          <button className="boto boto-suau boto-perill" disabled={pendent} onClick={() => resol("cancellada")}>
-            <X className="icona-petita" aria-hidden /> <span className="text-boto">cancel·lar</span>
+          <button className="boto boto-suau boto-perill boto-icona" disabled={pendent} onClick={() => resol("cancellada")} data-tip="cancel·lar la revisió">
+            <X className="icona-petita" aria-hidden /> <span className="sr-only">cancel·lar</span>
           </button>
         ) : retornant ? (
           <form
@@ -54,11 +54,11 @@ export function FilaRevisio({ id, soc, children }: { id: string; soc: "revisor" 
           </form>
         ) : (
           <>
-            <button className="boto boto-fet" disabled={pendent} onClick={() => resol("aprovada")}>
-              <Check className="icona-petita" aria-hidden /> aprovar
+            <button className="boto boto-fet boto-icona" disabled={pendent} onClick={() => resol("aprovada")} data-tip="aprovar">
+              <Check className="icona-petita" aria-hidden /> <span className="sr-only">aprovar</span>
             </button>
-            <button className="boto boto-suau" disabled={pendent} onClick={() => setRetornant(true)}>
-              <CornerUpLeft className="icona-petita" aria-hidden /> <span className="text-boto">retornar</span>
+            <button className="boto boto-suau boto-icona" disabled={pendent} onClick={() => setRetornant(true)} data-tip="retornar amb un comentari">
+              <CornerUpLeft className="icona-petita" aria-hidden /> <span className="sr-only">retornar</span>
             </button>
           </>
         )}

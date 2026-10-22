@@ -210,4 +210,8 @@ text no tancava. Cap amplia l'abast. Estan comentades al codi on s'apliquen.
 
 Res de §2: ni microdades, ni hores, ni sincronització, ni correu, ni gràfics,
 ni notificacions, ni pujada de fitxers (només enllaços `https://`), ni app
-nativa. Mode fosc: no.
+nativa.
+
+Cada persona tria al peu del menú si el vol plegat (només icones) o
+desplegat i si vol el mode fosc. Es desa en galetes del navegador, no a la
+base de dades: en un altre ordinador cal tornar-ho a triar.

@@ -683,3 +683,8 @@ ho seran, i les que faltin de debò es veuran de seguida.
 Lliure. Només dues constants: tipografia **Montserrat** i **cantonades rectes**
 (`border-radius: 0`). La resta (color, jerarquia, icones, ombres) s'ha de decidir
 per fer l'app clara i agradable d'utilitzar.
+
+Des de l'octubre de 2026: cada persona pot tenir el menú lateral plegat (només
+icones) o desplegat i el **mode fosc** activat, amb dos botons al peu del menú
+(galetes del navegador). Els botons d'acció de les files (fet, replanificar,
+revisat, passar, cancel·lar...) són només icona, amb l'etiqueta en passar-hi.

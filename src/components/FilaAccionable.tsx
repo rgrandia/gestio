@@ -87,7 +87,7 @@ export function FilaAccionable({
     <button
       className="boto boto-suau boto-icona"
       disabled={pendent}
-      title="editar"
+      data-tip="editar"
       aria-expanded={editant}
       onClick={() => setEditant(!editant)}
     >
@@ -107,8 +107,8 @@ export function FilaAccionable({
         {acabat && obert === null && (
           <>
             {botoEditar}
-            <button className="boto boto-suau" disabled={pendent} onClick={() => setObert("reobrir")} title="reobrir: es va marcar per error">
-              <RotateCcw className="icona-petita" aria-hidden /> <span className="text-boto">reobrir</span>
+            <button className="boto boto-suau boto-icona" disabled={pendent} onClick={() => setObert("reobrir")} data-tip="reobrir (es va marcar per error)">
+              <RotateCcw className="icona-petita" aria-hidden /> <span className="sr-only">reobrir</span>
             </button>
           </>
         )}
@@ -125,40 +125,40 @@ export function FilaAccionable({
 
         {!acabat && obert === null && (
           <>
-            <button className="boto boto-fet" disabled={pendent} onClick={() => setObert("fet")}>
-              <Check className="icona-petita" aria-hidden /> fet
+            <button className="boto boto-fet boto-icona" disabled={pendent} onClick={() => setObert("fet")} data-tip="fet">
+              <Check className="icona-petita" aria-hidden /> <span className="sr-only">fet</span>
             </button>
-            <button className="boto boto-suau" disabled={pendent} onClick={() => setObert("replanificar")} title={tePrevista ? "replanificar" : "planificar"}>
-              <CalendarClock className="icona-petita" aria-hidden /> <span className="text-boto">{tePrevista ? "replanificar" : "planificar"}</span>
+            <button className="boto boto-suau boto-icona" disabled={pendent} onClick={() => setObert("replanificar")} data-tip={tePrevista ? "replanificar" : "planificar"}>
+              <CalendarClock className="icona-petita" aria-hidden /> <span className="sr-only">{tePrevista ? "replanificar" : "planificar"}</span>
             </button>
             {ambRevisat && (
               <button
-                className="boto boto-suau"
+                className="boto boto-suau boto-icona"
                 disabled={pendent}
-                title="encara viu: amaga-ho 7 dies"
+                data-tip="revisat, encara viu (amaga-ho 7 dies)"
                 onClick={() => executa(() => accioItem({ accio: "revisat", taula, id }), true)}
               >
-                <Clock className="icona-petita" aria-hidden /> <span className="text-boto">revisat</span>
+                <Clock className="icona-petita" aria-hidden /> <span className="sr-only">revisat</span>
               </button>
             )}
             {botoEditar}
             {potPassar && (
               <button
-                className="boto boto-suau"
+                className="boto boto-suau boto-icona"
                 disabled={pendent}
-                title="passar-la a una altra persona"
+                data-tip="passar a una altra persona"
                 onClick={() => setObert("passar")}
               >
-                <ArrowRightLeft className="icona-petita" aria-hidden /> <span className="text-boto">passar</span>
+                <ArrowRightLeft className="icona-petita" aria-hidden /> <span className="sr-only">passar</span>
               </button>
             )}
             <button
-              className="boto boto-suau boto-perill"
-              title="cancel·lar"
+              className="boto boto-suau boto-perill boto-icona"
+              data-tip="cancel·lar"
               disabled={pendent}
               onClick={() => executa(() => accioItem({ accio: "cancellar", taula, id }), true)}
             >
-              <X className="icona-petita" aria-hidden /> <span className="text-boto">cancel·lar</span>
+              <X className="icona-petita" aria-hidden /> <span className="sr-only">cancel·lar</span>
             </button>
           </>
         )}
