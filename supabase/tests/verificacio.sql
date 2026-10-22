@@ -505,6 +505,19 @@ do $$ begin
 end $$;
 set local role authenticated;
 
+-- ------------------------------------------------------------
+-- 0012: el responsable del projecte veu el que està assignat a un altre
+-- ------------------------------------------------------------
+insert into tasques (id, projecte_id, titol, assignada_a, data_prevista) values
+  ('30000000-0000-0000-0000-000000000012', '20000000-0000-0000-0000-000000000001',
+   'Vençuda del company', '00000000-0000-0000-0000-00000000000c', current_date - 2);
+do $$ begin
+  assert (select '00000000-0000-0000-0000-00000000000a'::uuid = any(responsables)
+            and '00000000-0000-0000-0000-00000000000c'::uuid = any(responsables)
+            from v_safata where id = '30000000-0000-0000-0000-000000000012'),
+    'una tasca vençuda assignada a un altre no surt al responsable del projecte';
+end $$;
+
 -- historial: cap client hi pot escriure
 do $$ begin
   begin

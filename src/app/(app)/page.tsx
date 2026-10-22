@@ -49,7 +49,7 @@ export default async function LaMevaSetmana({
     .order("projecte");
   if (!veureTot) consultaSafata = consultaSafata.contains("responsables", [perfil.id]);
 
-  const [safata, setmana, muts, idees, revisionsR, persones] = await Promise.all([
+  const [safata, setmana, muts, idees, revisionsR, persones, sensDataR] = await Promise.all([
     consultaSafata,
     supabase
       .from("tasques")
@@ -77,7 +77,16 @@ export default async function LaMevaSetmana({
       .or(`revisor_id.eq.${perfil.id},demanada_per.eq.${perfil.id}`)
       .order("creat_el"),
     obtePersones(),
+    // Tasques obertes meves sense data: no poden vèncer ni sortir a la safata.
+    supabase
+      .from("tasques")
+      .select("id", { count: "exact", head: true })
+      .eq("assignada_a", perfil.id)
+      .is("data_prevista", null)
+      .is("data_real", null)
+      .not("estat", "in", "(fet,cancellat)"),
   ]);
+  const sensData = sensDataR.count ?? 0;
 
   type Revisio = {
     id: string;
@@ -193,6 +202,15 @@ export default async function LaMevaSetmana({
           </div>
         )}
       </section>
+
+      {sensData > 0 && (
+        <p className="avis-sense-data">
+          {sensData === 1
+            ? "Tens 1 tasca oberta sense data prevista: no pot vèncer i per això no surt a «a revisar». "
+            : `Tens ${sensData} tasques obertes sense data prevista: no poden vèncer i per això no surten a «a revisar». `}
+          <Link href="/feina?tot=1">Posa-hi data</Link>.
+        </p>
+      )}
 
       {revisions.length > 0 && (
         <section className="seccio" id="revisions">

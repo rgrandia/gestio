@@ -79,6 +79,13 @@ la migració, l'app falla en buscar columnes que no existeixen.
    `verificacio: totes les comprovacions superades`.
 3. Fusiona la PR.
 
+### Diagnòstic: "aquesta tasca no em surt"
+
+`supabase/diagnostic/per_que_no_surt.sql` (canvia-hi el correu) llista les
+tasques obertes dels teus projectes i diu, per a cadascuna, si surt a la teva
+safata i, si no, per què: sense data, projecte pausat/arxivat/a la paperera,
+encara no venç o marcada "revisat".
+
 ## Desviacions respecte a CLAUDE.md
 
 Totes són correccions d'errors del text de referència o decisions que el

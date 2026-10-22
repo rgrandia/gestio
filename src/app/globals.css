@@ -538,3 +538,4 @@ tbody.fase:has(.desplega:checked) > tr:first-child td { background: var(--hover)
 .columna li.mes a { font-size: 11px; color: var(--accent); }
 .xifres-columna { flex-wrap: wrap; }
 .xifres-columna > span { white-space: nowrap; }
+.avis-sense-data { margin: -12px 0 24px; padding: 8px 12px; font-size: 12px; color: var(--risc); background: var(--risc-suau); border-left: 3px solid var(--risc); }
