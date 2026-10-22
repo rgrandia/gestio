@@ -320,7 +320,9 @@ Un projecte de tipus `consultoria` **no genera cap fase**.
 - **Co-responsables** (`projecte_responsables`, amb `actiu` en lloc d'esborrar):
   `projectes.responsable_id` continua sent el principal. Els co-responsables
   veuen a la seva safata el que és del projecte (sense assignar o d'un extern);
-  el que està assignat a un membre concret només el veu ell. Ni el principal ni
+  el que està assignat a un membre concret el veu ell **i també els
+  responsables del projecte** (migració 0012: abans només ell, i el
+  responsable no veia les tasques vençudes que havia assignat). Ni el principal ni
   els co-responsables poden ser externs (trigger). La safata exposa
   `responsables uuid[]` i "els meus" filtra per pertinença.
 
