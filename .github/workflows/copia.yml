@@ -1,0 +1,51 @@
+name: copia
+
+# Còpia de seguretat setmanal de l'esquema public (projectes, tasques,
+# historial...), xifrada, com a artefacte de GitHub durant 90 dies.
+#
+# Necessita els secrets SUPABASE_DB_URL i COPIA_CONTRASENYA (README,
+# «Còpies de seguretat»). Sense els dos, no fa res.
+
+on:
+  schedule:
+    - cron: "17 5 * * 1" # dilluns a les 5.17 UTC
+  workflow_dispatch:
+
+jobs:
+  copia:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+      CONTRASENYA: ${{ secrets.COPIA_CONTRASENYA }}
+    steps:
+      - name: Hi ha secrets?
+        id: secret
+        run: |
+          if [ -z "$DATABASE_URL" ] || [ -z "$CONTRASENYA" ]; then
+            echo "::notice::Falten SUPABASE_DB_URL o COPIA_CONTRASENYA: no es fa cap còpia."
+            echo "hi_es=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "hi_es=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: pg_dump 17 (ha de ser igual o més nou que el servidor)
+        if: steps.secret.outputs.hi_es == 'true'
+        run: |
+          sudo apt-get install -y -q postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -q postgresql-client-17
+      - name: Còpia xifrada
+        if: steps.secret.outputs.hi_es == 'true'
+        run: |
+          set -euo pipefail
+          nom="gestio-$(date -u +%F)"
+          /usr/lib/postgresql/17/bin/pg_dump "$DATABASE_URL" --schema=public --no-owner --no-privileges -Fc -f "$nom.dump"
+          gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 --symmetric --cipher-algo AES256 \
+            -o "$nom.dump.gpg" "$nom.dump" 3<<<"$CONTRASENYA"
+          rm "$nom.dump"
+          echo "NOM=$nom" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        if: steps.secret.outputs.hi_es == 'true'
+        with:
+          name: ${{ env.NOM }}
+          path: ${{ env.NOM }}.dump.gpg
+          retention-days: 90

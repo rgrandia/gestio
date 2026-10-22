@@ -294,7 +294,10 @@ esborrar, vegeu 7.2). Aquest és el punt de partida:
 6. Presentació
 
 (Canviades l'octubre de 2026, migració 0010; abans: Qüestionari, Camp,
-Tabulació, Revisió, Informe, Presentació. Els estudis ja creats no es toquen.)
+Tabulació, Revisió, Informe, Presentació. Els estudis ja creats no es toquen
+sols; des de la migració 0014, un estudi antic que no ha començat es pot
+passar a les noves amb `aplica_fases_per_defecte()`: es reanomenen les que
+tenen equivalent, s'afegeix Briefing i es cancel·la Revisió.)
 
 Un projecte de tipus `consultoria` **no genera cap fase**.
 
@@ -349,6 +352,25 @@ Una tasca o un entregable es pot **passar** a una altra persona (membre o
 extern actiu) amb una nota opcional, per RPC `transfereix()`. Avisa qui el
 rep (i de qui era, si no l'ha passat ell mateix) i qui el tenia, si no ha estat
 ell qui l'ha passat. La traça queda als avisos; no hi ha taula d'historial.
+
+### 4.4 septies Editar, reobrir, nova onada (migració 0014)
+
+- **Editar** tasques (títol, descripció, prioritat, de què pengen) i
+  entregables (títol, tipus, enllaç, notes) des del detall del projecte. La
+  persona es canvia amb «passar» i la data prevista amb «replanificar»: mai
+  des del formulari d'edició, perquè quedi constància.
+- **Reobrir** el que es va marcar fet o cancel·lar per error: es treu la
+  `data_real` i torna a `en_curs` (o `pendent` si no en tenia). No es pot si
+  té una revisió pendent (trigger).
+- **Revisions també d'entregables** (`revisions.entregable_id`; una revisió
+  és d'una tasca o d'un entregable, mai de tots dos).
+- **Nova onada** d'un estudi (`nova_onada()`): un estudi nou per al mateix
+  client amb les fases, els entregables i les tasques no cancel·lats, la
+  mateixa gent i les dates desplaçades al nou inici. Ni dates reals, ni
+  enllaços, ni notes, ni contactes, ni historial. Un sol avís de resum per
+  persona.
+- **Registre de migracions** (`migracions_aplicades`, `versio_esquema()`):
+  cada migració s'hi registra; l'app avisa si en falta alguna.
 
 ### 4.5 Qui actualitza les fases
 
@@ -454,8 +476,10 @@ Si cal navegar al detall del projecte per resoldre una línia, el disseny falla.
 
 Quatre, més les afegides l'octubre de 2026: **equip** (membres i persones
 externes), **avisos** (notificacions dins de l'app), **cronograma** (prova de
-Gantt) i **feina de l'equip** (què té obert cadascú), a més d'una **cerca
-global** al menú (tecla `/`). Cap més sense preguntar. Estil visual: secció 11.
+Gantt), **feina de l'equip** (què té obert cadascú) i **resum setmanal**
+(per a la reunió de dilluns: què s'ha tancat, què ha lliscat i per què, què
+venç; llistes, sense xifres), a més d'una **cerca global** al menú (tecla
+`/`). Cap més sense preguntar. Estil visual: secció 11.
 
 ### 6.1 La meva setmana (pàgina d'inici)
 

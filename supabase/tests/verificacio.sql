@@ -560,6 +560,241 @@ do $$ begin
 end $$;
 set local role authenticated;
 
+-- ------------------------------------------------------------
+-- 0014: versió de l'esquema
+-- ------------------------------------------------------------
+do $$ begin
+  assert versio_esquema() >= '20261029000014_reobrir_onades_versio',
+    'versio_esquema() no retorna la darrera migració';
+  begin
+    perform 1 from migracions_aplicades;
+    raise exception 'FALLA: un client llegeix migracions_aplicades';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- ------------------------------------------------------------
+-- 0014: reobrir, i no amb una revisió pendent
+-- ------------------------------------------------------------
+update tasques set estat = 'fet', data_real = current_date where id = '30000000-0000-0000-0000-000000000009';
+insert into revisions (id, tasca_id, revisor_id) values
+  ('40000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000009',
+   '00000000-0000-0000-0000-00000000000c');
+do $$ begin
+  begin
+    update tasques set estat = 'en_curs', data_real = null where id = '30000000-0000-0000-0000-000000000009';
+    raise exception 'FALLA: s''ha reobert una tasca amb una revisió pendent';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+end $$;
+update revisions set estat = 'cancellada' where id = '40000000-0000-0000-0000-000000000002';
+update tasques set estat = 'en_curs', data_real = null where id = '30000000-0000-0000-0000-000000000009';
+do $$ begin
+  assert (select data_real is null from tasques where id = '30000000-0000-0000-0000-000000000009'),
+    'no s''ha pogut reobrir una tasca sense revisió pendent';
+end $$;
+
+-- ------------------------------------------------------------
+-- 0014: revisions d'entregables
+-- ------------------------------------------------------------
+insert into entregables (id, projecte_id, titol, data_prevista) values
+  ('50000000-0000-0000-0000-000000000014', '20000000-0000-0000-0000-000000000002', 'Informe de diagnosi', current_date);
+do $$ begin
+  begin
+    insert into revisions (entregable_id, revisor_id)
+      values ('50000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-00000000000c');
+    raise exception 'FALLA: s''ha enviat a revisar un entregable no fet';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+  begin
+    insert into revisions (revisor_id) values ('00000000-0000-0000-0000-00000000000c');
+    raise exception 'FALLA: una revisió sense tasca ni entregable';
+  exception when check_violation then null;
+  end;
+end $$;
+update entregables set estat = 'fet', data_real = current_date where id = '50000000-0000-0000-0000-000000000014';
+do $$ begin
+  begin
+    insert into revisions (tasca_id, entregable_id, revisor_id)
+      values ('30000000-0000-0000-0000-000000000009', '50000000-0000-0000-0000-000000000014',
+              '00000000-0000-0000-0000-00000000000c');
+    raise exception 'FALLA: una revisió de tasca i entregable alhora';
+  exception when check_violation then null;
+  end;
+end $$;
+insert into revisions (id, entregable_id, revisor_id) values
+  ('40000000-0000-0000-0000-000000000003', '50000000-0000-0000-0000-000000000014',
+   '00000000-0000-0000-0000-00000000000c');
+do $$ begin
+  begin
+    insert into revisions (entregable_id, revisor_id)
+      values ('50000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-00000000000c');
+    raise exception 'FALLA: dues revisions pendents per al mateix entregable';
+  exception when unique_violation then null;
+  end;
+  begin
+    update entregables set estat = 'en_curs', data_real = null where id = '50000000-0000-0000-0000-000000000014';
+    raise exception 'FALLA: s''ha reobert un entregable amb una revisió pendent';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+end $$;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000c"}';
+update revisions set estat = 'retornada', comentari = 'falten les conclusions'
+  where id = '40000000-0000-0000-0000-000000000003';
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';
+do $$ begin
+  assert (select data_real is null and estat = 'en_curs' from entregables
+           where id = '50000000-0000-0000-0000-000000000014'),
+    'retornar la revisió no ha reobert l''entregable';
+end $$;
+reset role;
+do $$ begin
+  assert exists (select 1 from notificacions where perfil_id = '00000000-0000-0000-0000-00000000000c'
+                   and text like '%et demana que revisis «Informe de diagnosi»%'),
+    'el revisor de l''entregable no ha rebut l''avís';
+  assert exists (select 1 from notificacions where perfil_id = '00000000-0000-0000-0000-00000000000a'
+                   and text like '%t''ha retornat «Informe de diagnosi»: falten les conclusions%'),
+    'qui demanava la revisió de l''entregable no ha rebut el retorn';
+end $$;
+set local role authenticated;
+
+-- ------------------------------------------------------------
+-- 0014: passar un estudi antic a les fases per defecte noves
+-- ------------------------------------------------------------
+insert into projectes (id, client_id, titol, tipus, responsable_id) values
+  ('20000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000001',
+   'Estudi antic', 'estudi', '00000000-0000-0000-0000-00000000000a');
+do $$ begin
+  begin
+    perform aplica_fases_per_defecte('20000000-0000-0000-0000-000000000005');
+    raise exception 'FALLA: s''han aplicat les fases noves a un estudi que ja les té';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+  begin
+    perform aplica_fases_per_defecte('20000000-0000-0000-0000-000000000002');
+    raise exception 'FALLA: s''han aplicat fases a una consultoria';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+end $$;
+-- el deixem com un estudi creat abans de 0010
+update fases f set nom = v.nom
+from (values (1, 'Qüestionari'), (2, 'Camp'), (3, 'Tabulació'), (4, 'Revisió'), (5, 'Informe'), (6, 'Presentació')) v(ordre, nom)
+where f.projecte_id = '20000000-0000-0000-0000-000000000005' and f.ordre = v.ordre;
+update fases set data_inici = current_date + 1, responsable_id = '00000000-0000-0000-0000-00000000000c'
+  where projecte_id = '20000000-0000-0000-0000-000000000005' and nom = 'Tabulació';
+insert into tasques (id, projecte_id, fase_id, titol) values
+  ('30000000-0000-0000-0000-000000000014', '20000000-0000-0000-0000-000000000005',
+   (select id from fases where projecte_id = '20000000-0000-0000-0000-000000000005' and nom = 'Tabulació'),
+   'Plantilla de taules');
+-- si ha començat, no
+update fases set estat = 'fet', data_real = current_date
+  where projecte_id = '20000000-0000-0000-0000-000000000005' and nom = 'Qüestionari';
+do $$ begin
+  begin
+    perform aplica_fases_per_defecte('20000000-0000-0000-0000-000000000005');
+    raise exception 'FALLA: s''han canviat les fases d''un estudi començat';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+end $$;
+update fases set estat = 'pendent', data_real = null
+  where projecte_id = '20000000-0000-0000-0000-000000000005' and nom = 'Qüestionari';
+select aplica_fases_per_defecte('20000000-0000-0000-0000-000000000005');
+do $$ begin
+  assert (select string_agg(nom, ',' order by ordre) from fases
+          where projecte_id = '20000000-0000-0000-0000-000000000005' and estat <> 'cancellat')
+         = 'Qüestionari i mostra,Briefing,Camp,Dades,Informe,Presentació',
+    'aplica_fases_per_defecte no deixa les fases noves en ordre';
+  assert (select string_agg(ordre::text, ',' order by ordre) from fases
+          where projecte_id = '20000000-0000-0000-0000-000000000005') = '1,2,3,4,5,6,7',
+    'aplica_fases_per_defecte no numera les fases de l''1 al 7';
+  assert (select estat from fases where projecte_id = '20000000-0000-0000-0000-000000000005' and nom = 'Revisió')
+         = 'cancellat',
+    'la fase Revisió no s''ha cancel·lat';
+  assert (select f.nom = 'Dades' and f.data_inici = current_date + 1
+                 and f.responsable_id = '00000000-0000-0000-0000-00000000000c'
+          from tasques t join fases f on f.id = t.fase_id
+          where t.id = '30000000-0000-0000-0000-000000000014'),
+    'Tabulació no ha passat a Dades conservant tasques, dates i persona';
+  begin
+    perform aplica_fases_per_defecte('20000000-0000-0000-0000-000000000005');
+    raise exception 'FALLA: s''han pogut aplicar dues vegades';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+end $$;
+
+-- ------------------------------------------------------------
+-- 0014: nova onada
+-- ------------------------------------------------------------
+update tasques set estat = 'cancellat' where id = '30000000-0000-0000-0000-000000000003';
+do $$
+declare
+  nou uuid;
+  delta int;
+begin
+  begin
+    perform nova_onada('20000000-0000-0000-0000-000000000002', 'x', current_date, null);
+    raise exception 'FALLA: nova onada d''una consultoria';
+  exception when raise_exception then
+    if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+
+  nou := nova_onada('20000000-0000-0000-0000-000000000001', 'Baròmetre onada 2', current_date + 10, '9876');
+  delta := (current_date + 10) - (current_date - 60);
+
+  assert (select numero_estudi = '9876' and data_inici = current_date + 10 and estat = 'actiu'
+          from projectes where id = nou),
+    'la nova onada no té el número o l''inici que toca';
+  assert (select string_agg(nom, ',' order by ordre) from fases where projecte_id = nou)
+         = (select string_agg(nom, ',' order by ordre) from fases
+             where projecte_id = '20000000-0000-0000-0000-000000000001' and estat <> 'cancellat'),
+    'la nova onada no té les mateixes fases (ni ha de generar les per defecte)';
+  assert (select count(*) from tasques where projecte_id = nou)
+         = (select count(*) from tasques
+             where projecte_id = '20000000-0000-0000-0000-000000000001' and estat <> 'cancellat'),
+    'la nova onada no copia les tasques no cancel·lades';
+  assert not exists (select 1 from tasques where projecte_id = nou and titol = 'Lluny'),
+    'la nova onada ha copiat una tasca cancel·lada';
+  assert not exists (
+    select 1 from tasques n
+    where n.projecte_id = nou and n.data_prevista is not null
+      and not exists (select 1 from tasques o
+                       where o.projecte_id = '20000000-0000-0000-0000-000000000001'
+                         and o.titol = n.titol and o.data_prevista + delta = n.data_prevista)),
+    'les dates de les tasques no s''han desplaçat igual que l''inici';
+  assert not exists (
+    select 1 from fases n
+    where n.projecte_id = nou and n.data_prevista is not null
+      and not exists (select 1 from fases o
+                       where o.projecte_id = '20000000-0000-0000-0000-000000000001'
+                         and o.nom = n.nom and o.data_prevista + delta = n.data_prevista)),
+    'les dates de les fases no s''han desplaçat';
+  assert not exists (select 1 from tasques t left join fases f on f.id = t.fase_id
+                      where t.projecte_id = nou and t.fase_id is not null and f.projecte_id <> nou),
+    'una tasca de la nova onada penja d''una fase de l''onada anterior';
+  assert not exists (select 1 from tasques where projecte_id = nou and data_real is not null)
+     and not exists (select 1 from fases where projecte_id = nou and data_real is not null),
+    'la nova onada hereta dates reals';
+  assert (select count(*) from tasques where projecte_id = nou and assignada_a = '00000000-0000-0000-0000-00000000000c') >= 1,
+    'la nova onada no conserva a qui està assignada cada tasca';
+end $$;
+reset role;
+do $$ begin
+  assert (select count(*) from notificacions where perfil_id = '00000000-0000-0000-0000-00000000000c'
+           and text like '%ha creat la nova onada 9876 · Baròmetre onada 2: hi tens%') = 1,
+    'el company no ha rebut un sol avís de resum de la nova onada';
+  assert not exists (select 1 from notificacions n join projectes p on n.enllac = '/projectes/' || p.id
+                      where p.numero_estudi = '9876' and n.text like '%t''ha assignat%'),
+    'la nova onada ha enviat un avís per cada tasca';
+end $$;
+set local role authenticated;
+
 -- historial: cap client hi pot escriure
 do $$ begin
   begin
@@ -582,7 +817,8 @@ declare t text;
 begin
   foreach t in array array['perfils', 'clients', 'projectes', 'fases', 'entregables',
                            'tasques', 'contactes', 'idees', 'historial_dates',
-                           'projecte_responsables', 'notificacions', 'revisions']
+                           'projecte_responsables', 'notificacions', 'revisions',
+                           'migracions_aplicades']
   loop
     begin
       execute format('delete from %I', t);

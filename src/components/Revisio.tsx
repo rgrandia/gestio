@@ -11,7 +11,7 @@ export type DarreraRevisio = {
   comentari: string | null;
 };
 
-// Estat de la darrera revisió d'una tasca.
+// Estat de la darrera revisió d'una tasca o d'un entregable.
 export function EtiquetaRevisio({ r }: { r: DarreraRevisio | undefined }) {
   if (!r || r.estat === "cancellada") return null;
   if (r.estat === "pendent")
@@ -25,8 +25,16 @@ export function EtiquetaRevisio({ r }: { r: DarreraRevisio | undefined }) {
   );
 }
 
-// Enviar a revisar una tasca que ja està feta.
-export function EnviaARevisar({ tascaId, revisors }: { tascaId: string; revisors: { id: string; nom: string }[] }) {
+// Enviar a revisar una tasca o un entregable que ja està fet.
+export function EnviaARevisar({
+  taula,
+  id,
+  revisors,
+}: {
+  taula: "tasques" | "entregables";
+  id: string;
+  revisors: { id: string; nom: string }[];
+}) {
   const router = useRouter();
   const [obert, setObert] = useState(false);
   const [revisor, setRevisor] = useState("");
@@ -47,7 +55,7 @@ export function EnviaARevisar({ tascaId, revisors }: { tascaId: string; revisors
         e.preventDefault();
         startTransition(async () => {
           setError(null);
-          const r = await enviaARevisar(tascaId, revisor);
+          const r = await enviaARevisar(taula, id, revisor);
           if (r.error) return setError(r.error);
           setObert(false);
           router.refresh();

@@ -39,7 +39,8 @@ export type AccioItem =
   | { accio: "fet"; taula: TaulaItem; id: string; data: string; revisor?: string }
   | { accio: "replanificar"; taula: TaulaItem | "projectes"; id: string; data: string; motiu: string }
   | { accio: "revisat"; taula: TaulaItem; id: string }
-  | { accio: "cancellar"; taula: TaulaItem; id: string };
+  | { accio: "cancellar"; taula: TaulaItem; id: string }
+  | { accio: "reobrir"; taula: TaulaItem; id: string };
 
 export async function accioItem(a: AccioItem): Promise<Resultat> {
   const taulaValida =
@@ -59,10 +60,25 @@ export async function accioItem(a: AccioItem): Promise<Resultat> {
       .eq("id", a.id);
     if (error) return { error: missatgeError(error) };
     if (!count) return { error: "No s'ha trobat l'element. Recarrega la pàgina." };
-    if (a.taula === "tasques" && a.revisor) {
-      const { error: e2 } = await supabase.from("revisions").insert({ tasca_id: a.id, revisor_id: a.revisor });
-      if (e2) return { error: `Tasca marcada com a feta, però no s'ha pogut enviar a revisar: ${missatgeError(e2)}` };
+    if (a.taula !== "fases" && a.revisor) {
+      const { error: e2 } = await supabase.from("revisions").insert(element(a.taula, a.id, a.revisor));
+      if (e2) return { error: `Marcat com a fet, però no s'ha pogut enviar a revisar: ${missatgeError(e2)}` };
     }
+    return { ok: true };
+  }
+
+  // Reobrir el que es va marcar fet o cancel·lar per error. Si tenia data
+  // real, torna a "en curs"; si no, a "pendent". La base de dades no ho deixa
+  // fer si hi ha una revisió pendent.
+  if (a.accio === "reobrir") {
+    const { data: actual } = await supabase.from(a.taula).select("data_real").eq("id", a.id).maybeSingle();
+    if (!actual) return { error: "No s'ha trobat l'element. Recarrega la pàgina." };
+    const { error } = await supabase
+      .from(a.taula)
+      .update({ estat: actual.data_real ? "en_curs" : "pendent", data_real: null })
+      .eq("id", a.id);
+    if (error) return { error: missatgeError(error) };
+    revalidatePath("/", "layout");
     return { ok: true };
   }
 
@@ -269,6 +285,29 @@ async function desaCoresponsables(
   return null;
 }
 
+// Nova onada d'un estudi: mateixes fases, gent i tasques, dates desplaçades.
+export async function novaOnada(_p: Resultat, fd: FormData): Promise<Resultat> {
+  const origen = text(fd, "origen");
+  const titol = text(fd, "titol");
+  const data_inici = text(fd, "data_inici");
+  const numero = opcional(fd, "numero_estudi");
+  if (!titol) return { error: "Posa un títol a la nova onada." };
+  if (!esDataValida(data_inici)) return { error: "Indica quan comença la nova onada (AAAA-MM-DD)." };
+  if (numero && !/^[0-9]{4}$/.test(numero))
+    return { error: "El número d'estudi ha de tenir exactament 4 xifres." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("nova_onada", {
+    p_origen: origen,
+    p_titol: titol,
+    p_inici: data_inici,
+    p_numero: numero,
+  });
+  if (error) return { error: missatgeError(error) };
+  revalidatePath("/", "layout");
+  redirect(`/projectes/${data}`);
+}
+
 // Arxivar i paperera: res no s'esborra (§7.2). Es marca amb una data i es
 // desfà tornant-la a null.
 export async function arxivaProjecte(id: string, arxivar: boolean): Promise<Resultat> {
@@ -337,22 +376,33 @@ export async function creaFase(_p: Resultat, fd: FormData): Promise<Resultat> {
   return { ok: true };
 }
 
-// Inici previst i responsable d'una fase. El final previst NO: va per
+// Nom, inici previst i responsable d'una fase. El final previst NO: va per
 // replanificar(), perquè quedi a l'historial.
 export async function actualitzaFase(_p: Resultat, fd: FormData): Promise<Resultat> {
   const id = text(fd, "id");
   const projecte_id = text(fd, "projecte_id");
+  const nom = text(fd, "nom");
   const data_inici = dataOpcional(fd, "data_inici");
+  if (!nom) return { error: "La fase necessita un nom." };
   if (data_inici === "invalida") return { error: "La data ha de tenir format AAAA-MM-DD." };
 
   const supabase = await createClient();
   const { error, count } = await supabase
     .from("fases")
-    .update({ data_inici, responsable_id: opcional(fd, "responsable_id") }, { count: "exact" })
+    .update({ nom, data_inici, responsable_id: opcional(fd, "responsable_id") }, { count: "exact" })
     .eq("id", id);
   if (error) return { error: missatgeError(error) };
   if (!count) return { error: "No s'ha trobat la fase. Recarrega la pàgina." };
   revalidatePath(`/projectes/${projecte_id}`);
+  return { ok: true };
+}
+
+// Estudis creats abans de la migració 0010: passa'ls a les fases noves.
+export async function aplicaFasesPerDefecte(projecteId: string): Promise<Resultat> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("aplica_fases_per_defecte", { p_projecte: projecteId });
+  if (error) return { error: missatgeError(error) };
+  revalidatePath(`/projectes/${projecteId}`);
   return { ok: true };
 }
 
@@ -418,6 +468,57 @@ export async function creaTasca(_p: Resultat, fd: FormData): Promise<Resultat> {
     entregable_id: tipusAncora === "entregable" ? idAncora : null,
   });
   if (error) return { error: missatgeError(error) };
+  revalidatePath(`/projectes/${projecte_id}`);
+  return { ok: true };
+}
+
+// Edició d'una tasca. La persona va per transfereix() (avisa) i la data
+// prevista per replanificar() (historial): aquí no es toquen.
+export async function actualitzaTasca(_p: Resultat, fd: FormData): Promise<Resultat> {
+  const id = text(fd, "id");
+  const projecte_id = text(fd, "projecte_id");
+  const titol = text(fd, "titol");
+  const prioritat = text(fd, "prioritat");
+  const [tipusAncora, idAncora] = text(fd, "ancora").split(":");
+  if (!titol) return { error: "La tasca necessita un títol." };
+  if (!["alta", "normal", "baixa"].includes(prioritat)) return { error: "Prioritat no vàlida." };
+
+  const supabase = await createClient();
+  const { error, count } = await supabase
+    .from("tasques")
+    .update(
+      {
+        titol,
+        descripcio: opcional(fd, "descripcio"),
+        prioritat,
+        fase_id: tipusAncora === "fase" ? idAncora : null,
+        entregable_id: tipusAncora === "entregable" ? idAncora : null,
+      },
+      { count: "exact" },
+    )
+    .eq("id", id);
+  if (error) return { error: missatgeError(error) };
+  if (!count) return { error: "No s'ha trobat la tasca. Recarrega la pàgina." };
+  revalidatePath(`/projectes/${projecte_id}`);
+  return { ok: true };
+}
+
+export async function actualitzaEntregable(_p: Resultat, fd: FormData): Promise<Resultat> {
+  const id = text(fd, "id");
+  const projecte_id = text(fd, "projecte_id");
+  const titol = text(fd, "titol");
+  const enllac = opcional(fd, "enllac");
+  if (!titol) return { error: "L'entregable necessita un títol." };
+  if (enllac && !/^https:\/\//.test(enllac))
+    return { error: "L'enllaç ha de començar per https:// (SharePoint o Drive)." };
+
+  const supabase = await createClient();
+  const { error, count } = await supabase
+    .from("entregables")
+    .update({ titol, tipus: opcional(fd, "tipus"), enllac, notes: opcional(fd, "notes") }, { count: "exact" })
+    .eq("id", id);
+  if (error) return { error: missatgeError(error) };
+  if (!count) return { error: "No s'ha trobat l'entregable. Recarrega la pàgina." };
   revalidatePath(`/projectes/${projecte_id}`);
   return { ok: true };
 }
@@ -594,15 +695,28 @@ export async function cercaGlobal(consulta: string): Promise<ResultatCerca[]> {
 }
 
 // ------------------------------------------------------------------
-// Revisions de tasques fetes
+// Revisions de tasques i entregables fets
 // ------------------------------------------------------------------
 
-export async function enviaARevisar(tascaId: string, revisorId: string): Promise<Resultat> {
+function element(taula: "tasques" | "entregables", id: string, revisor: string) {
+  return {
+    tasca_id: taula === "tasques" ? id : null,
+    entregable_id: taula === "entregables" ? id : null,
+    revisor_id: revisor,
+  };
+}
+
+export async function enviaARevisar(
+  taula: "tasques" | "entregables",
+  id: string,
+  revisorId: string,
+): Promise<Resultat> {
+  if (taula !== "tasques" && taula !== "entregables") return { error: "Tipus d'element no vàlid." };
   if (!revisorId) return { error: "Tria qui l'ha de revisar." };
   const supabase = await createClient();
-  const { error } = await supabase.from("revisions").insert({ tasca_id: tascaId, revisor_id: revisorId });
+  const { error } = await supabase.from("revisions").insert(element(taula, id, revisorId));
   if (error) {
-    if (error.code === "23505") return { error: "Aquesta tasca ja té una revisió pendent." };
+    if (error.code === "23505") return { error: "Ja té una revisió pendent." };
     return { error: missatgeError(error) };
   }
   revalidatePath("/", "layout");

@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarCheck,
   CalendarRange,
+  ClipboardList,
   FolderKanban,
   Lightbulb,
   Users,
@@ -19,6 +20,7 @@ const ENLLACOS = [
   { href: "/projectes", text: "projectes", Icona: FolderKanban },
   { href: "/cronograma", text: "cronograma", Icona: CalendarRange },
   { href: "/feina", text: "feina de l'equip", Icona: UsersRound },
+  { href: "/resum", text: "resum setmanal", Icona: ClipboardList },
   { href: "/idees", text: "idees", Icona: Lightbulb },
   { href: "/clients", text: "clients", Icona: Building2 },
   { href: "/equip", text: "equip", Icona: Users },
@@ -34,7 +36,7 @@ export function NavRail({ pendents, avisos }: { pendents: number; avisos: number
         const actiu = href === "/" ? ruta === "/" : ruta.startsWith(href);
         const n = compte ? comptes[compte] : 0;
         return (
-          <Link key={href} href={href} aria-current={actiu ? "page" : undefined} title={text}>
+          <Link key={href} href={href} aria-current={actiu ? "page" : undefined}>
             <Icona className="icona" aria-hidden />
             <span className="text">{text}</span>
             {n > 0 && (
