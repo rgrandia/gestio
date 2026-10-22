@@ -6,10 +6,14 @@ import { NavRail } from "@/components/NavRail";
 import { CercaGlobal } from "@/components/CercaGlobal";
 import { Persona } from "@/components/Persona";
 import { ESQUEMA_ESPERAT } from "@/lib/versio";
+import { cookies } from "next/headers";
+import { Preferencies } from "@/components/Preferencies";
+import { GALETA_MENU, GALETA_TEMA, llegeixMenu, llegeixTema } from "@/lib/preferencies";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const perfil = await requereixMembre();
   const supabase = await createClient();
+  const galetes = await cookies();
   const [{ count }, { count: avisos }, { count: perRevisar }, versio] = await Promise.all([
     supabase
       .from("v_safata")
@@ -49,6 +53,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {perfil.nom}
             <small>{perfil.email}</small>
           </span>
+          <Preferencies
+            tema={llegeixTema(galetes.get(GALETA_TEMA)?.value)}
+            menu={llegeixMenu(galetes.get(GALETA_MENU)?.value)}
+          />
           <form action={tancaSessio}>
             <button title="sortir" aria-label="sortir">
               <LogOut className="icona" aria-hidden />

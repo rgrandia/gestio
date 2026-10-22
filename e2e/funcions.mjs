@@ -26,7 +26,7 @@ const u1 = await obre(p, "Baròmetre municipal onada 2");
 // editar una tasca
 const tasques = p.locator("section.seccio", { has: p.locator("header .titol", { hasText: /^tasques/ }) });
 const fila = tasques.locator("tbody tr", { hasText: "Revisar literals del qüestionari" });
-await fila.locator("button[title=editar]").click();
+await fila.locator("button[data-tip=editar]").click();
 const ed = tasques.locator("tr.fila-edicio");
 await ed.locator("input[name=titol]").fill("Revisar literals del qüestionari (v2)");
 await ed.locator("textarea[name=descripcio]").fill("Sobretot les preguntes de valoració de líders");
@@ -96,7 +96,7 @@ await p.screenshot({ path: `${SHOTS}/g3-revisio-entregable.png`, fullPage: true 
 
 // editar l'entregable
 const ent2 = p.locator("tbody tr", { hasText: "Argumentari ple" }).first();
-await ent2.locator("button[title=editar]").click();
+await ent2.locator("button[data-tip=editar]").click();
 await p.locator("tr.fila-edicio input[name=enllac]").fill("https://gesop.sharepoint.com/argumentari");
 await p.locator("tr.fila-edicio button:has-text('desar entregable')").click();
 await p.waitForTimeout(1000);
@@ -124,6 +124,14 @@ await p.goto(B + "/resum");
 ok(await p.isVisible("section:has-text('ha lliscat') >> text=el gabinet demana més temps"), "el resum mostra què ha lliscat i el motiu");
 ok(await p.isVisible("section:has-text('venç aquesta setmana') >> text=Revisar ponderació"), "el resum mostra què venç aquesta setmana");
 await p.screenshot({ path: `${SHOTS}/resum.png`, fullPage: true });
+
+// preferències: mode fosc i menú desplegat, recordats en recarregar
+await p.click("button.pref-tema");
+await p.click("button.pref-menu");
+await p.reload();
+const [tema, menu] = await p.evaluate(() => [document.documentElement.dataset.tema, document.documentElement.dataset.menu]);
+ok(tema === "fosc" && menu === "desplegat", "el mode fosc i el menú desplegat es recorden");
+ok(await p.isVisible("nav[aria-label=principal] >> text=resum setmanal"), "amb el menú desplegat es veuen els noms");
 
 ok(errors.length === 0, "cap error de JS " + errors.join(" | "));
 await browser.close();

@@ -29,9 +29,44 @@
   --mut-suau:    #F1F5F9;
   --fet:         #16A34A;
   --fet-suau:    #F0FDF4;
+  --fet-fort:    #15803D;
 
   --ombra:       0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.07);
   --ombra-alta:  0 8px 24px rgba(16, 24, 40, 0.10);
+  color-scheme: light;
+}
+
+/* Mode fosc (botó de la lluna al peu del menú). Només canvien les variables;
+   la barra lateral ja és fosca en tots dos modes. */
+:root[data-tema="fosc"] {
+  --fons:        #0B111C;
+  --panell:      #141C2B;
+  --tinta:       #101827;
+  --tinta-2:     #1B2638;
+  --text:        #E5E9F0;
+  --text-suau:   #9AA5B5;
+  --text-fluix:  #677386;
+  --linia:       #243045;
+  --linia-forta: #34425A;
+  --hover:       #1A2334;
+
+  --accent:      #4F8BFF;
+  --accent-fort: #3B76EE;
+  --accent-suau: #16264A;
+
+  --vencut:      #F05252;
+  --vencut-suau: #3A1618;
+  --risc:        #F0A23A;
+  --risc-suau:   #3A2A12;
+  --mut:         #94A3B8;
+  --mut-suau:    #1E293B;
+  --fet:         #22A55A;
+  --fet-suau:    #11301F;
+  --fet-fort:    #1C8A4B;
+
+  --ombra:       0 1px 2px rgba(0, 0, 0, 0.4);
+  --ombra-alta:  0 8px 24px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -181,7 +216,7 @@ a.xifra:hover { box-shadow: var(--ombra-alta); transform: translateY(-1px); colo
 .commutador { display: inline-flex; border: 1px solid var(--linia); }
 .commutador a { padding: 3px 10px; color: var(--text-suau); font-size: 12px; }
 .commutador a:hover { color: var(--text); background: var(--hover); }
-.commutador a[aria-current="true"] { background: var(--text); color: #fff; }
+.commutador a[aria-current="true"] { background: var(--text); color: var(--panell); }
 
 /* ---------------- taules ---------------- */
 
@@ -264,7 +299,7 @@ a.xifra:hover { box-shadow: var(--ombra-alta); transform: translateY(-1px); colo
 .boto-primari { background: var(--accent); border-color: var(--accent); color: #fff; }
 .boto-primari:hover { background: var(--accent-fort); border-color: var(--accent-fort); color: #fff; }
 .boto-fet { background: var(--fet); border-color: var(--fet); color: #fff; }
-.boto-fet:hover { background: #15803D; border-color: #15803D; color: #fff; }
+.boto-fet:hover { background: var(--fet-fort); border-color: var(--fet-fort); color: #fff; }
 .boto-suau { background: transparent; border-color: transparent; color: var(--text-suau); }
 .boto-suau:hover { background: var(--fons); border-color: transparent; color: var(--text); }
 .boto-perill:hover { background: var(--vencut-suau); color: var(--vencut); }
@@ -574,6 +609,11 @@ tr.fila-edicio > td { background: var(--fons); border-left: 3px solid var(--acce
 /* ---------------- impressió (resum setmanal) ---------------- */
 
 @media print {
+  /* sempre en clar, encara que la pantalla sigui fosca */
+  :root[data-tema] {
+    --fons: #fff; --panell: #fff; --text: #111827; --text-suau: #6B7280; --text-fluix: #9CA3AF;
+    --linia: #E5E7EB; --linia-forta: #D1D5DB; --hover: #F9FAFB; color-scheme: light;
+  }
   .app { display: block; background: #fff; }
   .rail, .amaga-imprimir { display: none !important; }
   .contingut { padding: 0; max-width: none; }
@@ -581,5 +621,56 @@ tr.fila-edicio > td { background: var(--fons); border-left: 3px solid var(--acce
   a { color: inherit; }
 }
 
-.avis-esquema { margin: 0 0 20px; padding: 12px 16px; background: #FDECEC; border-left: 3px solid var(--vencut); color: var(--text); font-size: 13px; }
+.avis-esquema { margin: 0 0 20px; padding: 12px 16px; background: var(--vencut-suau); border-left: 3px solid var(--vencut); color: var(--text); font-size: 13px; }
 .avis-esquema code { font-size: 12px; }
+
+/* ---------------- preferències: menú desplegat ---------------- */
+
+.rail .peu .pref-tema, .rail .peu .pref-menu { color: #8592A6; }
+
+@media (min-width: 721px) {
+  :root[data-menu="desplegat"] .app {
+    grid-template-columns: 232px 1fr;
+    background: linear-gradient(to right, var(--tinta) 232px, var(--fons) 232px);
+  }
+  :root[data-menu="desplegat"] .rail { padding: 20px 12px 16px; }
+  :root[data-menu="desplegat"] .rail .marca { justify-content: flex-start; gap: 10px; padding: 0 8px 20px; }
+  :root[data-menu="desplegat"] .rail .marca div { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  :root[data-menu="desplegat"] .rail .seccio-nav { display: block; font-size: 11px; color: #6B778A; padding: 8px 10px 6px; }
+  :root[data-menu="desplegat"] .rail nav a { justify-content: flex-start; gap: 10px; padding: 0 10px; height: 38px; }
+  :root[data-menu="desplegat"] .rail nav a svg.icona { width: 16px; height: 16px; }
+  :root[data-menu="desplegat"] .rail nav a .text {
+    position: static; transform: none; opacity: 1; background: none; box-shadow: none;
+    padding: 0; font-size: 13px; font-weight: inherit; flex: 1;
+  }
+  :root[data-menu="desplegat"] .rail nav a .comptador { position: static; height: auto; line-height: 1.5; font-size: 11px; }
+  :root[data-menu="desplegat"] .rail .peu { flex-direction: row; padding: 12px 8px 0; gap: 4px; }
+  :root[data-menu="desplegat"] .rail .peu .avatar { margin-right: 6px; }
+  :root[data-menu="desplegat"] .rail .peu .nom {
+    position: static; width: auto; height: auto; overflow: hidden; clip: auto; flex: 1; min-width: 0;
+    color: #fff; font-size: 12px; line-height: 1.2; text-overflow: ellipsis;
+  }
+  :root[data-menu="desplegat"] .cerca-global { padding: 0 8px 12px; }
+  :root[data-menu="desplegat"] .cerca-global .camp input,
+  :root[data-menu="desplegat"] .cerca-global .camp kbd { width: auto; opacity: 1; }
+  :root[data-menu="desplegat"] .cerca-global:focus-within .camp { position: static; width: auto; box-shadow: none; }
+}
+@media (max-width: 720px) {
+  .rail .peu .pref-menu { display: none; }
+}
+
+/* ---------------- botons només d'icona amb etiqueta ---------------- */
+
+/* L'etiqueta surt a l'esquerra en passar-hi el ratolí o amb el teclat; el
+   text real és dins del botó (sr-only) per als lectors de pantalla. */
+.boto[data-tip] { position: relative; }
+.boto[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute; right: calc(100% + 6px); top: 50%; transform: translateY(-50%);
+  background: var(--tinta); color: #fff; padding: 4px 8px; font-size: 11px; font-weight: 500;
+  white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 80ms; z-index: 15;
+}
+.boto[data-tip]:hover::after, .boto[data-tip]:focus-visible::after { opacity: 1; }
+.accions .boto-icona { width: 32px; height: 32px; }
+
+:root[data-tema="fosc"] .rail { border-right: 1px solid var(--linia); }
