@@ -63,9 +63,9 @@ svg.icona-petita { width: 14px; height: 14px; flex: none; stroke-width: 2; }
 /* ---------------- estructura ---------------- */
 
 .app {
-  display: grid; grid-template-columns: 232px 1fr; min-height: 100vh;
+  display: grid; grid-template-columns: 64px 1fr; min-height: 100vh;
   /* la columna del rail és fosca fins a baix encara que la pàgina sigui llarga */
-  background: linear-gradient(to right, var(--tinta) 232px, var(--fons) 232px);
+  background: linear-gradient(to right, var(--tinta) 64px, var(--fons) 64px);
 }
 
 .rail {
@@ -73,34 +73,49 @@ svg.icona-petita { width: 14px; height: 14px; flex: none; stroke-width: 2; }
   background: var(--tinta);
   color: #C9D1DC;
   display: flex; flex-direction: column;
-  padding: 20px 12px 16px;
+  padding: 16px 0 14px;
+  z-index: 20;
 }
-.rail .marca { display: flex; align-items: center; gap: 10px; padding: 0 8px 20px; }
+/* Rail només d'icones: el nom surt en passar-hi per sobre (i el llegeixen els lectors de pantalla). */
+.rail .marca { display: flex; justify-content: center; padding: 0 0 16px; }
+.rail .marca div { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .rail .marca .logo {
   width: 32px; height: 32px; display: grid; place-items: center;
   background: var(--accent); color: #fff; font-weight: 600; font-size: 16px;
 }
 .rail .marca strong { display: block; color: #fff; font-size: 15px; line-height: 1.2; }
 .rail .marca span { display: block; font-size: 11px; color: #8592A6; }
-.rail .seccio-nav { font-size: 11px; color: #6B778A; padding: 8px 10px 6px; }
+.rail .seccio-nav { display: none; }
 .rail nav { display: flex; flex-direction: column; gap: 2px; }
 .rail nav a {
-  display: flex; align-items: center; gap: 10px;
-  padding: 9px 10px;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  height: 42px;
   color: #C9D1DC;
   border-left: 3px solid transparent;
 }
+.rail nav a svg.icona { width: 20px; height: 20px; }
 .rail nav a:hover { background: var(--tinta-2); color: #fff; }
 .rail nav a[aria-current="page"] {
   background: var(--tinta-2); color: #fff; border-left-color: var(--accent); font-weight: 600;
 }
-.rail nav a .text { flex: 1; }
-.rail nav a .comptador { background: var(--vencut); color: #fff; }
-.rail .peu {
-  margin-top: auto; display: flex; align-items: center; gap: 10px;
-  padding: 12px 8px 0; border-top: 1px solid var(--tinta-2);
+.rail nav a .text {
+  position: absolute; left: calc(100% + 6px); top: 50%; transform: translateY(-50%);
+  background: var(--tinta); color: #fff; padding: 5px 10px; font-size: 12px; font-weight: 500;
+  white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 80ms;
+  box-shadow: var(--ombra-alta);
 }
-.rail .peu .nom { flex: 1; color: #fff; font-size: 12px; line-height: 1.2; }
+.rail nav a:hover .text, .rail nav a:focus-visible .text { opacity: 1; }
+.rail nav a .comptador {
+  position: absolute; top: 4px; right: 8px;
+  min-width: 16px; height: 16px; padding: 0 4px; font-size: 10px; line-height: 16px;
+  background: var(--vencut); color: #fff;
+}
+.rail .peu {
+  margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 12px 0 0; border-top: 1px solid var(--tinta-2);
+}
+.rail .peu .nom { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .rail .peu .nom small { display: block; color: #8592A6; font-size: 11px; }
 .rail .peu button { color: #8592A6; background: none; border: 0; cursor: pointer; padding: 4px; display: grid; }
 .rail .peu button:hover { color: #fff; }
@@ -331,13 +346,14 @@ textarea { font-family: var(--font-sans); font-size: 15px; line-height: 1.55; }
 }
 
 @media (max-width: 720px) {
-  .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; background: var(--fons); }
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; background: var(--fons); }
   .rail { position: sticky; top: 0; z-index: 10; height: auto; flex-direction: row; align-items: center; padding: 8px 12px; gap: 8px; }
   .rail .marca { padding: 0; }
   .rail .marca div, .rail .seccio-nav, .rail .peu .nom, .rail .peu .avatar { display: none; }
-  .rail nav { flex-direction: row; flex: 1; gap: 0; overflow-x: auto; }
-  .rail nav a { padding: 8px; border-left: 0; border-bottom: 2px solid transparent; }
-  .rail nav a .text { display: none; }
+  .rail nav { flex-direction: row; flex: 1; min-width: 0; gap: 0; overflow-x: auto; }
+  .rail nav a { width: 40px; height: 40px; flex: none; border-left: 0; border-bottom: 2px solid transparent; }
+  .rail nav a .text { width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); padding: 0; }
+  .rail .peu { flex-direction: row; }
   .rail nav a[aria-current="page"] { border-bottom-color: var(--accent); }
   .rail .peu { margin: 0; padding: 0; border: 0; }
   .contingut { padding: 20px 16px 48px; }
@@ -460,15 +476,22 @@ tbody.fase:has(.desplega:checked) > tr:first-child td { background: var(--hover)
 
 /* ---------------- cerca global ---------------- */
 
-.cerca-global { position: relative; padding: 0 8px 12px; }
-.cerca-global .camp { display: flex; align-items: center; gap: 8px; background: var(--tinta-2); padding: 0 8px; color: #8592A6; }
+.cerca-global { position: relative; padding: 0 12px 12px; }
+.cerca-global .camp { display: flex; align-items: center; gap: 8px; background: var(--tinta-2); padding: 0 12px; color: #8592A6; height: 40px; cursor: text; overflow: hidden; }
+/* Al rail estret només es veu la lupa; en entrar-hi s'obre cap a la dreta. */
+.cerca-global .camp input, .cerca-global .camp kbd { width: 0; opacity: 0; }
+.cerca-global:focus-within .camp {
+  position: absolute; left: 12px; top: 0; width: 360px; z-index: 31; box-shadow: var(--ombra-alta);
+}
+.cerca-global:focus-within .camp input { width: auto; opacity: 1; }
+.cerca-global:focus-within .camp kbd { width: auto; opacity: 1; }
 .cerca-global input { background: transparent; border: 0; color: #fff; min-height: 34px; padding: 0; flex: 1; min-width: 0; }
 .cerca-global input::placeholder { color: #8592A6; }
 .cerca-global input:focus { outline: none; }
 .cerca-global .camp:focus-within { outline: 2px solid var(--accent); }
 .cerca-global kbd { font: inherit; font-size: 11px; border: 1px solid #39465c; padding: 0 5px; color: #8592A6; }
 .cerca-global .resultats {
-  position: absolute; left: 8px; top: 38px; z-index: 30; width: 420px; max-width: calc(100vw - 32px);
+  position: absolute; left: 12px; top: 40px; z-index: 30; width: 420px; max-width: calc(100vw - 32px);
   list-style: none; margin: 0; padding: 4px 0; background: var(--panell); color: var(--text);
   border: 1px solid var(--linia); box-shadow: var(--ombra-alta);
 }
@@ -539,3 +562,24 @@ tbody.fase:has(.desplega:checked) > tr:first-child td { background: var(--hover)
 .xifres-columna { flex-wrap: wrap; }
 .xifres-columna > span { white-space: nowrap; }
 .avis-sense-data { margin: -12px 0 24px; padding: 8px 12px; font-size: 12px; color: var(--risc); background: var(--risc-suau); border-left: 3px solid var(--risc); }
+
+/* ---------------- edició en línia de tasques i entregables ---------------- */
+
+tr.fila-edicio > td { background: var(--fons); border-left: 3px solid var(--accent); padding: 16px 20px; }
+.seccio .formulari-edicio { gap: 12px; }
+.formulari-edicio .fila-camps { gap: 12px; }
+.context.descripcio { white-space: pre-line; max-width: 60ch; }
+.avis-fases-noves { padding: 10px 16px; background: var(--accent-suau); border-bottom: 1px solid var(--linia); }
+
+/* ---------------- impressió (resum setmanal) ---------------- */
+
+@media print {
+  .app { display: block; background: #fff; }
+  .rail, .amaga-imprimir { display: none !important; }
+  .contingut { padding: 0; max-width: none; }
+  .seccio { box-shadow: none; break-inside: avoid; }
+  a { color: inherit; }
+}
+
+.avis-esquema { margin: 0 0 20px; padding: 12px 16px; background: #FDECEC; border-left: 3px solid var(--vencut); color: var(--text); font-size: 13px; }
+.avis-esquema code { font-size: 12px; }

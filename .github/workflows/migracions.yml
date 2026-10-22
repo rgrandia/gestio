@@ -1,0 +1,40 @@
+name: migracions
+
+# Aplica a la base de dades de Supabase les migracions que hi falten quan
+# arriben a main, i després hi passa la verificació (que no deixa rastre).
+#
+# Necessita el secret SUPABASE_DB_URL (README, «Migracions automàtiques»).
+# Sense el secret no fa res: les migracions s'apliquen a mà com fins ara.
+
+on:
+  push:
+    branches: [main]
+    paths: ["supabase/migrations/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: migracions
+  cancel-in-progress: false
+
+jobs:
+  aplica:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hi ha secret?
+        id: secret
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::notice::Sense el secret SUPABASE_DB_URL no s'aplica res: fes-ho a mà a l'editor SQL."
+            echo "hi_es=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "hi_es=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Aplica les migracions que falten
+        if: steps.secret.outputs.hi_es == 'true'
+        run: scripts/aplica-migracions.sh
+      - name: Verificació (CLAUDE.md §7.3; tot es desfà en acabar)
+        if: steps.secret.outputs.hi_es == 'true'
+        run: psql "$DATABASE_URL" -X -q -v ON_ERROR_STOP=1 -f supabase/tests/verificacio.sql

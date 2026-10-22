@@ -16,13 +16,17 @@ import { EnviaARevisar, EtiquetaRevisio, type DarreraRevisio } from "@/component
 import { requereixMembre } from "@/lib/auth/session";
 import { avui, dataCurta, desplacament, diesEntre } from "@/lib/dates";
 import {
+  actualitzaEntregable,
   actualitzaProjecte,
+  actualitzaTasca,
   creaContacte,
   creaEntregable,
   actualitzaFase,
   creaFase,
   creaTasca,
+  novaOnada,
 } from "@/lib/accions";
+import { AplicaFasesNoves } from "@/components/AplicaFasesNoves";
 import { FilaAccionable } from "@/components/FilaAccionable";
 import { Formulari } from "@/components/Formulari";
 import { MouFase } from "@/components/MouFase";
@@ -45,7 +49,11 @@ import type {
 
 export const dynamic = "force-dynamic";
 
-type Pestanya = "detall" | "historial" | "editar";
+type Pestanya = "detall" | "historial" | "editar" | "onada";
+
+// Fases per defecte d'abans de la migració 0010.
+const FASES_ANTIGUES = ["Qüestionari", "Camp", "Tabulació", "Revisió", "Informe", "Presentació"];
+const TIPUS_ENTREGABLE = ["informe", "discurs", "nota", "pla", "altre"];
 
 export default async function DetallProjecte({
   params,
@@ -57,7 +65,7 @@ export default async function DetallProjecte({
   const { id } = await params;
   const sp = await searchParams;
   const pestanya: Pestanya =
-    sp.pestanya === "historial" || sp.pestanya === "editar" ? sp.pestanya : "detall";
+    sp.pestanya === "historial" || sp.pestanya === "editar" || sp.pestanya === "onada" ? sp.pestanya : "detall";
   const mostraTancats = sp.tot === "1";
   const hui = avui();
 
@@ -158,10 +166,14 @@ export default async function DetallProjecte({
           historial de replanificacions
         </Link>
         <Link href={`${base}?pestanya=editar`} aria-current={pestanya === "editar" ? "page" : undefined}>editar</Link>
+        {p.tipus === "estudi" && (
+          <Link href={`${base}?pestanya=onada`} aria-current={pestanya === "onada" ? "page" : undefined}>nova onada</Link>
+        )}
       </nav>
 
       {pestanya === "historial" && <Historial projecteId={id} />}
       {pestanya === "editar" && <Editar p={p} perfils={perfils} coresponsables={coresponsables} />}
+      {pestanya === "onada" && p.tipus === "estudi" && <NovaOnada p={p} />}
       {pestanya === "detall" && (
         <Detall p={p} hui={hui} persones={persones} perfils={perfils} mostraTancats={mostraTancats} base={base} />
       )}
@@ -202,7 +214,7 @@ async function Detall({
   const entregablesTots = comprova(entregablesR) as Entregable[];
   const tasquesTotes = comprova(tasquesR) as Tasca[];
   const contactes = comprova(contactesR) as Contacte[];
-  const [replans, revisionsR, jo] = await Promise.all([
+  const [replans, revTasquesR, revEntregablesR, jo] = await Promise.all([
     comptaReplanificacions([
       ...fases.map((x) => x.id),
       ...entregablesTots.map((x) => x.id),
@@ -210,21 +222,28 @@ async function Detall({
     ]),
     supabase
       .from("revisions")
-      .select("tasca_id, estat, revisor_id, comentari, creat_el")
+      .select("tasca_id, entregable_id, estat, revisor_id, comentari, creat_el")
       .in("tasca_id", tasquesTotes.map((t) => t.id))
+      .order("creat_el", { ascending: false }),
+    supabase
+      .from("revisions")
+      .select("tasca_id, entregable_id, estat, revisor_id, comentari, creat_el")
+      .in("entregable_id", entregablesTots.map((e) => e.id))
       .order("creat_el", { ascending: false }),
     requereixMembre(),
   ]);
-  // Darrera revisió de cada tasca.
+  // Darrera revisió de cada tasca i de cada entregable.
   const revisions = new Map<string, DarreraRevisio>();
-  for (const r of (revisionsR.data ?? []) as {
-    tasca_id: string;
+  for (const r of [...(revTasquesR.data ?? []), ...(revEntregablesR.data ?? [])] as {
+    tasca_id: string | null;
+    entregable_id: string | null;
     estat: DarreraRevisio["estat"];
     revisor_id: string;
     comentari: string | null;
   }[]) {
-    if (!revisions.has(r.tasca_id))
-      revisions.set(r.tasca_id, { estat: r.estat, revisor: persones.get(r.revisor_id)?.nom ?? "?", comentari: r.comentari });
+    const clau = r.tasca_id ?? r.entregable_id;
+    if (clau && !revisions.has(clau))
+      revisions.set(clau, { estat: r.estat, revisor: persones.get(r.revisor_id)?.nom ?? "?", comentari: r.comentari });
   }
   const passables = assignables(perfils).map((x) => ({ id: x.id, nom: x.nom, extern: x.extern, area: x.area }));
   const revisors = membres(perfils)
@@ -242,6 +261,29 @@ async function Detall({
   const nomFase = new Map(fases.map((f) => [f.id, f.nom]));
   const nomEntregable = new Map(entregablesTots.map((e) => [e.id, e.titol]));
 
+  // Un estudi d'abans de 0010 que no ha començat es pot passar a les fases noves.
+  const actives = fases.filter((f) => f.estat !== "cancellat").map((f) => f.nom);
+  const potAplicarFasesNoves =
+    p.tipus === "estudi" &&
+    actives.length > 0 &&
+    actives.every((n) => FASES_ANTIGUES.includes(n)) &&
+    new Set(actives).size === actives.length &&
+    !fases.some((f) => f.data_real);
+
+  // On pot penjar una tasca (en editar-la surten també les cancel·lades, perquè
+  // no es perdi l'àncora actual en desar).
+  const opcionsAncora = (ambCancellades: boolean) => (
+    <>
+      <option value="">del projecte</option>
+      {fases.filter((f) => ambCancellades || f.estat !== "cancellat").map((f) => (
+        <option key={f.id} value={`fase:${f.id}`}>fase: {f.nom}{f.estat === "cancellat" ? " (cancel·lada)" : ""}</option>
+      ))}
+      {entregablesTots.filter((e) => ambCancellades || e.estat !== "cancellat").map((e) => (
+        <option key={e.id} value={`entregable:${e.id}`}>entregable: {e.titol}{e.estat === "cancellat" ? " (cancel·lat)" : ""}</option>
+      ))}
+    </>
+  );
+
   return (
     <>
       {p.tipus === "estudi" && (
@@ -250,6 +292,7 @@ async function Detall({
             <span className="titol">fases</span>
             <span className="meta">les actualitza el responsable del projecte; l&apos;app no sap si una fase ha acabat</span>
           </header>
+          {potAplicarFasesNoves && <AplicaFasesNoves projecteId={p.id} />}
           <TiraFases fases={fases} hui={hui} />
           <div className="desplacable">
             <table className="taula taula-fases">
@@ -324,6 +367,7 @@ async function Detall({
                                       {t.titol}{" "}
                                       {t.prioritat === "alta" && <span className="etiqueta tag-vencut">alta</span>}
                                       <Replanificat n={replans.get(t.id)} />
+                                      {t.descripcio && <div className="context descripcio">{t.descripcio}</div>}
                                     </td>
                                     <td><Persona p={persones.get(t.assignada_a ?? "")} /></td>
                                     <td className="num">{dataCurta(t.data_prevista)}</td>
@@ -350,6 +394,10 @@ async function Detall({
                             <Formulari accio={actualitzaFase} boto="desar fase" className="flex flex-wrap gap-2 items-center">
                               <input type="hidden" name="id" value={f.id} />
                               <input type="hidden" name="projecte_id" value={p.id} />
+                              <label className="petit suau flex items-center gap-2">
+                                nom
+                                <input name="nom" defaultValue={f.nom} required aria-label="nom de la fase" />
+                              </label>
                               <label className="petit suau flex items-center gap-2">
                                 inici
                                 <input name="data_inici" type="date" defaultValue={f.data_inici ?? ""} aria-label="inici de la fase" />
@@ -418,6 +466,38 @@ async function Detall({
                       tePrevista={Boolean(e.data_prevista)}
                       acabat={Boolean(e.data_real) || e.estat === "cancellat"}
                       persones={passables}
+                      revisors={revisors}
+                      columnes={7}
+                      edicio={
+                        <Formulari accio={actualitzaEntregable} boto="desar entregable" className="formulari formulari-edicio">
+                          <input type="hidden" name="id" value={e.id} />
+                          <input type="hidden" name="projecte_id" value={p.id} />
+                          <div className="fila-camps">
+                            <label>
+                              títol
+                              <input name="titol" defaultValue={e.titol} required />
+                            </label>
+                            <label>
+                              tipus
+                              <select name="tipus" defaultValue={e.tipus ?? ""}>
+                                <option value="">—</option>
+                                {TIPUS_ENTREGABLE.map((t) => <option key={t} value={t}>{t}</option>)}
+                              </select>
+                            </label>
+                          </div>
+                          <label>
+                            enllaç (SharePoint/Drive)
+                            <input name="enllac" type="url" placeholder="https://" defaultValue={e.enllac ?? ""} />
+                          </label>
+                          <label>
+                            notes
+                            <textarea name="notes" rows={2} defaultValue={e.notes ?? ""} />
+                          </label>
+                          <p className="petit suau">
+                            La persona es canvia amb «passar» i la data amb «replanificar», perquè en quedi constància.
+                          </p>
+                        </Formulari>
+                      }
                     >
                       <td>
                         {e.enllac ? (
@@ -426,6 +506,11 @@ async function Detall({
                           e.titol
                         )}
                         <Replanificat n={replans.get(e.id)} />
+                        <EtiquetaRevisio r={revisions.get(e.id)} />
+                        {e.data_real && revisions.get(e.id)?.estat !== "pendent" && (
+                          <EnviaARevisar taula="entregables" id={e.id} revisors={revisors} />
+                        )}
+                        {e.notes && <div className="context descripcio">{e.notes}</div>}
                       </td>
                       <td className="suau">{e.tipus ?? ""}</td>
                       <td><Persona p={persones.get(e.responsable_id ?? p.responsable_id)} /></td>
@@ -445,7 +530,7 @@ async function Detall({
             <input name="titol" placeholder="nou entregable" aria-label="títol" required />
             <select name="tipus" aria-label="tipus" defaultValue="">
               <option value="">tipus</option>
-              {["informe", "discurs", "nota", "pla", "altre"].map((t) => <option key={t} value={t}>{t}</option>)}
+              {TIPUS_ENTREGABLE.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
             <input name="data_prevista" type="date" aria-label="data prevista" />
             <select name="responsable_id" aria-label="responsable" defaultValue="">
@@ -532,15 +617,54 @@ async function Detall({
                     acabat={Boolean(t.data_real) || t.estat === "cancellat"}
                     revisors={revisors}
                     persones={passables}
+                    columnes={7}
+                    edicio={
+                      <Formulari accio={actualitzaTasca} boto="desar tasca" className="formulari formulari-edicio">
+                        <input type="hidden" name="id" value={t.id} />
+                        <input type="hidden" name="projecte_id" value={p.id} />
+                        <label>
+                          títol
+                          <input name="titol" defaultValue={t.titol} required />
+                        </label>
+                        <label>
+                          descripció
+                          <textarea name="descripcio" rows={2} defaultValue={t.descripcio ?? ""} />
+                        </label>
+                        <div className="fila-camps">
+                          <label>
+                            penja de
+                            <select
+                              name="ancora"
+                              defaultValue={t.fase_id ? `fase:${t.fase_id}` : t.entregable_id ? `entregable:${t.entregable_id}` : ""}
+                            >
+                              {opcionsAncora(true)}
+                            </select>
+                          </label>
+                          <label>
+                            prioritat
+                            <select name="prioritat" defaultValue={t.prioritat}>
+                              <option value="alta">alta</option>
+                              <option value="normal">normal</option>
+                              <option value="baixa">baixa</option>
+                            </select>
+                          </label>
+                        </div>
+                        <p className="petit suau">
+                          La persona es canvia amb «passar» i la data amb «replanificar», perquè en quedi constància.
+                        </p>
+                      </Formulari>
+                    }
                   >
                     <td>
                       {t.titol}
                       {t.prioritat === "alta" && <span className="etiqueta tag-vencut ml-1">alta</span>}
+                      {t.prioritat === "baixa" && <span className="etiqueta ml-1">baixa</span>}
                       <Replanificat n={replans.get(t.id)} />
                       <EtiquetaRevisio r={revisions.get(t.id)} />
                       {t.data_real && revisions.get(t.id)?.estat !== "pendent" && (
-                        <EnviaARevisar tascaId={t.id} revisors={revisors} />
+                        <EnviaARevisar taula="tasques" id={t.id} revisors={revisors} />
                       )}
+                      {t.descripcio && <div className="context descripcio">{t.descripcio}</div>}
                     </td>
                     <td className="suau">
                       {t.fase_id ? nomFase.get(t.fase_id) : t.entregable_id ? nomEntregable.get(t.entregable_id) : ""}
@@ -566,13 +690,7 @@ async function Detall({
           </select>
           <input name="data_prevista" type="date" aria-label="data prevista" />
           <select name="ancora" aria-label="penja de" defaultValue="">
-            <option value="">del projecte</option>
-            {fases.filter((f) => f.estat !== "cancellat").map((f) => (
-              <option key={f.id} value={`fase:${f.id}`}>fase: {f.nom}</option>
-            ))}
-            {entregablesTots.filter((e) => e.estat !== "cancellat").map((e) => (
-              <option key={e.id} value={`entregable:${e.id}`}>entregable: {e.titol}</option>
-            ))}
+            {opcionsAncora(false)}
           </select>
           <select name="prioritat" aria-label="prioritat" defaultValue="normal">
             <option value="alta">alta</option>
@@ -708,6 +826,34 @@ function Editar({ p, perfils, coresponsables }: { p: Projecte; perfils: Perfil[]
       <label>
         notes
         <textarea name="notes" rows={4} defaultValue={p.notes ?? ""} />
+      </label>
+    </Formulari>
+  );
+}
+
+function NovaOnada({ p }: { p: Projecte }) {
+  return (
+    <Formulari accio={novaOnada} boto="crear la nova onada">
+      <input type="hidden" name="origen" value={p.id} />
+      <p className="prosa">
+        Crea un estudi nou per al mateix client amb les mateixes fases, entregables i tasques (les que no estan
+        cancel·lades) i la mateixa gent. Les dates es mouen tants dies com hi hagi entre l&apos;inici d&apos;aquest
+        estudi{p.data_inici ? ` (${dataCurta(p.data_inici)})` : ""} i el de la nova onada. No es copien dates reals,
+        enllaços, notes, contactes ni historial.
+      </p>
+      <div className="grid gap-4" style={{ gridTemplateColumns: "120px 1fr" }}>
+        <label>
+          núm. d&apos;estudi
+          <input name="numero_estudi" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} placeholder="0000" />
+        </label>
+        <label>
+          títol
+          <input name="titol" required defaultValue={p.titol} />
+        </label>
+      </div>
+      <label style={{ maxWidth: "16rem" }}>
+        inici de la nova onada
+        <input name="data_inici" type="date" required />
       </label>
     </Formulari>
   );

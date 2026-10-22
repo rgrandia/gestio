@@ -157,5 +157,6 @@ export type Replanificacio = {
   motiu: string;
   usuari: string | null;
   element: string;
+  projecte_id: string;
   creat_el: string;
 };

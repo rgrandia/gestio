@@ -5,11 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import { NavRail } from "@/components/NavRail";
 import { CercaGlobal } from "@/components/CercaGlobal";
 import { Persona } from "@/components/Persona";
+import { ESQUEMA_ESPERAT } from "@/lib/versio";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const perfil = await requereixMembre();
   const supabase = await createClient();
-  const [{ count }, { count: avisos }, { count: perRevisar }] = await Promise.all([
+  const [{ count }, { count: avisos }, { count: perRevisar }, versio] = await Promise.all([
     supabase
       .from("v_safata")
       .select("id", { count: "exact", head: true })
@@ -23,7 +24,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .select("id", { count: "exact", head: true })
       .eq("estat", "pendent")
       .eq("revisor_id", perfil.id),
+    supabase.rpc("versio_esquema"),
   ]);
+  // Si falla la crida, la base de dades és anterior a la migració 0014.
+  const esquema: string | null = versio.error ? null : versio.data;
+  const faltenMigracions = !esquema || esquema < ESQUEMA_ESPERAT;
 
   return (
     <div className="app">
@@ -51,7 +56,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </div>
       </aside>
-      <main className="contingut">{children}</main>
+      <main className="contingut">
+        {faltenMigracions && (
+          <p className="avis-esquema" role="alert">
+            <strong>Falten migracions a la base de dades.</strong> Aquesta versió de l&apos;app necessita fins a la{" "}
+            <code>{ESQUEMA_ESPERAT.slice(0, 14)}</code>
+            {esquema ? <> i la base de dades és a la <code>{esquema.slice(0, 14)}</code></> : " i la base de dades és anterior a la 0014"}.
+            Algunes pantalles poden fallar fins que s&apos;apliquin (vegeu el README, «Actualitzar una instal·lació existent»).
+          </p>
+        )}
+        {children}
+      </main>
     </div>
   );
 }

@@ -13,6 +13,8 @@ Tailwind · Vercel.
 supabase/migrations/   esquema, RLS, triggers/RPC i vistes (en aquest ordre)
 supabase/tests/        verificacio.sql (§7.3) + stub d'auth per provar en local
 scripts/prova-sql.sh   aplica les migracions en un Postgres buit i verifica
+scripts/aplica-migracions.sh  aplica les migracions que falten (workflow «migracions»)
+scripts/e2e/, e2e/     proves de punta a punta amb navegador (CI, job «e2e»)
 src/lib/auth/          TOT el que depèn del proveïdor d'autenticació
 src/lib/accions.ts     totes les escriptures (server actions, sense service_role)
 src/app/(app)/         les quatre pantalles: setmana, projectes, idees, clients
@@ -68,16 +70,82 @@ npm run dev
 executa la verificació (cal `psql`; usa les variables `PG*` habituals). La CI
 fa el mateix a cada PR.
 
+**Cada migració nova** ha d'acabar registrant-se
+(`insert into migracions_aplicades (nom) values ('<nom del fitxer sense .sql>') on conflict do nothing;`)
+i s'ha d'actualitzar `src/lib/versio.ts`. `scripts/comprova-migracions.sh`
+(a la CI) ho comprova.
+
 ## Actualitzar una instal·lació existent
 
-Cada fitxer nou de `supabase/migrations/` s'ha d'executar a l'editor SQL de
-Supabase **abans** de fusionar la PR que el porta. Si es publica el codi sense
-la migració, l'app falla en buscar columnes que no existeixen.
+Cada fitxer nou de `supabase/migrations/` ha d'arribar a la base de dades de
+Supabase. Si es publica el codi sense la migració, l'app falla en buscar
+columnes que no existeixen. Des de la migració 0014, l'app ho detecta i
+mostra un avís vermell a dalt de tot («Falten migracions a la base de
+dades») en lloc de fallar a cegues.
+
+**A mà** (com fins ara), **abans** de fusionar la PR:
 
 1. Enganxa la migració nova a l'editor SQL i executa-la.
 2. Executa `supabase/tests/verificacio.sql`: ha d'acabar amb
    `verificacio: totes les comprovacions superades`.
 3. Fusiona la PR.
+
+**La 0014 sempre s'ha d'aplicar a mà**: és la que crea el registre de
+migracions (`migracions_aplicades`). A partir d'aquí, cada migració es
+registra ella mateixa, l'apliqui qui l'apliqui.
+
+### Migracions automàtiques (opcional)
+
+El workflow `.github/workflows/migracions.yml` aplica les migracions que
+falten quan arriben a `main` i després hi passa la verificació. Per activar-lo:
+
+1. A Supabase: **Connect** (a dalt) → **Session pooler** → copia la cadena de
+   connexió i posa-hi la contrasenya de la base de dades. Ha de ser la del
+   *pooler* (`...pooler.supabase.com:5432`): la connexió directa és només
+   IPv6 i els servidors de GitHub no hi arriben.
+2. A GitHub: **Settings → Secrets and variables → Actions → New repository
+   secret**, nom `SUPABASE_DB_URL`, valor la cadena anterior.
+
+Sense el secret, el workflow no fa res. Amb el secret:
+
+- l'ordre és fusionar la PR i prou: GitHub aplica la migració en un minut,
+  més o menys el que triga Vercel a publicar. Si una migració falla, el
+  workflow surt en vermell, no s'aplica res d'aquella migració i l'app mostra
+  l'avís de migracions pendents;
+- **el que hi ha en joc**: aquesta cadena dona accés total a la base de dades
+  (se salta l'RLS). Qualsevol persona amb permís d'escriptura al repositori
+  podria fer un workflow que la fes servir. Amb el repositori limitat a
+  l'equip és acceptable; si s'hi afegeix gent de fora, cal repensar-ho.
+
+### Còpies de seguretat
+
+Al pla gratuït, Supabase no ofereix còpies descarregables. El workflow
+`.github/workflows/copia.yml` en fa una cada dilluns de l'esquema `public`
+(projectes, tasques, historial, avisos...), **xifrada** amb AES-256, i la
+deixa 90 dies com a artefacte del workflow (pestanya **Actions → copia**).
+Necessita dos secrets: `SUPABASE_DB_URL` (el d'abans) i `COPIA_CONTRASENYA`
+(una frase llarga que guardeu fora de GitHub: sense ella la còpia no serveix
+de res). També es pot llançar a mà (**Run workflow**).
+
+No copia els usuaris d'autenticació (contrasenyes xifrades): en una
+restauració s'han de tornar a crear i lligar al seu perfil. Per restaurar:
+
+```bash
+gpg -d -o gestio.dump gestio-AAAA-MM-DD.dump.gpg
+pg_restore --no-owner -d "<cadena de connexió del projecte nou>" gestio.dump
+```
+
+Si voleu còpies diàries amb restauració a qualsevol moment sense fer res,
+és el pla **Pro** de Supabase; aquesta còpia setmanal és el mínim raonable
+per a un equip que no el paga.
+
+### Proves de punta a punta
+
+El job `e2e` de la CI aixeca un Supabase mínim sense Docker
+(`scripts/e2e/entorn.sh`: Postgres + GoTrue + PostgREST amb claus de
+joguina), compila l'app i hi passa dos recorreguts amb un navegador:
+`e2e/basic.mjs` (base de dades buida) i `e2e/funcions.mjs` (amb
+`e2e/dades-prova.sql`). Si fallen, les captures queden com a artefacte.
 
 ### Diagnòstic: "aquesta tasca no em surt"
 

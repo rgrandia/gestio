@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition, type ReactNode } from "react";
+import { Fragment, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRightLeft, CalendarClock, Check, Clock, X } from "lucide-react";
+import { ArrowRightLeft, CalendarClock, Check, Clock, Pencil, RotateCcw, X } from "lucide-react";
 import { accioItem, transfereix } from "@/lib/accions";
 import { avui } from "@/lib/dates";
 import type { TaulaItem } from "@/lib/tipus";
@@ -12,17 +12,20 @@ type Props = {
   id: string;
   estat?: string; // valor de data-estat per al filet esquerre
   tePrevista: boolean;
-  acabat: boolean; // té data_real o està cancel·lat: sense accions
+  acabat: boolean; // té data_real o està cancel·lat: només editar i reobrir
   desapareix?: boolean; // a la safata, la fila marxa amb un fos de 120 ms
   ambRevisat?: boolean;
-  // Tasques: a qui es pot enviar a revisar en marcar-la feta (membres, sense un mateix).
+  // Tasques i entregables: a qui es pot enviar a revisar en marcar-ho fet (membres, sense un mateix).
   revisors?: { id: string; nom: string }[];
   // Tasques i entregables: a qui es poden passar (membres i externs actius).
   persones?: { id: string; nom: string; extern: boolean; area: string | null }[];
+  // Formulari d'edició (detall del projecte): s'obre en una fila a sota.
+  edicio?: ReactNode;
+  columnes?: number;
   children: ReactNode;
 };
 
-type Obert = null | "fet" | "replanificar" | "passar";
+type Obert = null | "fet" | "replanificar" | "passar" | "reobrir";
 
 // Fila amb les accions de §5 en línia: res de menús, res de navegar.
 export function FilaAccionable({
@@ -35,6 +38,8 @@ export function FilaAccionable({
   ambRevisat = false,
   revisors,
   persones,
+  edicio,
+  columnes = 8,
   children,
 }: Props) {
   const router = useRouter();
@@ -51,6 +56,7 @@ export function FilaAccionable({
   const [revisor, setRevisor] = useState("");
   const [desti, setDesti] = useState("");
   const [nota, setNota] = useState("");
+  const [editant, setEditant] = useState(false);
   const potPassar = (taula === "tasques" || taula === "entregables") && persones && persones.length > 0;
 
   function executa(crida: () => ReturnType<typeof accioItem>, treu: boolean) {
@@ -77,13 +83,46 @@ export function FilaAccionable({
 
   if (amagada) return null;
 
+  const botoEditar = edicio && obert === null && (
+    <button
+      className="boto boto-suau boto-icona"
+      disabled={pendent}
+      title="editar"
+      aria-expanded={editant}
+      onClick={() => setEditant(!editant)}
+    >
+      <Pencil className="icona-petita" aria-hidden />
+      <span className="sr-only">editar</span>
+    </button>
+  );
+
   return (
+    <Fragment>
     <tr
       data-estat={estat}
       className={[sortint ? "sortint" : "", obert || error ? "expandida" : ""].join(" ")}
     >
       {children}
       <td className="accions">
+        {acabat && obert === null && (
+          <>
+            {botoEditar}
+            <button className="boto boto-suau" disabled={pendent} onClick={() => setObert("reobrir")} title="reobrir: es va marcar per error">
+              <RotateCcw className="icona-petita" aria-hidden /> <span className="text-boto">reobrir</span>
+            </button>
+          </>
+        )}
+
+        {obert === "reobrir" && (
+          <span className="inline-flex flex-wrap gap-1 items-center justify-end">
+            <span className="petit suau">Es treu la data real i torna a estar obert.</span>
+            <button className="boto boto-primari" disabled={pendent} onClick={() => executa(() => accioItem({ accio: "reobrir", taula, id }), false)}>
+              <RotateCcw className="icona-petita" aria-hidden /> reobrir
+            </button>
+            <button type="button" className="boto boto-suau boto-icona" aria-label="tanca" onClick={() => setObert(null)}><X className="icona-petita" aria-hidden /></button>
+          </span>
+        )}
+
         {!acabat && obert === null && (
           <>
             <button className="boto boto-fet" disabled={pendent} onClick={() => setObert("fet")}>
@@ -102,6 +141,7 @@ export function FilaAccionable({
                 <Clock className="icona-petita" aria-hidden /> <span className="text-boto">revisat</span>
               </button>
             )}
+            {botoEditar}
             {potPassar && (
               <button
                 className="boto boto-suau"
@@ -144,7 +184,7 @@ export function FilaAccionable({
               autoFocus
               onChange={(e) => setDataReal(e.target.value)}
             />
-            {taula === "tasques" && revisors && revisors.length > 0 && (
+            {taula !== "fases" && revisors && revisors.length > 0 && (
               <select value={revisor} onChange={(e) => setRevisor(e.target.value)} aria-label="enviar a revisar">
                 <option value="">sense revisió</option>
                 {revisors.map((r) => (
@@ -233,5 +273,11 @@ export function FilaAccionable({
         {error && <div className="error" role="alert">{error}</div>}
       </td>
     </tr>
+    {edicio && editant && (
+      <tr className="fila-edicio">
+        <td colSpan={columnes}>{edicio}</td>
+      </tr>
+    )}
+    </Fragment>
   );
 }
