@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { avui, esDataValida } from "@/lib/dates";
+import { avui, esDataValida, extreuData, sumaDies } from "@/lib/dates";
 import { missatgeError } from "@/lib/errors";
+import { feinaOberta } from "@/lib/dades";
 import type { EstatIdea, EstatProjecte, TaulaItem } from "@/lib/tipus";
 
 // Totes les escriptures passen per aquí, amb la sessió de l'usuari i la clau
@@ -110,6 +111,37 @@ export async function accioItem(a: AccioItem): Promise<Resultat> {
 // ------------------------------------------------------------------
 // Clients
 // ------------------------------------------------------------------
+
+// Accions de la safata sobre diverses línies alhora. Es fan una a una, amb
+// les mateixes regles; si alguna falla, les altres es fan igual i es diu
+// quantes han fallat.
+export type ElementBloc = { taula: TaulaItem; id: string; prevista: string | null };
+
+export async function accioEnBloc(
+  elements: ElementBloc[],
+  accio: "setmana" | "dues_setmanes" | "revisat" | "fet",
+  motiu = "",
+): Promise<Resultat> {
+  if (elements.length === 0) return { ok: true };
+  if (elements.length > 200) return { error: "Massa elements alhora." };
+  const hui = avui();
+  const errors: string[] = [];
+  for (const e of elements) {
+    let r: Resultat;
+    if (accio === "fet") r = await accioItem({ accio: "fet", taula: e.taula, id: e.id, data: hui });
+    else if (accio === "revisat") r = await accioItem({ accio: "revisat", taula: e.taula, id: e.id });
+    else {
+      const base = e.prevista && e.prevista > hui ? e.prevista : hui;
+      const data = sumaDies(base, accio === "setmana" ? 7 : 14);
+      r = await accioItem({ accio: "replanificar", taula: e.taula, id: e.id, data, motiu });
+    }
+    if (r.error) errors.push(r.error);
+  }
+  revalidatePath("/", "layout");
+  if (errors.length)
+    return { error: `${errors.length} de ${elements.length} no s'han pogut fer: ${[...new Set(errors)].join(" · ")}` };
+  return { ok: true };
+}
 
 export async function creaClient(_p: Resultat, fd: FormData): Promise<Resultat> {
   const nom = text(fd, "nom");
@@ -577,10 +609,14 @@ export async function desaPreferencia(clau: "tema" | "menu", valor: string): Pro
 
 // Gestió interna: tasca meva al meu projecte intern (es crea el primer cop).
 export async function creaTascaInterna(_p: Resultat, fd: FormData): Promise<Resultat> {
-  const titol = text(fd, "titol");
-  const data_prevista = dataOpcional(fd, "data_prevista");
+  const dataCamp = dataOpcional(fd, "data_prevista");
+  if (dataCamp === "invalida") return { error: "La data ha de tenir format AAAA-MM-DD." };
+  // "Trucar a l'alcaldia dijous": si no s'ha triat data al calendari, es mira
+  // si el text n'acaba amb una (extreuData).
+  const escrit = dataCamp ? { titol: text(fd, "titol"), data: null } : extreuData(text(fd, "titol"), avui());
+  const titol = escrit.titol;
+  const data_prevista = dataCamp ?? escrit.data;
   if (!titol) return { error: "Escriu què has de fer." };
-  if (data_prevista === "invalida") return { error: "La data ha de tenir format AAAA-MM-DD." };
 
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
@@ -664,6 +700,15 @@ export async function actualitzaPersonaExterna(_p: Resultat, fd: FormData): Prom
   const nom = text(fd, "nom");
   if (!nom) return { error: "La persona necessita un nom." };
   const supabase = await createClient();
+  // Desactivar algú amb feina oberta la deixa sense ningú que la vegi.
+  if (fd.get("actiu") !== "on" && fd.get("igualment") !== "on") {
+    const { data: abans } = await supabase.from("perfils").select("actiu").eq("id", text(fd, "id")).maybeSingle();
+    const n = abans?.actiu ? (await feinaOberta()).get(text(fd, "id")) ?? 0 : 0;
+    if (n > 0)
+      return {
+        error: `${nom} té ${n} ${n === 1 ? "cosa oberta" : "coses obertes"}. Passa-les abans a algú altre o marca «desactivar-la igualment».`,
+      };
+  }
   const { error } = await supabase.rpc("actualitza_persona_externa", {
     p_id: text(fd, "id"),
     p_nom: nom,

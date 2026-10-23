@@ -73,7 +73,9 @@ fa el mateix a cada PR.
 **Cada migració nova** ha d'acabar registrant-se
 (`insert into migracions_aplicades (nom) values ('<nom del fitxer sense .sql>') on conflict do nothing;`)
 i s'ha d'actualitzar `src/lib/versio.ts`. `scripts/comprova-migracions.sh`
-(a la CI) ho comprova.
+(a la CI) ho comprova. Si la migració crea una funció o columna que el codi fa
+servir, afegiu-la a `src/lib/esquema-requerit.json`: l'app avisarà si a la base
+de dades li falta, encara que el registre digui que la migració hi és.
 
 ## Actualitzar una instal·lació existent
 
@@ -117,15 +119,23 @@ Sense el secret, el workflow no fa res. Amb el secret:
   podria fer un workflow que la fes servir. Amb el repositori limitat a
   l'equip és acceptable; si s'hi afegeix gent de fora, cal repensar-ho.
 
-### Còpies de seguretat
+### Còpies de seguretat i verificació setmanal
 
 Al pla gratuït, Supabase no ofereix còpies descarregables. El workflow
-`.github/workflows/copia.yml` en fa una cada dilluns de l'esquema `public`
-(projectes, tasques, historial, avisos...), **xifrada** amb AES-256, i la
-deixa 90 dies com a artefacte del workflow (pestanya **Actions → copia**).
-Necessita dos secrets: `SUPABASE_DB_URL` (el d'abans) i `COPIA_CONTRASENYA`
-(una frase llarga que guardeu fora de GitHub: sense ella la còpia no serveix
-de res). També es pot llançar a mà (**Run workflow**).
+`.github/workflows/copia.yml` s'executa cada dilluns (i a mà amb **Run
+workflow**) i, si hi ha el secret `SUPABASE_DB_URL`:
+
+1. passa `verificacio.sql` i la comprovació d'objectes requerits a producció
+   (no hi deixa res);
+2. fa una còpia de l'esquema `public` (projectes, tasques, historial...);
+3. **la restaura** en una base de dades buida i comprova que hi ha les mateixes
+   files que a l'original (`scripts/prova-restauracio.sh`): una còpia que no
+   s'ha restaurat mai és una suposició;
+4. si hi ha també `COPIA_CONTRASENYA` (una frase llarga que guardeu fora de
+   GitHub), la desa **xifrada** amb AES-256 durant 90 dies (pestanya
+   **Actions → copia**).
+
+Si qualsevol pas falla, el workflow surt en vermell i GitHub us envia un correu.
 
 No copia els usuaris d'autenticació (contrasenyes xifrades): en una
 restauració s'han de tornar a crear i lligar al seu perfil. Per restaurar:

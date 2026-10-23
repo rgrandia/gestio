@@ -35,7 +35,7 @@ export default async function FeinaEquip({
   const hui = avui();
   const supabase = await createClient();
 
-  const [tasquesR, fasesR, entregablesR, perfils] = await Promise.all([
+  const [tasquesR, fasesR, entregablesR, perfils, quietsR] = await Promise.all([
     supabase
       .from("tasques")
       .select(`id, titol, data_prevista, projecte_id, assignada_a, ${OBERTS}`)
@@ -61,7 +61,17 @@ export default async function FeinaEquip({
       .is("projectes.arxivat_el", null)
       .is("projectes.eliminat_el", null),
     obtePerfils(),
+    // Projectes actius sense moviment en 60 dies (vista, migració 0018).
+    supabase.from("v_projectes_quiets").select("id, titol, numero_estudi, responsable_id, darrer_moviment").order("darrer_moviment"),
   ]);
+  // Si la base de dades encara no té la migració 0018, la vista no hi és: sense llista.
+  const quiets = (quietsR.error ? [] : quietsR.data ?? []) as {
+    id: string;
+    titol: string;
+    numero_estudi: string | null;
+    responsable_id: string;
+    darrer_moviment: string;
+  }[];
 
   type FilaBD = {
     id: string;
@@ -151,6 +161,35 @@ export default async function FeinaEquip({
           </span>
         </span>
       </div>
+
+      {quiets.length > 0 && (
+        <section className="seccio">
+          <header>
+            <span className="titol">
+              projectes sense moviment
+              <span className="comptador c-mut">{quiets.length}</span>
+            </span>
+            <span className="meta">actius i sense res nou en 60 dies: es tanquen o es pausen?</span>
+          </header>
+          <table className="taula taula-mobil">
+            <tbody>
+              {quiets.map((q) => (
+                <tr key={q.id}>
+                  <td className="nowrap"><Persona p={perfils.find((x) => x.id === q.responsable_id)} nomesAvatar /></td>
+                  <td className="ample">
+                    <Link href={`/projectes/${q.id}?pestanya=editar`}>
+                      {(q.numero_estudi ? `${q.numero_estudi} · ` : "") + q.titol}
+                    </Link>
+                  </td>
+                  <td className="num nowrap suau">
+                    darrer moviment {dataCurta(q.darrer_moviment)} ({desplacament(diesEntre(hui, q.darrer_moviment))})
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
 
       <div className="tauler">
         {columnes.map(({ persona, tots, items }) => {

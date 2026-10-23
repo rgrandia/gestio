@@ -71,3 +71,44 @@ export function diaRelatiu(iso: string, hui: string): string {
   if (d === 1) return `demà · ${dataLlarga(iso)}`;
   return dataLlarga(iso);
 }
+
+const NOMS_DIES: Record<string, number> = {
+  diumenge: 0, dilluns: 1, dimarts: 2, dimecres: 3, dijous: 4, divendres: 5, dissabte: 6,
+};
+
+// Alta ràpida: si el text acaba amb una data dita en català, la separa.
+//   "Trucar a l'alcaldia dijous"   → títol "Trucar a l'alcaldia", data el pròxim dijous
+//   "... demà", "... avui", "... passat demà", "... d'aquí a 3 dies",
+//   "... en 3 dies", "... 12/11", "... 12/11/2027"
+// Un dia de la setmana és sempre el pròxim (mai avui). Un dd/mm que ja ha
+// passat aquest any és de l'any que ve.
+export function extreuData(text: string, hui: string): { titol: string; data: string | null } {
+  const net = text.trim();
+  const re =
+    /\s+(?:per\s+(?:a\s+)?|el\s+|aquest\s+|aquesta\s+|pr[òo]xim\s+)?(avui|dem[àa]|passat\s+dem[àa]|dilluns|dimarts|dimecres|dijous|divendres|dissabte|diumenge|d['’]aqu[íi]\s+(?:a\s+)?(\d{1,3})\s+dies|en\s+(\d{1,3})\s+dies|(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4}))?)$/i;
+  const m = net.match(re);
+  if (!m) return { titol: net, data: null };
+  const titol = net.slice(0, m.index).trim();
+  if (!titol) return { titol: net, data: null };
+
+  const paraula = m[1].toLowerCase().replace(/\s+/g, " ");
+  let data: string | null = null;
+  if (paraula === "avui") data = hui;
+  else if (paraula === "demà" || paraula === "dema") data = sumaDies(hui, 1);
+  else if (paraula.startsWith("passat")) data = sumaDies(hui, 2);
+  else if (paraula in NOMS_DIES) {
+    const avuiDia = new Date(hui + "T00:00:00Z").getUTCDay();
+    data = sumaDies(hui, ((NOMS_DIES[paraula] - avuiDia + 7) % 7) || 7);
+  } else if (m[2] || m[3]) data = sumaDies(hui, Number(m[2] ?? m[3]));
+  else if (m[4]) {
+    const [d, mes] = [Number(m[4]), Number(m[5])];
+    let any = m[6] ? Number(m[6].length === 2 ? "20" + m[6] : m[6]) : Number(hui.slice(0, 4));
+    const iso = (a: number) => `${a}-${String(mes).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    if (!m[6] && iso(any) < hui) any += 1;
+    const candidat = iso(any);
+    // 31/02 i similars: Date ho "arregla" a un altre dia; no ho acceptem.
+    const real = new Date(candidat + "T00:00:00Z").toISOString().slice(0, 10);
+    if (esDataValida(candidat) && real === candidat) data = candidat;
+  }
+  return data ? { titol, data } : { titol: net, data: null };
+}

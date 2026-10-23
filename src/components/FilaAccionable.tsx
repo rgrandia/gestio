@@ -6,6 +6,7 @@ import { ArrowRightLeft, CalendarClock, Check, Clock, Pencil, RotateCcw, X } fro
 import { accioItem, transfereix } from "@/lib/accions";
 import { DatesRapides, MotiusRapids } from "@/components/AjudesReplanificar";
 import { avui } from "@/lib/dates";
+import { clauElement, useSeleccio } from "@/components/Seleccio";
 import type { TaulaItem } from "@/lib/tipus";
 
 type Props = {
@@ -60,6 +61,7 @@ export function FilaAccionable({
   const [desti, setDesti] = useState("");
   const [nota, setNota] = useState("");
   const [editant, setEditant] = useState(false);
+  const ctxSeleccio = useSeleccio();
   const potPassar = (taula === "tasques" || taula === "entregables") && persones && persones.length > 0;
 
   function executa(crida: () => ReturnType<typeof accioItem>, treu: boolean) {
@@ -86,6 +88,45 @@ export function FilaAccionable({
 
   if (amagada) return null;
 
+  // Dins d'una <Seleccio> (la safata), cada línia oberta es pot marcar.
+  const seleccio = acabat ? null : ctxSeleccio;
+  const marcat = seleccio?.seleccionats.has(clauElement({ taula, id })) ?? false;
+  const commuta = () => seleccio?.commuta({ taula, id, prevista: prevista ?? null });
+
+  // Dreceres de teclat amb la línia enfocada (Tab o fletxes):
+  // ↑/↓ (o k/j) moure's · f fet · r replanificar · v revisat · p passar ·
+  // x seleccionar · Esc tancar.
+  function tecla(e: React.KeyboardEvent<HTMLTableRowElement>) {
+    if (e.key === "Escape" && obert) {
+      setObert(null);
+      e.currentTarget.focus();
+      return;
+    }
+    if (e.target !== e.currentTarget || e.metaKey || e.ctrlKey || e.altKey) return;
+    const moure = (dir: 1 | -1) => {
+      const files = [...document.querySelectorAll<HTMLTableRowElement>("tr[data-fila]")];
+      files[files.indexOf(e.currentTarget) + dir]?.focus();
+    };
+    const accions: Record<string, () => void> = {
+      ArrowDown: () => moure(1),
+      j: () => moure(1),
+      ArrowUp: () => moure(-1),
+      k: () => moure(-1),
+    };
+    if (!acabat) {
+      accions.f = () => setObert("fet");
+      accions.r = () => setObert("replanificar");
+      if (potPassar) accions.p = () => setObert("passar");
+      if (ambRevisat) accions.v = () => executa(() => accioItem({ accio: "revisat", taula, id }), true);
+      if (seleccio) accions.x = commuta;
+    }
+    const fes = accions[e.key];
+    if (fes) {
+      e.preventDefault();
+      fes();
+    }
+  }
+
   const botoEditar = edicio && obert === null && (
     <button
       className="boto boto-suau boto-icona"
@@ -103,8 +144,17 @@ export function FilaAccionable({
     <Fragment>
     <tr
       data-estat={estat}
-      className={[sortint ? "sortint" : "", obert || error ? "expandida" : ""].join(" ")}
+      data-fila=""
+      tabIndex={0}
+      onKeyDown={tecla}
+      aria-selected={seleccio ? marcat : undefined}
+      className={[sortint ? "sortint" : "", obert || error ? "expandida" : "", marcat ? "marcada" : ""].join(" ")}
     >
+      {seleccio && (
+        <td className="tria">
+          <input type="checkbox" checked={marcat} onChange={commuta} aria-label="seleccionar per actuar-hi en bloc" tabIndex={-1} />
+        </td>
+      )}
       {children}
       <td className="accions">
         {acabat && obert === null && (

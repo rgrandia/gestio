@@ -395,6 +395,18 @@ ell qui l'ha passat. La traça queda als avisos; no hi ha taula d'historial.
 - **Preferències al perfil** (`perfils.tema`, `perfils.menu`), a més de la
   galeta: segueixen la persona a qualsevol ordinador.
 
+### 4.4 nonies Salut de l'esquema i projectes sense moviment (migracions 0017-0018)
+
+- **0017**: a producció no s'hi va aplicar mai la 0013 i la 0014 la va donar
+  per aplicada. La 0017 crea només `transfereix()`. Lliçó: el registre de
+  migracions no prova que els objectes hi siguin.
+- **`falten_objectes()`**: l'app li passa el que necessita
+  (`src/lib/esquema-requerit.json`) i l'avís vermell diu exactament què falta.
+  Qui afegeixi una funció o columna que el codi faci servir, l'ha d'afegir a
+  aquest fitxer (la CI comprova que les migracions la creen).
+- **`v_projectes_quiets`**: projectes actius sense cap moviment en 60 dies
+  (calculat, no desat), a "feina de l'equip".
+
 ### 4.5 Qui actualitza les fases
 
 **Només el responsable del projecte** (membre del departament). El camp i la
@@ -514,7 +526,14 @@ Llistes accionables, sense gràfics ni percentatges:
 - **Projectes muts** — només si en soc responsable.
 - **Les meves idees** en estat `proposada`.
 - **Gestió interna** (§4.4 octies): tasques del dia a dia que no són de
-  cap client, amb alta ràpida.
+  cap client, amb alta ràpida (el text pot acabar amb una data: «demà»,
+  «dijous», «12/11», «d'aquí a 3 dies»).
+- **Moment polític a prop**: idees de l'equip encara sense projecte amb
+  `data_objectiu` en els propers 30 dies.
+
+A "a revisar" es poden seleccionar diverses línies i fer-hi «fet avui»,
+«+1/+2 setm.» (amb motiu d'un clic) o «revisat» de cop, i hi ha dreceres de
+teclat (↑↓, f, r, v, p, x, Esc).
 
 Criteri: si l'obro cada matí i hi ha feina concreta a fer, l'app viu. Si hi ha
 percentatges d'avanç, mor.
@@ -539,7 +558,9 @@ Des de "assignada" es pot convertir en projecte o entregable.
 ### 6.4 Clients
 
 Fitxa per client: projectes actius i tancats, data de darrer contacte, idees
-obertes. Serveix per preparar una reunió en trenta segons.
+obertes. Serveix per preparar una reunió en trenta segons. Inclou el que
+encara és obert i s'ha **ajornat dues vegades o més**, amb els motius
+(el cas d'ús del §4.2).
 
 ---
 

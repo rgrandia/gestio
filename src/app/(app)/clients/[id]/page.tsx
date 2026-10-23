@@ -55,6 +55,7 @@ export default async function FitxaClient({
   // Els arxivats van amb els tancats, encara que el seu estat sigui "actiu".
   const actius = projectes.filter((p) => !p.arxivat_el && (p.estat === "actiu" || p.estat === "pausat"));
   const tancats = projectes.filter((p) => p.arxivat_el || p.estat === "tancat" || p.estat === "cancellat");
+  const ajornats = await obteAjornats(actius);
 
   return (
     <>
@@ -132,6 +133,47 @@ export default async function FitxaClient({
         )}
       </section>
 
+      {ajornats.length > 0 && (
+        <section className="seccio">
+          <header>
+            <span className="titol">
+              ajornats més d&apos;una vegada
+              <span className="comptador c-risc">{ajornats.length}</span>
+            </span>
+            <span className="meta">el que encara és obert i s&apos;ha replanificat dues vegades o més: ho sabrà el client</span>
+          </header>
+          <div className="desplacable">
+            <table className="taula">
+              <thead>
+                <tr>
+                  <th>element</th>
+                  <th className="num">vegades</th>
+                  <th className="num">ara previst</th>
+                  <th>motius</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ajornats.map((a) => (
+                  <tr key={a.clau}>
+                    <td>
+                      <div>{a.element}</div>
+                      <div className="context">
+                        <span>{a.que}</span>
+                        <span className="sep">·</span>
+                        <Link href={`/projectes/${a.projecte_id}?pestanya=historial`}>{a.projecte}</Link>
+                      </div>
+                    </td>
+                    <td className="num"><span className="etiqueta tag-risc">×{a.vegades}</span></td>
+                    <td className="num">{dataCurta(a.ara)}</td>
+                    <td className="font-sans">{a.motius.join(" · ")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       <section className="seccio">
         <header>
           <span className="titol">projectes tancats i arxivats</span>
@@ -161,6 +203,55 @@ export default async function FitxaClient({
       </section>
     </>
   );
+}
+
+const QUE: Record<string, string> = { projectes: "fi del projecte", fases: "fase", entregables: "entregable", tasques: "tasca" };
+
+// Elements oberts dels projectes actius replanificats dues vegades o més (la
+// primera planificació no compta). És el cas del §4.2: saber, abans d'una
+// reunió, que un informe s'ha ajornat quatre vegades.
+async function obteAjornats(actius: Projecte[]) {
+  if (actius.length === 0) return [];
+  const supabase = await createClient();
+  const h = comprova(
+    await supabase
+      .from("v_historial_projecte")
+      .select("taula, registre_id, element, projecte_id, data_nova, motiu, creat_el")
+      .in("projecte_id", actius.map((p) => p.id))
+      .not("data_antiga", "is", null)
+      .order("creat_el"),
+  ) as { taula: string; registre_id: string; element: string; projecte_id: string; data_nova: string | null; motiu: string }[];
+
+  const grups = new Map<string, typeof h>();
+  for (const r of h) grups.set(`${r.taula}:${r.registre_id}`, [...(grups.get(`${r.taula}:${r.registre_id}`) ?? []), r]);
+  const candidats = [...grups].filter(([, rs]) => rs.length >= 2);
+  if (candidats.length === 0) return [];
+
+  // Només el que encara és obert.
+  const ids = (t: string) => candidats.filter(([k]) => k.startsWith(t + ":")).map(([, rs]) => rs[0].registre_id);
+  const oberts = new Set<string>();
+  for (const t of ["tasques", "fases", "entregables"] as const) {
+    const llista = ids(t);
+    if (llista.length === 0) continue;
+    const { data } = await supabase.from(t).select("id").in("id", llista).is("data_real", null).neq("estat", "cancellat");
+    for (const r of data ?? []) oberts.add(`${t}:${r.id}`);
+  }
+  for (const id of ids("projectes")) oberts.add(`projectes:${id}`); // tots són actius
+
+  const titol = new Map(actius.map((p) => [p.id, (p.numero_estudi ? `${p.numero_estudi} · ` : "") + p.titol]));
+  return candidats
+    .filter(([k]) => oberts.has(k))
+    .map(([clau, rs]) => ({
+      clau,
+      que: QUE[rs[0].taula] ?? rs[0].taula,
+      element: rs[0].element,
+      projecte_id: rs[0].projecte_id,
+      projecte: titol.get(rs[0].projecte_id) ?? "",
+      vegades: rs.length,
+      ara: rs.at(-1)!.data_nova,
+      motius: [...new Set(rs.map((r) => r.motiu))],
+    }))
+    .sort((a, b) => b.vegades - a.vegades);
 }
 
 function LlistaProjectes({
