@@ -8,17 +8,18 @@ import { Persona } from "@/components/Persona";
 import { ESQUEMA_ESPERAT } from "@/lib/versio";
 import { cookies } from "next/headers";
 import { Preferencies } from "@/components/Preferencies";
-import { GALETA_MENU, GALETA_TEMA, llegeixMenu, llegeixTema } from "@/lib/preferencies";
+import { GALETA_MENU, GALETA_TEMA, llegeixMenu, llegeixTema, type Menu, type Tema } from "@/lib/preferencies";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const perfil = await requereixMembre();
   const supabase = await createClient();
   const galetes = await cookies();
-  const [{ count }, { count: avisos }, { count: perRevisar }, versio] = await Promise.all([
+  const [{ count }, { count: avisos }, { count: perRevisar }, versio, prefsR] = await Promise.all([
     supabase
       .from("v_safata")
       .select("id", { count: "exact", head: true })
-      .contains("responsables", [perfil.id]),
+      .contains("responsables", [perfil.id])
+      .eq("intern", false),
     supabase
       .from("notificacions")
       .select("id", { count: "exact", head: true })
@@ -29,7 +30,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .eq("estat", "pendent")
       .eq("revisor_id", perfil.id),
     supabase.rpc("versio_esquema"),
+    // Consulta a part: si la base de dades encara no té la migració 0016,
+    // falla sola i l'app continua amb les galetes.
+    supabase.from("perfils").select("tema, menu").eq("id", perfil.id).maybeSingle(),
   ]);
+  const prefs = (prefsR.error ? null : prefsR.data) as { tema: Tema | null; menu: Menu | null } | null;
   // Si falla la crida, la base de dades és anterior a la migració 0014.
   const esquema: string | null = versio.error ? null : versio.data;
   const faltenMigracions = !esquema || esquema < ESQUEMA_ESPERAT;
@@ -56,6 +61,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Preferencies
             tema={llegeixTema(galetes.get(GALETA_TEMA)?.value)}
             menu={llegeixMenu(galetes.get(GALETA_MENU)?.value)}
+            temaDesat={prefs?.tema ?? null}
+            menuDesat={prefs?.menu ?? null}
           />
           <form action={tancaSessio}>
             <button title="sortir" aria-label="sortir">

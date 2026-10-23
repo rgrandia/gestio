@@ -34,7 +34,7 @@ type Fila = {
   responsable_id?: string | null;
 };
 
-const PROJECTE = "projectes!inner(titol, numero_estudi, responsable_id, estat, arxivat_el, eliminat_el)";
+const PROJECTE = "projectes!inner(titol, numero_estudi, responsable_id, estat, arxivat_el, eliminat_el, intern_de)";
 
 export default async function ResumSetmanal() {
   const hui = avui();
@@ -48,7 +48,8 @@ export default async function ResumSetmanal() {
       .from(taula)
       .select(`id, projecte_id, data_real, data_prevista, ${columnes}, ${PROJECTE}`)
       .is("projectes.arxivat_el", null)
-      .is("projectes.eliminat_el", null);
+      .is("projectes.eliminat_el", null)
+      .is("projectes.intern_de", null); // la gestió interna no és tema de la reunió
 
   const [tFet, fFet, eFet, tVen, fVen, eVen, histR, projectesTancatsR, persones] = await Promise.all([
     consulta("tasques", "titol, assignada_a").eq("estat", "fet").gte("data_real", desDe).lte("data_real", hui),
@@ -83,7 +84,8 @@ export default async function ResumSetmanal() {
       .select("id, titol, numero_estudi, responsable_id, data_fi_real")
       .gte("data_fi_real", desDe)
       .lte("data_fi_real", hui)
-      .is("eliminat_el", null),
+      .is("eliminat_el", null)
+      .is("intern_de", null),
     obtePersones(),
   ]);
 
@@ -126,7 +128,8 @@ export default async function ResumSetmanal() {
           .select("id, titol, numero_estudi")
           .in("id", [...new Set(endarrerits.map((h) => h.projecte_id))])
           .is("arxivat_el", null)
-          .is("eliminat_el", null),
+          .is("eliminat_el", null)
+          .is("intern_de", null),
       ) as { id: string; titol: string; numero_estudi: string | null }[]
     ).map((p) => [p.id, p]),
   );

@@ -12,7 +12,7 @@ export default async function Clients({ searchParams }: { searchParams: Promise<
   const ambInactius = inactius === "1";
   const supabase = await createClient();
 
-  let q = supabase.from("clients").select("*, projectes(estat, arxivat_el, eliminat_el)").order("nom");
+  let q = supabase.from("clients").select("*, projectes(estat, arxivat_el, eliminat_el)").eq("intern", false).order("nom");
   if (!ambInactius) q = q.eq("actiu", true);
 
   const [clientsR, persones] = await Promise.all([q, obtePersones()]);

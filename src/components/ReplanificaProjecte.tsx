@@ -4,9 +4,19 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarClock } from "lucide-react";
 import { accioItem } from "@/lib/accions";
+import { avui } from "@/lib/dates";
+import { DatesRapides, MotiusRapids } from "@/components/AjudesReplanificar";
 
 // La data de fi prevista d'un projecte també passa per replanificar() (§4.2).
-export function ReplanificaProjecte({ id, tePrevista }: { id: string; tePrevista: boolean }) {
+export function ReplanificaProjecte({
+  id,
+  tePrevista,
+  prevista,
+}: {
+  id: string;
+  tePrevista: boolean;
+  prevista?: string | null;
+}) {
   const router = useRouter();
   const [obert, setObert] = useState(false);
   const [data, setData] = useState("");
@@ -36,15 +46,19 @@ export function ReplanificaProjecte({ id, tePrevista }: { id: string; tePrevista
       }}
     >
       <input type="date" aria-label="nova fi prevista" required autoFocus value={data} onChange={(e) => setData(e.target.value)} />
+      <DatesRapides prevista={prevista} hui={avui()} setData={setData} />
       {tePrevista && (
-        <input
-          type="text"
-          aria-label="motiu"
-          placeholder="motiu (opcional)"
-          className="font-sans"
-          value={motiu}
-          onChange={(e) => setMotiu(e.target.value)}
-        />
+        <>
+          <input
+            type="text"
+            aria-label="motiu"
+            placeholder="motiu (opcional)"
+            className="font-sans"
+            value={motiu}
+            onChange={(e) => setMotiu(e.target.value)}
+          />
+          <MotiusRapids motiu={motiu} setMotiu={setMotiu} />
+        </>
       )}
       <button className="boto boto-primari" disabled={pendent}>desar</button>
       <button type="button" className="boto" onClick={() => setObert(false)}>×</button>

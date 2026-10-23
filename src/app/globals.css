@@ -687,3 +687,23 @@ tr.fila-edicio > td { background: var(--fons); border-left: 3px solid var(--acce
 .meves-tasques[open] > summary .fletxa { transform: rotate(90deg); }
 .meves-tasques > p { padding: 0 14px 12px; margin: 0; }
 .meves-tasques .taula { border-top: 1px solid var(--linia); }
+
+/* ---------------- xips: motius i dates ràpides en replanificar ---------------- */
+
+.xips { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.xip {
+  font: inherit; font-size: 11px; padding: 3px 8px; cursor: pointer; white-space: nowrap;
+  background: var(--panell); color: var(--text-suau); border: 1px solid var(--linia-forta);
+}
+.xip:hover { color: var(--text); border-color: var(--text-fluix); }
+.xip[aria-pressed="true"] { background: var(--accent-suau); color: var(--accent); border-color: var(--accent); }
+
+/* alta ràpida de tasques internes */
+.alta-rapida input[name="titol"] { flex: 1; min-width: 14rem; }
+tr.inactiu td { color: var(--text-fluix); text-decoration: line-through; }
+tr.inactiu td.accions { text-decoration: none; }
+/* amb el formulari de replanificar obert, la columna d'accions s'eixampla */
+@media (min-width: 721px) {
+  .taula tr.expandida td.accions { min-width: 32rem; white-space: normal; }
+}
+.accions form .xips { flex-wrap: wrap; justify-content: flex-end; }

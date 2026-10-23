@@ -15,8 +15,11 @@ import { assignables, comprova, comptaReplanificacions, membres, obtePersones } 
 import { FilaRevisio } from "@/components/FilaRevisio";
 import { Persona } from "@/components/Persona";
 import { Replanificat } from "@/components/Replanificat";
-import { avui, dataCurta, dataLlarga, desplacament, diaCurt, diaRelatiu, salutacio, sumaDies } from "@/lib/dates";
+import { avui, dataCurta, dataLlarga, desplacament, diaCurt, diaRelatiu, diesEntre, salutacio, sumaDies } from "@/lib/dates";
 import { FilaAccionable } from "@/components/FilaAccionable";
+import { Formulari } from "@/components/Formulari";
+import { Retard, estatFila } from "@/components/Retard";
+import { creaTascaInterna } from "@/lib/accions";
 import { TAULA_DE, type FilaSafata, type ProjecteMut } from "@/lib/tipus";
 
 export const dynamic = "force-dynamic";
@@ -46,10 +49,11 @@ export default async function LaMevaSetmana({
     .from("v_safata")
     .select("*")
     .order("data_prevista")
-    .order("projecte");
+    .order("projecte")
+    .eq("intern", false); // les internes tenen la seva secció
   if (!veureTot) consultaSafata = consultaSafata.contains("responsables", [perfil.id]);
 
-  const [safata, setmana, muts, idees, revisionsR, persones, sensDataR] = await Promise.all([
+  const [safata, setmana, muts, idees, revisionsR, persones, sensDataR, internesR] = await Promise.all([
     consultaSafata,
     supabase
       .from("tasques")
@@ -60,6 +64,7 @@ export default async function LaMevaSetmana({
       .eq("projectes.estat", "actiu")
       .is("projectes.arxivat_el", null)
       .is("projectes.eliminat_el", null)
+      .is("projectes.intern_de", null)
       .gte("data_prevista", hui)
       .lte("data_prevista", fiSetmana)
       .order("data_prevista"),
@@ -82,12 +87,31 @@ export default async function LaMevaSetmana({
     // Tasques obertes meves sense data: no poden vèncer ni sortir a la safata.
     supabase
       .from("tasques")
-      .select("id", { count: "exact", head: true })
+      .select("id, projectes!inner(intern_de)", { count: "exact", head: true })
       .eq("assignada_a", perfil.id)
       .is("data_prevista", null)
       .is("data_real", null)
-      .not("estat", "in", "(fet,cancellat)"),
+      .not("estat", "in", "(fet,cancellat)")
+      .is("projectes.intern_de", null),
+    // Gestió interna: les meves tasques obertes de projectes interns (el meu
+    // o el d'algú que me n'ha passat una).
+    supabase
+      .from("tasques")
+      .select("id, titol, descripcio, data_prevista, prioritat, projectes!inner(intern_de)")
+      .eq("assignada_a", perfil.id)
+      .is("data_real", null)
+      .not("estat", "in", "(fet,cancellat)")
+      .not("projectes.intern_de", "is", null)
+      .order("data_prevista", { nullsFirst: false })
+      .order("creat_el"),
   ]);
+  const internes = comprova(internesR) as unknown as {
+    id: string;
+    titol: string;
+    descripcio: string | null;
+    data_prevista: string | null;
+    prioritat: string;
+  }[];
   const sensData = sensDataR.count ?? 0;
 
   type ElementRevisat = { titol: string; projecte_id: string; projectes: { titol: string } | null };
@@ -185,6 +209,7 @@ export default async function LaMevaSetmana({
                     id={f.id}
                     estat={f.motiu === "vencut" ? "vencut" : "risc"}
                     tePrevista
+                    prevista={f.data_prevista}
                     acabat={false}
                     desapareix
                     ambRevisat
@@ -228,6 +253,55 @@ export default async function LaMevaSetmana({
           <Link href="/feina?tot=1">Posa-hi data</Link>.
         </p>
       )}
+
+      <section className="seccio" id="intern">
+        <header>
+          <span className="titol">
+            gestió interna
+            {internes.length > 0 && (
+              <span className={`comptador ${internes.some((t) => t.data_prevista && t.data_prevista < hui) ? "c-vencut" : ""}`}>
+                {internes.length}
+              </span>
+            )}
+          </span>
+          <span className="meta">el dia a dia que no és de cap client</span>
+        </header>
+        <Formulari accio={creaTascaInterna} boto="afegir" className="en-linia alta-rapida" buidaEnDesar>
+          <input name="titol" placeholder="nova tasca interna i Enter" aria-label="nova tasca interna" required autoComplete="off" />
+          <input name="data_prevista" type="date" aria-label="per a quan (opcional)" />
+        </Formulari>
+        {internes.length > 0 && (
+          <div className="desplacable">
+            <table className="taula taula-mobil">
+              <tbody>
+                {internes.map((t) => (
+                  <FilaAccionable
+                    key={t.id}
+                    taula="tasques"
+                    id={t.id}
+                    estat={estatFila(t.data_prevista, null, "pendent", hui)}
+                    tePrevista={Boolean(t.data_prevista)}
+                    prevista={t.data_prevista}
+                    acabat={false}
+                    desapareix
+                    persones={passables}
+                  >
+                    <td className="ample element">
+                      <div className="titol-el">
+                        {t.titol}
+                        {t.prioritat === "alta" && <span className="etiqueta tag-vencut ml-1">alta</span>}
+                      </div>
+                      {t.descripcio && <div className="context descripcio">{t.descripcio}</div>}
+                    </td>
+                    <td className="num nowrap">{t.data_prevista ? diaRelatiuCurt(t.data_prevista, hui) : <span className="fluix">sense data</span>}</td>
+                    <td className="num nowrap"><Retard prevista={t.data_prevista} real={null} hui={hui} /></td>
+                  </FilaAccionable>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {revisions.length > 0 && (
         <section className="seccio" id="revisions">
@@ -307,7 +381,7 @@ export default async function LaMevaSetmana({
                       <td colSpan={3}>{diaRelatiu(dia, hui)}</td>
                     </tr>
                     {tasques.map((t) => (
-                      <FilaAccionable key={t.id} taula="tasques" id={t.id} tePrevista acabat={false} desapareix revisors={revisors} persones={passables}>
+                      <FilaAccionable key={t.id} taula="tasques" id={t.id} tePrevista prevista={t.data_prevista} acabat={false} desapareix revisors={revisors} persones={passables}>
                         <td className="ample element">
                           <div className="titol-el trunc" title={t.titol}>
                             {t.titol}{" "}
@@ -432,4 +506,13 @@ function Buit({ text, children }: { text: string; children?: React.ReactNode }) 
       {children}
     </div>
   );
+}
+
+// "avui", "demà", "ahir" o "dj 30".
+function diaRelatiuCurt(iso: string, hui: string): string {
+  const d = diesEntre(hui, iso);
+  if (d === 0) return "avui";
+  if (d === 1) return "demà";
+  if (d === -1) return "ahir";
+  return diaCurt(iso);
 }
