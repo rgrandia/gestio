@@ -33,7 +33,7 @@ await shot(pi, "00-sense-acces");
 const p = await login("roc@prova.test");
 ok(p.url() === B + "/", "membre actiu entra a la meva setmana");
 ok(!(await p.isVisible(".avis-esquema")), "la base de dades té totes les migracions (sense avís)");
-ok(await p.isVisible("text=cap element a revisar"), "safata buida diu 'cap element a revisar'");
+ok(await p.isVisible("text=res vençut ni a punt de vèncer"), "safata buida ho diu");
 
 // client
 await p.goto(B + "/clients/nou");
@@ -137,7 +137,7 @@ ok(!(await p.isVisible("section:has(header:has-text('a revisar')) >> text=Nota d
 const filaT = p.locator("section:has(header:has-text('a revisar')) tbody tr", { hasText: "Revisar literals" });
 await filaT.locator("button:has-text('cancel·lar')").click();
 await p.waitForTimeout(1200);
-ok(await p.isVisible("text=cap element a revisar"), "safata buida després de les accions");
+ok(await p.isVisible("text=res vençut ni a punt de vèncer"), "safata buida després de les accions");
 
 // contacte treu el projecte de muts
 await p.goto(B + "/projectes");

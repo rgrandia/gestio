@@ -723,3 +723,68 @@ td.tria input { min-height: 0; width: 16px; height: 16px; accent-color: var(--ac
 .barra-bloc strong { margin-right: 6px; font-size: 13px; }
 .dreceres { cursor: help; border-bottom: 1px dotted var(--text-fluix); margin-right: 12px; }
 @media (max-width: 720px) { .dreceres { display: none; } }
+
+/* ---------------- la meva setmana: dues columnes ---------------- */
+
+/* A l'esquerra el que demana decisions (a revisar); a la dreta el dia a dia,
+   compacte. En pantalles estretes, una sola columna amb el mateix ordre. */
+.inici { display: grid; gap: 24px; align-items: start; }
+@media (min-width: 1180px) {
+  .inici { grid-template-columns: minmax(0, 1fr) 380px; }
+}
+.inici-principal, .inici-lateral { display: grid; gap: 20px; min-width: 0; align-content: start; }
+.inici .seccio { margin: 0; }
+
+/* pastilles de resum sota la salutació */
+.pastilles { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.pastilla {
+  display: inline-flex; align-items: baseline; gap: 4px; padding: 3px 10px;
+  font-size: 12px; color: var(--text-suau); background: var(--panell);
+  border: 1px solid var(--linia); border-left-width: 3px;
+}
+.pastilla strong { font-size: 14px; color: var(--text); }
+.pastilla:hover { border-color: var(--linia-forta); color: var(--text); }
+.pastilla.p-vencut { border-left-color: var(--vencut); } .pastilla.p-vencut strong { color: var(--vencut); }
+.pastilla.p-risc   { border-left-color: var(--risc); }   .pastilla.p-risc strong   { color: var(--risc); }
+.pastilla.p-mut    { border-left-color: var(--mut); }    .pastilla.p-mut strong    { color: var(--mut); }
+.pastilla.p-accent { border-left-color: var(--accent); } .pastilla.p-accent strong { color: var(--accent); }
+.pastilla.p-zero strong { color: var(--text-fluix); }
+.pastilla.p-zero { border-left-color: var(--linia-forta); }
+
+/* columna lateral: seccions compactes, files apilades (com al mòbil) */
+.seccio.compacta > header { padding: 10px 14px; }
+.seccio.compacta > header .meta { font-size: 11px; }
+.inici-lateral .taula.taula-mobil tr { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 10px 14px; border-bottom: 1px solid var(--linia); border-left: 3px solid transparent; }
+.inici-lateral .taula.taula-mobil tr:last-child { border-bottom: 0; }
+.inici-lateral .taula.taula-mobil td, .inici-lateral .taula.taula-mobil td:first-child { border: 0; padding: 0; background: transparent; }
+.inici-lateral .taula.taula-mobil tr[data-estat="vencut"] { border-left-color: var(--vencut); }
+.inici-lateral .taula.taula-mobil tr[data-estat="risc"] { border-left-color: var(--risc); }
+.inici-lateral .taula.taula-mobil td.ample { flex: 1 1 0; min-width: 0; max-width: none; }
+.inici-lateral .taula.taula-mobil .element .context { white-space: normal; }
+.inici-lateral .taula.taula-mobil td.accions { margin-left: auto; white-space: nowrap; min-width: 0; }
+.inici-lateral .taula.taula-mobil tr.expandida td.accions { flex-basis: 100%; white-space: normal; text-align: left; }
+.inici-lateral .taula.taula-mobil .accions .boto-icona { width: 28px; height: 28px; }
+.inici-lateral .taula.taula-mobil tr.dia { padding: 6px 14px; }
+.inici-lateral .alta-rapida { padding: 10px 14px; gap: 6px; }
+.inici-lateral .alta-rapida input[name="titol"] { min-width: 0; flex: 1 1 100%; }
+.inici-lateral .alta-rapida input[type="date"] { flex: 1; }
+.buit-petit { margin: 0; padding: 12px 14px; font-size: 12px; color: var(--text-suau); }
+
+/* agenda: calendari de la setmana, sense botons */
+.agenda { list-style: none; margin: 0; padding: 4px 0 8px; }
+.agenda-dia { padding: 8px 14px 4px; font-size: 11px; font-weight: 600; color: var(--text-suau); text-transform: lowercase; }
+.agenda-dia.avui { color: var(--accent); }
+.agenda ul { list-style: none; margin: 0; padding: 0; }
+.agenda ul li, .llista-compacta li { display: grid; gap: 1px; padding: 5px 14px 5px 22px; font-size: 13px; }
+.agenda ul li a, .llista-compacta li a { color: var(--text); }
+.agenda ul li a:hover, .llista-compacta li a:hover { color: var(--accent); }
+.agenda .on, .llista-compacta .on { font-size: 11px; color: var(--text-suau); }
+.llista-compacta { list-style: none; margin: 0; padding: 6px 0; }
+.llista-compacta li { padding-left: 14px; border-left: 3px solid transparent; }
+.llista-compacta li[data-estat="mut"] { border-left-color: var(--mut); }
+/* les files són flex: la taula i el tbody han de cenyir-se a l'amplada del panell */
+.inici-lateral .taula.taula-mobil, .inici-lateral .taula.taula-mobil tbody { display: block; width: 100%; }
+.inici-lateral .taula.taula-mobil td.ample { order: 0; }
+.inici-lateral .taula.taula-mobil td.accions { order: 5; }
+@media (max-width: 720px) { .taula.taula-mobil td.tria { width: auto; flex: none; } }
+.inici-lateral .taula.taula-mobil td:not(.ample) { flex: none; width: auto; }

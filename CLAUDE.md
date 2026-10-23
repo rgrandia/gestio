@@ -535,6 +535,12 @@ A "a revisar" es poden seleccionar diverses línies i fer-hi «fet avui»,
 «+1/+2 setm.» (amb motiu d'un clic) o «revisat» de cop, i hi ha dreceres de
 teclat (↑↓, f, r, v, p, x, Esc).
 
+Disposició (octubre 2026): a pantalla gran, dues columnes. A l'esquerra el que
+demana decisions («a revisar»); a la dreta, compacte, el dia a dia (revisions,
+gestió interna, l'agenda de la setmana, muts, moment polític, idees). L'agenda
+és un calendari sense botons: les accions es fan a «a revisar» i no es
+repeteixen. A dalt, una línia de pastilles amb els comptadors.
+
 Criteri: si l'obro cada matí i hi ha feina concreta a fer, l'app viu. Si hi ha
 percentatges d'avanç, mor.
 
