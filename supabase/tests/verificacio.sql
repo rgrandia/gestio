@@ -129,14 +129,15 @@ do $$ begin
     'la vista d''historial del projecte no recull tasques i projecte';
 end $$;
 
--- motiu buit a la RPC ha de fallar
+-- 0015: motiu buit a la RPC: es desa igualment, com a «sense motiu»
+select replanificar('tasques', '30000000-0000-0000-0000-000000000001', current_date + 40, '   ');
 do $$ begin
-  begin
-    perform replanificar('tasques', '30000000-0000-0000-0000-000000000001', current_date + 40, '   ');
-    raise exception 'FALLA: replanificar amb motiu buit no ha fallat';
-  exception when raise_exception then
-    if sqlerrm like 'FALLA%' then raise; end if;
-  end;
+  assert (select data_prevista from tasques where id = '30000000-0000-0000-0000-000000000001') = current_date + 40,
+    'replanificar sense motiu no ha canviat la data';
+  assert exists (select 1 from historial_dates
+                  where registre_id = '30000000-0000-0000-0000-000000000001'
+                    and data_nova = current_date + 40 and motiu = 'sense motiu'),
+    'replanificar sense motiu no ha deixat rastre a l''historial';
 end $$;
 
 -- la configuració del motiu no es filtra a updates posteriors de la mateixa transacció
@@ -147,6 +148,15 @@ do $$ begin
   exception when raise_exception then
     if sqlerrm like 'FALLA%' then raise; end if;
   end;
+end $$;
+
+-- primera planificació per la RPC sense motiu: «planificació inicial», no «sense motiu»
+select replanificar('tasques', '30000000-0000-0000-0000-000000000003', null, 'esborrem la data per provar');
+select replanificar('tasques', '30000000-0000-0000-0000-000000000003', current_date + 20, '');
+do $$ begin
+  assert (select motiu from historial_dates where registre_id = '30000000-0000-0000-0000-000000000003'
+           and data_antiga is null order by id desc limit 1) = 'planificació inicial',
+    'la primera planificació sense motiu per la RPC no queda com a planificació inicial';
 end $$;
 
 -- primera planificació (NULL → data) no exigeix motiu

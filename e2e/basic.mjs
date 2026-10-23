@@ -79,7 +79,7 @@ const en3 = new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10);
 await p.locator("form:has(input[placeholder='nova tasca']) input[name=data_prevista]").fill(en3);
 await p.click("form:has(input[placeholder='nova tasca']) button:has-text('afegir tasca')");
 await p.waitForTimeout(800);
-ok(await p.isVisible("td:has-text('Revisar literals')"), "tasca creada");
+ok(await p.locator("section.seccio td:has-text('Revisar literals')").first().isVisible(), "tasca creada");
 await shot(p, "01-detall-estudi");
 
 // replanificar fase 2 sense motiu: el navegador ho impedeix (required); i amb motiu, va

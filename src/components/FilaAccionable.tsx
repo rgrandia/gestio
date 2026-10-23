@@ -220,10 +220,8 @@ export function FilaAccionable({
               <input
                 type="text"
                 aria-label="motiu"
-                placeholder="motiu (obligatori)"
+                placeholder="motiu (opcional)"
                 value={motiu}
-                required
-                minLength={3}
                 className="font-sans"
                 onChange={(e) => setMotiu(e.target.value)}
               />

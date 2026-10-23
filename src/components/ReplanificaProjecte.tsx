@@ -40,9 +40,7 @@ export function ReplanificaProjecte({ id, tePrevista }: { id: string; tePrevista
         <input
           type="text"
           aria-label="motiu"
-          placeholder="motiu (obligatori)"
-          required
-          minLength={3}
+          placeholder="motiu (opcional)"
           className="font-sans"
           value={motiu}
           onChange={(e) => setMotiu(e.target.value)}

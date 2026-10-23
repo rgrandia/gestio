@@ -84,8 +84,8 @@ export async function accioItem(a: AccioItem): Promise<Resultat> {
 
   if (a.accio === "replanificar") {
     if (!esDataValida(a.data)) return { error: "Indica la nova data en format AAAA-MM-DD." };
-    // El motiu és obligatori excepte en la primera planificació; ho valida el
-    // trigger de la base de dades, que és qui mana (§4.2).
+    // El motiu és opcional (migració 0015): si arriba buit, la base de dades
+    // hi posa «sense motiu». El canvi queda a l'historial igualment (§4.2).
     const { error } = await supabase.rpc("replanificar", {
       p_taula: a.taula,
       p_id: a.id,

@@ -115,6 +115,12 @@ d'un client s'ha ajornat quatre vegades abans d'una reunió amb ell.
 Implementar-ho amb un **trigger de Postgres**, no a l'aplicació, perquè no es
 pugui esquivar.
 
+**Canvi (octubre 2026, migració 0015, decisió de l'equip):** el motiu passa a
+ser **opcional**. Si no se n'escriu cap, es desa «sense motiu». El que es manté:
+cada canvi de data continua quedant a l'historial (antiga, nova, qui, quan) i
+un update directe sense passar per `replanificar()` continua fallant. Es perd
+el *perquè* quan no s'escriu, no el *que*.
+
 ### 4.3 Esquema SQL
 
 ```sql
@@ -503,6 +509,8 @@ Llista amb filtres per tipus, client, responsable i estat. Detall del projecte:
 - Si és **consultoria**: entregables i historial de contactes.
 - Tasques del projecte en tots dos casos.
 - Pestanya d'historial de replanificacions.
+- A dalt de tot, un desplegable amb **les meves tasques obertes** d'aquell
+  projecte, amb les accions de la safata.
 
 ### 6.3 Idees
 

@@ -84,7 +84,20 @@ export default async function DetallProjecte({
     .filter((r) => r.actiu && r.perfil_id !== p.responsable_id)
     .map((r) => r.perfil_id);
 
-  const perfils = await obtePerfils();
+  const jo = await requereixMembre();
+  const [perfils, mevesR] = await Promise.all([
+    obtePerfils(),
+    // Les meves tasques obertes d'aquest projecte, per al desplegable de dalt.
+    supabase
+      .from("tasques")
+      .select("id, titol, data_prevista, prioritat")
+      .eq("projecte_id", id)
+      .eq("assignada_a", jo.id)
+      .is("data_real", null)
+      .not("estat", "in", "(fet,cancellat)")
+      .order("data_prevista", { nullsFirst: false }),
+  ]);
+  const meves = comprova(mevesR) as Pick<Tasca, "id" | "titol" | "data_prevista" | "prioritat">[];
   const noms = new Map(perfils.map((x) => [x.id, x.nom]));
   const persones = mapaPersones(perfils);
 
@@ -123,6 +136,42 @@ export default async function DetallProjecte({
           Projecte arxivat el {dataCurta(p.arxivat_el.slice(0, 10))}: no surt a la safata ni a les llistes.
         </p>
       )}
+
+      <details className="meves-tasques">
+        <summary>
+          <ChevronRight className="icona-petita fletxa" aria-hidden />
+          les meves tasques d&apos;aquest projecte
+          <span className={`comptador ${meves.some((t) => t.data_prevista && t.data_prevista < hui) ? "c-vencut" : ""}`}>
+            {meves.length}
+          </span>
+        </summary>
+        {meves.length === 0 ? (
+          <p className="petit suau">No en tens cap d&apos;oberta.</p>
+        ) : (
+          <table className="taula taula-mobil">
+            <tbody>
+              {meves.map((t) => (
+                <FilaAccionable
+                  key={t.id}
+                  taula="tasques"
+                  id={t.id}
+                  estat={estatFila(t.data_prevista, null, "pendent", hui)}
+                  tePrevista={Boolean(t.data_prevista)}
+                  acabat={false}
+                  desapareix
+                >
+                  <td className="ample">
+                    {t.titol}
+                    {t.prioritat === "alta" && <span className="etiqueta tag-vencut ml-1">alta</span>}
+                  </td>
+                  <td className="num nowrap">{dataCurta(t.data_prevista)}</td>
+                  <td className="num nowrap"><Retard prevista={t.data_prevista} real={null} hui={hui} /></td>
+                </FilaAccionable>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </details>
 
       <dl className="capcalera">
         <div>
@@ -755,7 +804,7 @@ async function Historial({ projecteId }: { projecteId: string }) {
                   <span className="fluix">—</span>
                 )}
               </td>
-              <td className="font-sans">{h.motiu}</td>
+              <td className={h.motiu === "sense motiu" ? "fluix" : "font-sans"}>{h.motiu}</td>
               <td className="suau nowrap">{h.usuari ?? ""}</td>
             </tr>
           ))}
