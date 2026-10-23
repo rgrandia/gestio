@@ -1,5 +1,6 @@
 import { UserPlus } from "lucide-react";
-import { obtePerfils } from "@/lib/dades";
+import Link from "next/link";
+import { feinaOberta, obtePerfils } from "@/lib/dades";
 import { actualitzaPersonaExterna, canviaElMeuColor, creaPersonaExterna } from "@/lib/accions";
 import { requereixMembre } from "@/lib/auth/session";
 import { SelectorColor } from "@/components/SelectorColor";
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function Equip() {
   const jo = await requereixMembre();
-  const perfils = await obtePerfils();
+  const [perfils, oberta] = await Promise.all([obtePerfils(), feinaOberta()]);
   const membres = perfils.filter((p) => !p.extern);
   const externs = perfils.filter((p) => p.extern);
   // colors que ja fan servir altres membres actius
@@ -50,6 +51,7 @@ export default async function Equip() {
                   )}
                 </td>
                 <td className="suau nowrap">{p.email}</td>
+                <td className="nowrap"><FeinaOberta n={oberta.get(p.id) ?? 0} actiu={p.actiu} /></td>
                 <td className="nowrap">
                   <span className={`etiqueta ${p.actiu ? "tag-fet" : ""}`}>{p.actiu ? "actiu" : "inactiu"}</span>
                 </td>
@@ -86,6 +88,12 @@ export default async function Equip() {
                       <label className="flex items-center gap-1 petit suau">
                         <input type="checkbox" name="actiu" defaultChecked={p.actiu} className="min-h-0" /> activa
                       </label>
+                      {p.actiu && (oberta.get(p.id) ?? 0) > 0 && (
+                        <label className="flex items-center gap-1 petit suau" title="si la desactives amb feina oberta, ningú no la veurà a la seva llista">
+                          <input type="checkbox" name="igualment" className="min-h-0" /> desactivar-la igualment
+                        </label>
+                      )}
+                      <FeinaOberta n={oberta.get(p.id) ?? 0} actiu={p.actiu} />
                     </Formulari>
                   </td>
                 </tr>
@@ -99,5 +107,21 @@ export default async function Equip() {
         </Formulari>
       </section>
     </>
+  );
+}
+
+// Feina oberta d'una persona; si és inactiva i en té, és feina que no veu ningú.
+function FeinaOberta({ n, actiu }: { n: number; actiu: boolean }) {
+  if (n === 0) return <span className="petit fluix">res obert</span>;
+  if (!actiu)
+    return (
+      <Link href="/feina?tot=1" className="etiqueta tag-vencut" title="està inactiva: passa aquesta feina a algú altre">
+        inactiva amb {n} {n === 1 ? "cosa oberta" : "coses obertes"}
+      </Link>
+    );
+  return (
+    <Link href="/feina?tot=1" className="petit suau">
+      {n} {n === 1 ? "cosa oberta" : "coses obertes"}
+    </Link>
   );
 }

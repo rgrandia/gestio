@@ -895,6 +895,49 @@ do $$ begin
   end;
 end $$;
 
+-- ------------------------------------------------------------
+-- 0018: salut de l'esquema i projectes sense moviment
+-- ------------------------------------------------------------
+do $$ begin
+  assert falten_objectes(array['transfereix(text,uuid,uuid,text)', 'no_existeix()'],
+                         array['tasques.titol', 'tasques.no_hi_es', 'v_safata.intern'])
+         = array['no_existeix() (funció)', 'tasques.no_hi_es (columna)'],
+    'falten_objectes() no detecta bé el que hi és i el que no';
+end $$;
+
+insert into projectes (id, client_id, titol, tipus, responsable_id, creat_el, actualitzat_el) values
+  ('20000000-0000-0000-0000-000000000018', '10000000-0000-0000-0000-000000000001',
+   'Projecte oblidat', 'consultoria', '00000000-0000-0000-0000-00000000000a',
+   now() - interval '90 days', now() - interval '90 days');
+do $$ begin
+  assert exists (select 1 from v_projectes_quiets where id = '20000000-0000-0000-0000-000000000018'),
+    'un projecte actiu sense moviment en 90 dies no surt com a quiet';
+  assert not exists (select 1 from v_projectes_quiets where id = '20000000-0000-0000-0000-000000000001'),
+    'un projecte amb moviment recent surt com a quiet';
+end $$;
+-- un projecte intern sense moviment tampoc hi surt (cal saltar-se el trigger
+-- d'actualitzat_el per envellir-lo; tot es desfà en acabar)
+reset role;
+alter table projectes disable trigger trg_projectes_actualitzat;
+update projectes set creat_el = now() - interval '90 days', actualitzat_el = now() - interval '90 days'
+  where intern_de is not null;
+update tasques set creat_el = now() - interval '90 days', data_real = null
+  where projecte_id in (select id from projectes where intern_de is not null);
+alter table projectes enable trigger trg_projectes_actualitzat;
+set local role authenticated;
+do $$ begin
+  assert exists (select 1 from projectes where intern_de is not null),
+    'cap projecte intern per provar: la comprovació següent no provaria res';
+  assert not exists (select 1 from v_projectes_quiets v join projectes p on p.id = v.id where p.intern_de is not null),
+    'un projecte intern surt com a quiet';
+end $$;
+insert into contactes (projecte_id, data, tipus) values
+  ('20000000-0000-0000-0000-000000000018', current_date, 'trucada');
+do $$ begin
+  assert not exists (select 1 from v_projectes_quiets where id = '20000000-0000-0000-0000-000000000018'),
+    'un contacte d''avui no treu el projecte de quiets';
+end $$;
+
 -- historial: cap client hi pot escriure
 do $$ begin
   begin

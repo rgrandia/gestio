@@ -5,6 +5,7 @@ import { comprova, obtePersones } from "@/lib/dades";
 import { avui, dataCurta, dataLlarga, desplacament, diaCurt, diesEntre, sumaDies } from "@/lib/dates";
 import { Persona } from "@/components/Persona";
 import { BotoImprimir } from "@/components/BotoImprimir";
+import { BotoCopiar } from "@/components/BotoCopiar";
 import type { Replanificacio, TipusItem } from "@/lib/tipus";
 
 export const dynamic = "force-dynamic";
@@ -146,6 +147,28 @@ export default async function ResumSetmanal() {
     (p.numero_estudi ? `${p.numero_estudi} · ` : "") + p.titol;
 
   // Agrupa per projecte, en l'ordre d'aparició.
+  // El mateix resum en text pla, per enganxar a Teams o a un correu.
+  const nomPersona = (id: string | null) => (id ? persones.get(id)?.nom ?? "" : "");
+  const text = [
+    `Resum setmanal · del ${dataCurta(desDe)} a avui`,
+    "",
+    "S'HA TANCAT",
+    ...(tancats.length === 0 && projectesTancats.length === 0 ? ["- res no consta tancat"] : []),
+    ...projectesTancats.map((p) => `- Projecte tancat: ${nomProjecte(p)}`),
+    ...tancats.map((e) => `- ${e.titol}${e.tipus !== "tasca" ? ` (${e.tipus})` : ""} · ${nomProjecte(e.projecte)}${nomPersona(e.persona) ? ` · ${nomPersona(e.persona)}` : ""}`),
+    "",
+    "HA LLISCAT",
+    ...(historial.length === 0 ? ["- no s'ha endarrerit res"] : []),
+    ...historial.map(
+      (h) =>
+        `- ${h.element} · ${nomProjecte(vius.get(h.projecte_id)!)}: ${dataCurta(h.data_antiga)} → ${dataCurta(h.data_nova)} (${desplacament(diesEntre(h.data_antiga!, h.data_nova!))}) · ${h.motiu}`,
+    ),
+    "",
+    `VENÇ AQUESTA SETMANA (fins al ${dataCurta(finsA)})`,
+    ...(vencen.length === 0 ? ["- no venç res"] : []),
+    ...vencen.map((e) => `- ${e.data === hui ? "avui" : diaCurt(e.data)}: ${e.titol} · ${nomProjecte(e.projecte)}${nomPersona(e.persona) ? ` · ${nomPersona(e.persona)}` : ""}`),
+  ].join("\n");
+
   const perProjecte = (llista: Element[]) => {
     const m = new Map<string, Element[]>();
     for (const e of llista) m.set(e.projecte_id, [...(m.get(e.projecte_id) ?? []), e]);
@@ -161,7 +184,10 @@ export default async function ResumSetmanal() {
             per a la reunió de l&apos;equip: del {dataCurta(desDe)} a avui, i el que venç fins al {dataLlarga(finsA)}
           </div>
         </div>
-        <BotoImprimir />
+        <div className="flex gap-2">
+          <BotoCopiar text={text} />
+          <BotoImprimir />
+        </div>
       </div>
 
       <p className="notes petit suau">

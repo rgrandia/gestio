@@ -64,3 +64,9 @@ update fases f set nom = v.nom
 from (values (1, 'Qüestionari'), (2, 'Camp'), (3, 'Tabulació'), (4, 'Revisió'), (5, 'Informe'), (6, 'Presentació')) v(o, nom)
 where f.ordre = v.o and f.projecte_id = (select id from projectes where titol = 'Enquesta de serveis');
 update perfils set tema = null, menu = null;
+
+-- Un projecte actiu sense cap moviment en 90 dies (per a "feina de l'equip").
+insert into projectes (client_id, titol, tipus, responsable_id, creat_el, actualitzat_el)
+select c.id, 'Estudi de mercat aturat', 'altre', p.id, now() - interval '90 days', now() - interval '90 days'
+from clients c, perfils p
+where c.nom = 'Ajuntament de Mataró' and p.email = 'roc@prova.test';

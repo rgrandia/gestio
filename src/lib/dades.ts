@@ -56,3 +56,28 @@ export async function comptaReplanificacions(ids: string[]): Promise<Map<string,
   for (const r of data ?? []) compte.set(r.registre_id, (compte.get(r.registre_id) ?? 0) + 1);
   return compte;
 }
+
+// Quantes coses obertes (tasques, fases i entregables sense data real ni
+// cancel·lades, de projectes que no són a la paperera) té assignades cadascú.
+export async function feinaOberta(): Promise<Map<string, number>> {
+  const supabase = await createClient();
+  const consulta = (taula: "tasques" | "fases" | "entregables", camp: string) =>
+    supabase
+      .from(taula)
+      .select(`${camp}, projectes!inner(eliminat_el)`)
+      .not(camp, "is", null)
+      .is("data_real", null)
+      .neq("estat", "cancellat")
+      .is("projectes.eliminat_el", null);
+  const [t, f, e] = await Promise.all([
+    consulta("tasques", "assignada_a"),
+    consulta("fases", "responsable_id"),
+    consulta("entregables", "responsable_id"),
+  ]);
+  const compte = new Map<string, number>();
+  for (const r of [...(t.data ?? []), ...(f.data ?? []), ...(e.data ?? [])] as unknown as Record<string, string>[]) {
+    const qui = r.assignada_a ?? r.responsable_id;
+    compte.set(qui, (compte.get(qui) ?? 0) + 1);
+  }
+  return compte;
+}

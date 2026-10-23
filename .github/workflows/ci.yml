@@ -17,6 +17,8 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      - name: Dates en català de l'alta ràpida
+        run: node --experimental-strip-types scripts/prova-dates.mts
       - run: npm run build
         env:
           GESTIO_SUPABASE_URL: http://127.0.0.1:54321

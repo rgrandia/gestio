@@ -9,7 +9,7 @@ const browser = await chromium.launch({ executablePath: process.env.CHROME || un
 const ok = (c, m) => { if (!c) throw new Error("FALLA: " + m); console.log("✓", m); };
 const errors = [];
 async function login(email) {
-  const p = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+  const p = await (await browser.newContext({ viewport: { width: 1280, height: 900 }, permissions: ["clipboard-read", "clipboard-write"] })).newPage();
   p.on("pageerror", (e) => errors.push(e.message));
   await p.goto(B + "/login");
   await p.fill("input[name=email]", email);
@@ -185,6 +185,81 @@ await p.click("button:has-text('crear projecte')");
 await p.waitForURL(/\/projectes\/[0-9a-f-]{36}$/);
 ok(await p.isVisible("section.seccio:has(header .titol:text-is('tasques')) td:has-text('Transcripcions')"), "el projecte nou té les tasques de la plantilla");
 
+// dates en català a l'alta ràpida
+await p.goto(B + "/");
+await p.fill("#intern input[name=titol]", "Trucar a l'alcaldia demà");
+await p.press("#intern input[name=titol]", "Enter");
+await p.waitForTimeout(1200);
+const filaDema = p.locator("#intern tr", { hasText: "Trucar a l'alcaldia" });
+ok((await filaDema.locator("td.ample").innerText()).trim() === "Trucar a l'alcaldia", "«demà» se separa del títol");
+ok(await filaDema.locator("text=demà").isVisible(), "la tasca queda per a demà");
+
+// dreceres de teclat a la safata
+await p.goto(B + "/?tot=1");
+const primera = p.locator("#a-revisar tr[data-fila]").first();
+await primera.focus();
+await p.keyboard.press("r");
+ok(await primera.locator("input[aria-label='nova data prevista']").isVisible(), "la tecla r obre replanificar");
+await p.keyboard.press("Escape");
+ok(!(await primera.locator("input[aria-label='nova data prevista']").isVisible()), "Esc el tanca");
+await p.keyboard.press("ArrowDown");
+const segona = p.locator("#a-revisar tr[data-fila]").nth(1);
+ok(await segona.evaluate((el) => el === document.activeElement), "↓ passa a la línia següent");
+
+// accions en bloc: dues línies +1 setmana amb un motiu
+const totals = await p.locator("#a-revisar tr[data-fila]").count();
+const titols = [];
+for (const i of [0, 1]) {
+  const f = p.locator("#a-revisar tr[data-fila]").nth(i);
+  titols.push((await f.locator(".titol-el").innerText()).split("\n")[0].trim());
+  await f.locator("td.tria input").check();
+}
+ok(await p.isVisible(".barra-bloc >> text=2 seleccionats"), "barra d'accions en bloc amb 2 seleccionats");
+await p.locator(".barra-bloc button:has-text('dependència interna')").click();
+await p.locator(".barra-bloc button:has-text('+1 setm.')").click();
+await p.waitForTimeout(2000);
+ok((await p.locator("#a-revisar tr[data-fila]").count()) === totals - 2, `les dues surten de la safata (${titols.join(", ")})`);
+await p.goto(B + "/resum");
+ok((await p.locator(`tr:has-text("${titols[0]}") >> text=dependència interna`).count()) > 0, "el motiu en bloc queda a l'historial");
+
+// idees amb el moment polític a prop
+await p.goto(B + "/idees");
+await p.fill("input[placeholder='nova idea']", "Sondeig ràpid abans del ple de pressupostos");
+await p.fill("input[name=data_objectiu]", new Date(Date.now() + 10 * 864e5).toISOString().slice(0, 10));
+await p.click("button:has-text('proposar')");
+await p.waitForTimeout(1000);
+await p.goto(B + "/");
+ok(await p.isVisible("#moment >> text=Sondeig ràpid abans del ple de pressupostos"), "la idea surt a «moment polític a prop»");
+ok(!(await p.isVisible("#moment >> text=Baròmetre comarcal compartit")), "una idea amb data llunyana no hi surt");
+
+// ajornaments a la fitxa del client
+await p.goto(B + "/clients");
+await p.click("a:has-text('Ajuntament de Vilanova')");
+await p.waitForURL(/clients\/[0-9a-f-]{36}/);
+ok(await p.isVisible("section:has-text('ajornats més d') >> text=Nota de posicionament pressupostos"), "la fitxa del client llista el que s'ha ajornat més d'un cop");
+ok(await p.isVisible("section:has-text('ajornats més d') >> text=×3"), "amb el nombre de vegades");
+
+// copiar el resum setmanal com a text
+await p.goto(B + "/resum");
+await p.click("button:has-text('copiar com a text')");
+await p.waitForSelector("button:has-text('copiat')", { timeout: 5000 });
+const copiat = await p.evaluate(() => navigator.clipboard.readText());
+ok(copiat.startsWith("Resum setmanal") && copiat.includes("HA LLISCAT") && copiat.includes("dependència interna"), "el resum es copia com a text, amb els motius");
+
+// equip: feina oberta i desactivar algú que en té
+await p.goto(B + "/equip");
+const filaMarta = p.locator("tr:has(input[name=nom][value='Marta'])");
+ok(await filaMarta.locator("text=/\\d+ coses? obertes?/").isVisible(), "l'equip mostra la feina oberta de cadascú");
+await filaMarta.locator("input[name=actiu]").uncheck();
+await filaMarta.locator("button:has-text('desar')").click();
+await p.waitForTimeout(1000);
+ok(await filaMarta.locator("text=Passa-les abans").isVisible(), "no deixa desactivar algú amb feina oberta sense confirmar-ho");
+
+// projectes sense moviment
+await p.goto(B + "/feina");
+ok(await p.isVisible("section:has-text('projectes sense moviment') >> text=Estudi de mercat aturat"), "«feina de l'equip» llista els projectes sense moviment");
+ok(!(await p.isVisible("section:has-text('projectes sense moviment') >> text=Baròmetre municipal onada 2")), "un projecte amb moviment no hi surt");
+
 // preferències: mode fosc i menú desplegat, recordats en recarregar
 await p.click("button.pref-tema");
 await p.click("button.pref-menu");
@@ -194,7 +269,8 @@ ok(tema === "fosc" && menu === "desplegat", "el mode fosc i el menú desplegat e
 ok(await p.isVisible("nav[aria-label=principal] >> text=resum setmanal"), "amb el menú desplegat es veuen els noms");
 // desades al perfil: en un navegador nou (sense galetes) també
 const p2 = await login("roc@prova.test");
-await p2.waitForTimeout(500);
+// s'apliquen en hidratar la pàgina (la galeta d'aquest navegador encara no hi és)
+await p2.waitForFunction(() => document.documentElement.dataset.tema === "fosc", null, { timeout: 8000 }).catch(() => {});
 const [tema2, menu2] = await p2.evaluate(() => [document.documentElement.dataset.tema, document.documentElement.dataset.menu]);
 ok(tema2 === "fosc" && menu2 === "desplegat", "les preferències es recuperen del perfil en un altre navegador");
 

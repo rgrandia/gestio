@@ -18,6 +18,7 @@ import { Replanificat } from "@/components/Replanificat";
 import { avui, dataCurta, dataLlarga, desplacament, diaCurt, diaRelatiu, diesEntre, salutacio, sumaDies } from "@/lib/dates";
 import { FilaAccionable } from "@/components/FilaAccionable";
 import { Formulari } from "@/components/Formulari";
+import { Seleccio } from "@/components/Seleccio";
 import { Retard, estatFila } from "@/components/Retard";
 import { creaTascaInterna } from "@/lib/accions";
 import { TAULA_DE, type FilaSafata, type ProjecteMut } from "@/lib/tipus";
@@ -53,7 +54,7 @@ export default async function LaMevaSetmana({
     .eq("intern", false); // les internes tenen la seva secció
   if (!veureTot) consultaSafata = consultaSafata.contains("responsables", [perfil.id]);
 
-  const [safata, setmana, muts, idees, revisionsR, persones, sensDataR, internesR] = await Promise.all([
+  const [safata, setmana, muts, idees, revisionsR, persones, sensDataR, internesR, momentR] = await Promise.all([
     consultaSafata,
     supabase
       .from("tasques")
@@ -104,7 +105,25 @@ export default async function LaMevaSetmana({
       .not("projectes.intern_de", "is", null)
       .order("data_prevista", { nullsFirst: false })
       .order("creat_el"),
+    // Idees de l'equip encara no convertides el moment polític de les quals
+    // (data_objectiu) arriba en 30 dies: si no es mouen ara, no hi arribaran.
+    supabase
+      .from("idees")
+      .select("id, titol, data_objectiu, estat, proposada_per, clients(nom)")
+      .in("estat", ["proposada", "valorada", "assignada"])
+      .is("projecte_id", null)
+      .gte("data_objectiu", hui)
+      .lte("data_objectiu", sumaDies(hui, 30))
+      .order("data_objectiu"),
   ]);
+  const moment = comprova(momentR) as unknown as {
+    id: string;
+    titol: string;
+    data_objectiu: string;
+    estat: string;
+    proposada_per: string | null;
+    clients: { nom: string } | null;
+  }[];
   const internes = comprova(internesR) as unknown as {
     id: string;
     titol: string;
@@ -189,6 +208,12 @@ export default async function LaMevaSetmana({
             a revisar
             {filesSafata.length > 0 && <span className="comptador c-vencut">{filesSafata.length}</span>}
           </span>
+          <span
+            className="dreceres petit suau"
+            title="Amb una línia seleccionada (Tab o clic): ↑↓ moure's · f fet · r replanificar · v revisat · p passar · x marcar per actuar en bloc · Esc tancar"
+          >
+            dreceres de teclat
+          </span>
           <span className="commutador" role="group" aria-label="abast">
             <Link href="/" aria-current={!veureTot}>els meus</Link>
             <Link href="/?tot=1" aria-current={veureTot}>tot l&apos;equip</Link>
@@ -199,6 +224,7 @@ export default async function LaMevaSetmana({
             {!veureTot && <Link href="/?tot=1">mira els de l&apos;equip</Link>}
           </Buit>
         ) : (
+          <Seleccio>
           <div className="desplacable">
             <table className="taula taula-mobil">
               <tbody>
@@ -242,6 +268,7 @@ export default async function LaMevaSetmana({
               </tbody>
             </table>
           </div>
+          </Seleccio>
         )}
       </section>
 
@@ -267,7 +294,13 @@ export default async function LaMevaSetmana({
           <span className="meta">el dia a dia que no és de cap client</span>
         </header>
         <Formulari accio={creaTascaInterna} boto="afegir" className="en-linia alta-rapida" buidaEnDesar>
-          <input name="titol" placeholder="nova tasca interna i Enter" aria-label="nova tasca interna" required autoComplete="off" />
+          <input
+            name="titol"
+            placeholder="nova tasca interna i Enter (pots acabar amb «demà», «dijous», «12/11»…)"
+            aria-label="nova tasca interna"
+            required
+            autoComplete="off"
+          />
           <input name="data_prevista" type="date" aria-label="per a quan (opcional)" />
         </Formulari>
         {internes.length > 0 && (
@@ -437,6 +470,45 @@ export default async function LaMevaSetmana({
               </tbody>
             </table>
           </div>
+        </section>
+      )}
+
+      {moment.length > 0 && (
+        <section className="seccio" id="moment">
+          <header>
+            <span className="titol">
+              moment polític a prop
+              <span className="comptador c-risc">{moment.length}</span>
+            </span>
+            <span className="meta">idees de l&apos;equip amb data objectiu en 30 dies i encara sense projecte</span>
+          </header>
+          <table className="taula taula-mobil">
+            <tbody>
+              {moment.map((i) => (
+                <tr key={i.id}>
+                  <td className="nowrap"><Persona p={persones.get(i.proposada_per ?? "")} nomesAvatar /></td>
+                  <td className="ample element">
+                    <div className="titol-el">
+                      <Lightbulb className="icona-petita inline mr-1 tag-risc" aria-hidden />
+                      <Link href="/idees">{i.titol}</Link>
+                    </div>
+                    <div className="context">
+                      <span>{i.estat}</span>
+                      {i.clients?.nom && (
+                        <>
+                          <span className="sep">·</span>
+                          <span>{i.clients.nom}</span>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                  <td className="num nowrap tag-risc">
+                    {dataCurta(i.data_objectiu)} · {diesEntre(hui, i.data_objectiu) === 0 ? "avui" : `d'aquí ${diesEntre(hui, i.data_objectiu)} dies`}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </section>
       )}
 

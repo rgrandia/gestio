@@ -1,0 +1,37 @@
+{
+  "_comentari": "Objectes de la base de dades que el codi necessita. Si n'afegiu un, poseu-lo aquí: l'app avisarà si a la base de dades li falta (falten_objectes, migració 0018) i la CI comprova que les migracions el creen.",
+  "funcions": [
+    "es_membre()",
+    "versio_esquema()",
+    "replanificar(text,uuid,date,text)",
+    "mou_fase(uuid,integer)",
+    "crea_persona_externa(text,text)",
+    "actualitza_persona_externa(uuid,text,text,boolean,text)",
+    "transfereix(text,uuid,uuid,text)",
+    "aplica_fases_per_defecte(uuid)",
+    "nova_onada(uuid,text,date,text)",
+    "projecte_intern()"
+  ],
+  "columnes": [
+    "fases.data_inici",
+    "projectes.numero_estudi",
+    "perfils.extern",
+    "perfils.area",
+    "perfils.color",
+    "projectes.arxivat_el",
+    "projectes.eliminat_el",
+    "projecte_responsables.actiu",
+    "notificacions.llegida_el",
+    "revisions.tasca_id",
+    "revisions.entregable_id",
+    "v_safata.responsables",
+    "v_safata.intern",
+    "v_historial_projecte.projecte_id",
+    "clients.intern",
+    "projectes.intern_de",
+    "plantilles_tasques.subtipus",
+    "perfils.tema",
+    "perfils.menu",
+    "v_projectes_quiets.darrer_moviment"
+  ]
+}

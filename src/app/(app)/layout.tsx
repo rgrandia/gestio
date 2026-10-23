@@ -6,6 +6,7 @@ import { NavRail } from "@/components/NavRail";
 import { CercaGlobal } from "@/components/CercaGlobal";
 import { Persona } from "@/components/Persona";
 import { ESQUEMA_ESPERAT } from "@/lib/versio";
+import requerit from "@/lib/esquema-requerit.json";
 import { cookies } from "next/headers";
 import { Preferencies } from "@/components/Preferencies";
 import { GALETA_MENU, GALETA_TEMA, llegeixMenu, llegeixTema, type Menu, type Tema } from "@/lib/preferencies";
@@ -14,7 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const perfil = await requereixMembre();
   const supabase = await createClient();
   const galetes = await cookies();
-  const [{ count }, { count: avisos }, { count: perRevisar }, versio, prefsR] = await Promise.all([
+  const [{ count }, { count: avisos }, { count: perRevisar }, versio, prefsR, faltenR] = await Promise.all([
     supabase
       .from("v_safata")
       .select("id", { count: "exact", head: true })
@@ -33,7 +34,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     // Consulta a part: si la base de dades encara no té la migració 0016,
     // falla sola i l'app continua amb les galetes.
     supabase.from("perfils").select("tema, menu").eq("id", perfil.id).maybeSingle(),
+    // Què falta de debò (0018): no ens refiem només del registre de migracions.
+    supabase.rpc("falten_objectes", { p_funcions: requerit.funcions, p_columnes: requerit.columnes }),
   ]);
+  const falten: string[] = faltenR.error ? [] : ((faltenR.data as string[] | null) ?? []);
   const prefs = (prefsR.error ? null : prefsR.data) as { tema: Tema | null; menu: Menu | null } | null;
   // Si falla la crida, la base de dades és anterior a la migració 0014.
   const esquema: string | null = versio.error ? null : versio.data;
@@ -72,11 +76,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
       <main className="contingut">
-        {faltenMigracions && (
+        {(faltenMigracions || falten.length > 0) && (
           <p className="avis-esquema" role="alert">
-            <strong>Falten migracions a la base de dades.</strong> Aquesta versió de l&apos;app necessita fins a la{" "}
-            <code>{ESQUEMA_ESPERAT.slice(0, 14)}</code>
-            {esquema ? <> i la base de dades és a la <code>{esquema.slice(0, 14)}</code></> : " i la base de dades és anterior a la 0014"}.
+            <strong>Falten migracions a la base de dades.</strong>{" "}
+            {faltenMigracions && (
+              <>
+                Aquesta versió de l&apos;app necessita fins a la <code>{ESQUEMA_ESPERAT.slice(0, 14)}</code>
+                {esquema ? <> i la base de dades és a la <code>{esquema.slice(0, 14)}</code></> : " i la base de dades és anterior a la 0014"}.{" "}
+              </>
+            )}
+            {falten.length > 0 && (
+              <>
+                Hi falta: {falten.map((f, i) => <code key={f}>{i > 0 ? ", " : ""}{f}</code>)}.{" "}
+              </>
+            )}
             Algunes pantalles poden fallar fins que s&apos;apliquin (vegeu el README, «Actualitzar una instal·lació existent»).
           </p>
         )}

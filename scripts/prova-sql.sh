@@ -20,3 +20,5 @@ for f in supabase/migrations/*.sql; do
   run "$f"
 done
 psql -v ON_ERROR_STOP=1 -q -d "$DB" -f supabase/tests/verificacio.sql
+# El codi demana objectes concrets (src/lib/esquema-requerit.json): hi han de ser.
+node scripts/comprova-requerit.mjs | psql -v ON_ERROR_STOP=1 -q -d "$DB" -f -
