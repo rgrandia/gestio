@@ -1,16 +1,7 @@
 import Link from "next/link";
-import {
-  AlertTriangle,
-  CalendarDays,
-  CheckCircle2,
-  Hourglass,
-  Lightbulb,
-  MessageSquareOff,
-  Plus,
-} from "lucide-react";
+import { CheckCircle2, Lightbulb, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requereixMembre } from "@/lib/auth/session";
-import { Fragment } from "react";
 import { assignables, comprova, comptaReplanificacions, membres, obtePersones } from "@/lib/dades";
 import { FilaRevisio } from "@/components/FilaRevisio";
 import { Persona } from "@/components/Persona";
@@ -19,7 +10,7 @@ import { avui, dataCurta, dataLlarga, desplacament, diaCurt, diaRelatiu, diesEnt
 import { FilaAccionable } from "@/components/FilaAccionable";
 import { Formulari } from "@/components/Formulari";
 import { Seleccio } from "@/components/Seleccio";
-import { Retard, estatFila } from "@/components/Retard";
+import { estatFila } from "@/components/Retard";
 import { creaTascaInterna } from "@/lib/accions";
 import { TAULA_DE, type FilaSafata, type ProjecteMut } from "@/lib/tipus";
 
@@ -172,12 +163,30 @@ export default async function LaMevaSetmana({
     ...filesSetmana.map((t) => t.id),
   ]);
 
-  // Agenda: tasques de la setmana agrupades per dia.
-  const perDia = new Map<string, TascaSetmana[]>();
-  for (const t of filesSetmana) perDia.set(t.data_prevista, [...(perDia.get(t.data_prevista) ?? []), t]);
+  // Agenda de la setmana: les meves tasques de projecte i les internes amb data,
+  // agrupades per dia. És un calendari per veure què ve: les accions es fan a
+  // «a revisar» i a «gestió interna» (abans hi eren repetides).
+  type Cita = { id: string; titol: string; data: string; alta: boolean; projecte_id: string; on: string; intern: boolean };
+  const cites: Cita[] = [
+    ...filesSetmana.map((t) => ({
+      id: t.id,
+      titol: t.titol,
+      data: t.data_prevista,
+      alta: t.prioritat === "alta",
+      projecte_id: t.projecte_id,
+      on: [t.projectes?.titol, t.projectes?.clients?.nom].filter(Boolean).join(" · "),
+      intern: false,
+    })),
+    ...internes
+      .filter((t) => t.data_prevista && t.data_prevista >= hui && t.data_prevista <= fiSetmana)
+      .map((t) => ({ id: t.id, titol: t.titol, data: t.data_prevista!, alta: t.prioritat === "alta", projecte_id: "", on: "gestió interna", intern: true })),
+  ].sort((a, b) => a.data.localeCompare(b.data));
+  const perDia = new Map<string, Cita[]>();
+  for (const c of cites) perDia.set(c.data, [...(perDia.get(c.data) ?? []), c]);
 
   const vencuts = filesSafata.filter((f) => f.motiu === "vencut").length;
   const enRisc = filesSafata.length - vencuts;
+  const internesVencudes = internes.filter((t) => t.data_prevista && t.data_prevista < hui).length;
 
   return (
     <>
@@ -185,387 +194,337 @@ export default async function LaMevaSetmana({
         <div>
           <h1>{salutacio()}, {perfil.nom}</h1>
           <div className="sub">{dataLlarga(hui)}</div>
+          <nav className="pastilles" aria-label="resum">
+            <Pastilla href="#a-revisar" classe="p-vencut" n={vencuts} text={vencuts === 1 ? "vençut" : "vençuts"} />
+            <Pastilla href="#a-revisar" classe="p-risc" n={enRisc} text="en risc" />
+            {perRevisar.length > 0 && (
+              <Pastilla href="#revisions" classe="p-accent" n={perRevisar.length} text={perRevisar.length === 1 ? "revisió per fer" : "revisions per fer"} />
+            )}
+            {internesVencudes > 0 && (
+              <Pastilla href="#intern" classe="p-vencut" n={internesVencudes} text={internesVencudes === 1 ? "interna vençuda" : "internes vençudes"} />
+            )}
+            <Pastilla href="#setmana" classe="p-accent" n={cites.length} text="aquesta setmana" />
+            {filesMuts.length > 0 && (
+              <Pastilla href="#muts" classe="p-mut" n={filesMuts.length} text={filesMuts.length === 1 ? "projecte mut" : "projectes muts"} />
+            )}
+          </nav>
         </div>
         <Link href="/projectes/nou" className="boto boto-primari">
           <Plus className="icona-petita" aria-hidden /> nou projecte
         </Link>
       </div>
 
-      <div className="xifres">
-        <Xifra href="#a-revisar" classe="x-vencut" valor={vencuts} etiqueta="vençuts" nota="data prevista passada"
-          icona={<AlertTriangle className="icona-petita" aria-hidden />} />
-        <Xifra href="#a-revisar" classe="x-risc" valor={enRisc} etiqueta="en risc" nota="vencen en 5 dies"
-          icona={<Hourglass className="icona-petita" aria-hidden />} />
-        <Xifra href="#muts" classe="x-mut" valor={filesMuts.length} etiqueta="projectes muts" nota="sense contacte recent"
-          icona={<MessageSquareOff className="icona-petita" aria-hidden />} />
-        <Xifra href="#setmana" classe="x-accent" valor={filesSetmana.length} etiqueta="aquesta setmana"
-          nota={`tasques fins al ${diaCurt(fiSetmana)}`} icona={<CalendarDays className="icona-petita" aria-hidden />} />
-      </div>
-
-      <section className="seccio" id="a-revisar">
-        <header>
-          <span className="titol">
-            a revisar
-            {filesSafata.length > 0 && <span className="comptador c-vencut">{filesSafata.length}</span>}
-          </span>
-          <span
-            className="dreceres petit suau"
-            title="Amb una línia seleccionada (Tab o clic): ↑↓ moure's · f fet · r replanificar · v revisat · p passar · x marcar per actuar en bloc · Esc tancar"
-          >
-            dreceres de teclat
-          </span>
-          <span className="commutador" role="group" aria-label="abast">
-            <Link href="/" aria-current={!veureTot}>els meus</Link>
-            <Link href="/?tot=1" aria-current={veureTot}>tot l&apos;equip</Link>
-          </span>
-        </header>
-        {filesSafata.length === 0 ? (
-          <Buit text="cap element a revisar">
-            {!veureTot && <Link href="/?tot=1">mira els de l&apos;equip</Link>}
-          </Buit>
-        ) : (
-          <Seleccio>
-          <div className="desplacable">
-            <table className="taula taula-mobil">
-              <tbody>
-                {filesSafata.map((f) => (
-                  <FilaAccionable
-                    key={`${f.tipus_item}-${f.id}`}
-                    taula={TAULA_DE[f.tipus_item]}
-                    id={f.id}
-                    estat={f.motiu === "vencut" ? "vencut" : "risc"}
-                    tePrevista
-                    prevista={f.data_prevista}
-                    acabat={false}
-                    desapareix
-                    ambRevisat
-                    revisors={f.tipus_item !== "fase" ? revisors : undefined}
-                    persones={f.tipus_item === "fase" ? undefined : passables}
-                  >
-                    <td className="nowrap">
-                      <span className={`etiqueta ${f.motiu === "vencut" ? "tag-vencut" : "tag-risc"}`}>
-                        {f.motiu === "vencut" ? "vençut" : "risc"}
-                      </span>
-                    </td>
-                    <td className={`num dies ${f.motiu === "vencut" ? "tag-vencut" : "tag-risc"}`}>
-                      {desplacament(-f.dies_retard)}
-                    </td>
-                    <td className="ample element">
-                      <div className="titol-el trunc" title={f.titol}>
-                        {f.titol}
-                        <Replanificat n={replans.get(f.id)} />
-                      </div>
-                      <div className="context">
-                        <span>{f.tipus_item}</span>
-                        <span className="sep">·</span>
-                        <Link href={`/projectes/${f.projecte_id}`}>{f.projecte}</Link>
-                        <span className="sep">·</span>
-                        <span>{f.client}</span>
-                      </div>
-                    </td>
-                  </FilaAccionable>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          </Seleccio>
-        )}
-      </section>
-
-      {sensData > 0 && (
-        <p className="avis-sense-data">
-          {sensData === 1
-            ? "Tens 1 tasca oberta sense data prevista: no pot vèncer i per això no surt a «a revisar». "
-            : `Tens ${sensData} tasques obertes sense data prevista: no poden vèncer i per això no surten a «a revisar». `}
-          <Link href="/feina?tot=1">Posa-hi data</Link>.
-        </p>
-      )}
-
-      <section className="seccio" id="intern">
-        <header>
-          <span className="titol">
-            gestió interna
-            {internes.length > 0 && (
-              <span className={`comptador ${internes.some((t) => t.data_prevista && t.data_prevista < hui) ? "c-vencut" : ""}`}>
-                {internes.length}
+      <div className="inici">
+        <div className="inici-principal">
+          <section className="seccio" id="a-revisar">
+            <header>
+              <span className="titol">
+                a revisar
+                {filesSafata.length > 0 && <span className="comptador c-vencut">{filesSafata.length}</span>}
               </span>
+              <span className="flex items-center gap-2">
+                <span
+                  className="dreceres petit suau"
+                  title="Amb una línia seleccionada (Tab o clic): ↑↓ moure's · f fet · r replanificar · v revisat · p passar · x marcar per actuar en bloc · Esc tancar"
+                >
+                  dreceres
+                </span>
+                <span className="commutador" role="group" aria-label="abast">
+                  <Link href="/" aria-current={!veureTot}>els meus</Link>
+                  <Link href="/?tot=1" aria-current={veureTot}>tot l&apos;equip</Link>
+                </span>
+              </span>
+            </header>
+            {filesSafata.length === 0 ? (
+              <Buit text="res vençut ni a punt de vèncer">
+                {!veureTot && <Link href="/?tot=1">mira els de l&apos;equip</Link>}
+              </Buit>
+            ) : (
+              <Seleccio>
+                <div className="desplacable">
+                  <table className="taula taula-mobil">
+                    <tbody>
+                      {filesSafata.map((f) => (
+                        <FilaAccionable
+                          key={`${f.tipus_item}-${f.id}`}
+                          taula={TAULA_DE[f.tipus_item]}
+                          id={f.id}
+                          estat={f.motiu === "vencut" ? "vencut" : "risc"}
+                          tePrevista
+                          prevista={f.data_prevista}
+                          acabat={false}
+                          desapareix
+                          ambRevisat
+                          revisors={f.tipus_item !== "fase" ? revisors : undefined}
+                          persones={f.tipus_item === "fase" ? undefined : passables}
+                        >
+                          <td className={`num dies nowrap ${f.motiu === "vencut" ? "tag-vencut" : "tag-risc"}`}>
+                            {desplacament(-f.dies_retard)}
+                          </td>
+                          <td className="ample element">
+                            <div className="titol-el trunc" title={f.titol}>
+                              {f.titol}
+                              <Replanificat n={replans.get(f.id)} />
+                            </div>
+                            <div className="context">
+                              <span>{f.tipus_item}</span>
+                              <span className="sep">·</span>
+                              <Link href={`/projectes/${f.projecte_id}`}>{f.projecte}</Link>
+                              <span className="sep">·</span>
+                              <span>{f.client}</span>
+                            </div>
+                          </td>
+                        </FilaAccionable>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Seleccio>
             )}
-          </span>
-          <span className="meta">el dia a dia que no és de cap client</span>
-        </header>
-        <Formulari accio={creaTascaInterna} boto="afegir" className="en-linia alta-rapida" buidaEnDesar>
-          <input
-            name="titol"
-            placeholder="nova tasca interna i Enter (pots acabar amb «demà», «dijous», «12/11»…)"
-            aria-label="nova tasca interna"
-            required
-            autoComplete="off"
-          />
-          <input name="data_prevista" type="date" aria-label="per a quan (opcional)" />
-        </Formulari>
-        {internes.length > 0 && (
-          <div className="desplacable">
-            <table className="taula taula-mobil">
-              <tbody>
-                {internes.map((t) => (
-                  <FilaAccionable
-                    key={t.id}
-                    taula="tasques"
-                    id={t.id}
-                    estat={estatFila(t.data_prevista, null, "pendent", hui)}
-                    tePrevista={Boolean(t.data_prevista)}
-                    prevista={t.data_prevista}
-                    acabat={false}
-                    desapareix
-                    persones={passables}
-                  >
-                    <td className="ample element">
-                      <div className="titol-el">
-                        {t.titol}
-                        {t.prioritat === "alta" && <span className="etiqueta tag-vencut ml-1">alta</span>}
-                      </div>
-                      {t.descripcio && <div className="context descripcio">{t.descripcio}</div>}
-                    </td>
-                    <td className="num nowrap">{t.data_prevista ? diaRelatiuCurt(t.data_prevista, hui) : <span className="fluix">sense data</span>}</td>
-                    <td className="num nowrap"><Retard prevista={t.data_prevista} real={null} hui={hui} /></td>
-                  </FilaAccionable>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+          </section>
 
-      {revisions.length > 0 && (
-        <section className="seccio" id="revisions">
-          <header>
-            <span className="titol">
-              revisions
-              {perRevisar.length > 0 && <span className="comptador c-vencut">{perRevisar.length}</span>}
-            </span>
-            <span className="meta">tasques i entregables fets que algú ha de revisar</span>
-          </header>
-          <div className="desplacable">
-            <table className="taula taula-mobil">
-              <tbody>
-                {perRevisar.length > 0 && (
-                  <tr className="dia avui"><td colSpan={3}>et toca revisar</td></tr>
-                )}
-                {perRevisar.map((r) => (
-                  <FilaRevisio key={r.id} id={r.id} soc="revisor">
-                    <td className="nowrap"><Persona p={persones.get(r.demanada_per)} nomesAvatar /></td>
-                    <td className="ample element">
-                      <div className="titol-el trunc" title={r.el?.titol}>
-                        {r.esEntregable && <span className="etiqueta mr-1">entregable</span>}
-                        {r.el?.titol}
-                      </div>
-                      <div className="context">
-                        <span>t&apos;ho demana {persones.get(r.demanada_per)?.nom}</span>
-                        <span className="sep">·</span>
-                        <Link href={`/projectes/${r.el?.projecte_id}`}>{r.el?.projectes?.titol}</Link>
-                      </div>
-                    </td>
-                  </FilaRevisio>
-                ))}
-                {esperant.length > 0 && (
-                  <tr className="dia"><td colSpan={3}>esperant revisió</td></tr>
-                )}
-                {esperant.map((r) => (
-                  <FilaRevisio key={r.id} id={r.id} soc="demanant">
-                    <td className="nowrap"><Persona p={persones.get(r.revisor_id)} nomesAvatar /></td>
-                    <td className="ample element">
-                      <div className="titol-el trunc" title={r.el?.titol}>
-                        {r.esEntregable && <span className="etiqueta mr-1">entregable</span>}
-                        {r.el?.titol}
-                      </div>
-                      <div className="context">
-                        <span>la revisa {persones.get(r.revisor_id)?.nom}</span>
-                        <span className="sep">·</span>
-                        <Link href={`/projectes/${r.el?.projecte_id}`}>{r.el?.projectes?.titol}</Link>
-                      </div>
-                    </td>
-                  </FilaRevisio>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
+          {sensData > 0 && (
+            <p className="avis-sense-data">
+              {sensData === 1
+                ? "Tens 1 tasca oberta sense data prevista: no pot vèncer i per això no surt a «a revisar». "
+                : `Tens ${sensData} tasques obertes sense data prevista: no poden vèncer i per això no surten a «a revisar». `}
+              <Link href="/feina?tot=1">Posa-hi data</Link>.
+            </p>
+          )}
+        </div>
 
-      <section className="seccio" id="setmana">
-        <header>
-          <span className="titol">
-            aquesta setmana
-            {filesSetmana.length > 0 && <span className="comptador">{filesSetmana.length}</span>}
-          </span>
-          <span className="meta">les meves tasques fins al {dataCurta(fiSetmana)}</span>
-        </header>
-        {filesSetmana.length === 0 ? (
-          <Buit text="cap tasca assignada per als propers 7 dies">
-            <Link href="/projectes">afegeix-ne des d&apos;un projecte</Link>
-          </Buit>
-        ) : (
-          <div className="desplacable">
-            <table className="taula taula-mobil">
-              <tbody>
-                {[...perDia].map(([dia, tasques]) => (
-                  <Fragment key={dia}>
-                    <tr className={`dia ${dia === hui ? "avui" : ""}`}>
-                      <td colSpan={3}>{diaRelatiu(dia, hui)}</td>
-                    </tr>
-                    {tasques.map((t) => (
-                      <FilaAccionable key={t.id} taula="tasques" id={t.id} tePrevista prevista={t.data_prevista} acabat={false} desapareix revisors={revisors} persones={passables}>
-                        <td className="ample element">
-                          <div className="titol-el trunc" title={t.titol}>
-                            {t.titol}{" "}
-                            {t.prioritat === "alta" && <span className="etiqueta tag-vencut">alta</span>}
-                            <Replanificat n={replans.get(t.id)} />
-                          </div>
-                          <div className="context">
-                            <Link href={`/projectes/${t.projecte_id}`}>{t.projectes?.titol}</Link>
-                            <span className="sep">·</span>
-                            <span>{t.projectes?.clients?.nom}</span>
-                          </div>
-                        </td>
-                      </FilaAccionable>
-                    ))}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      {filesMuts.length > 0 && (
-        <section className="seccio" id="muts">
-          <header>
-            <span className="titol">
-              projectes muts <span className="comptador c-mut">{filesMuts.length}</span>
-            </span>
-            <span className="meta">consultories sense contacte ni entregable recent</span>
-          </header>
-          <div className="desplacable">
-            <table className="taula taula-mobil">
-              <tbody>
-                {filesMuts.map((m) => (
-                  <tr key={m.id} data-estat="mut">
-                    <td className="nowrap"><span className="etiqueta tag-mut">mut</span></td>
-                    <td className="num dies tag-mut">{desplacament(-m.dies_silenci)}</td>
-                    <td className="ample element">
-                      <div className="titol-el"><Link href={`/projectes/${m.id}`}>{m.titol}</Link></div>
-                      <div className="context">
-                        <span>{m.client}</span>
-                        <span className="sep">·</span>
-                        <span>darrer senyal {dataCurta(m.darrer_senyal)}</span>
-                        <span className="sep">·</span>
-                        <span>llindar {m.dies_silenci_max} dies</span>
-                      </div>
-                    </td>
-                    <td className="accions">
-                      <Link href={`/projectes/${m.id}`} className="boto">registrar contacte</Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {moment.length > 0 && (
-        <section className="seccio" id="moment">
-          <header>
-            <span className="titol">
-              moment polític a prop
-              <span className="comptador c-risc">{moment.length}</span>
-            </span>
-            <span className="meta">idees de l&apos;equip amb data objectiu en 30 dies i encara sense projecte</span>
-          </header>
-          <table className="taula taula-mobil">
-            <tbody>
-              {moment.map((i) => (
-                <tr key={i.id}>
-                  <td className="nowrap"><Persona p={persones.get(i.proposada_per ?? "")} nomesAvatar /></td>
-                  <td className="ample element">
-                    <div className="titol-el">
-                      <Lightbulb className="icona-petita inline mr-1 tag-risc" aria-hidden />
-                      <Link href="/idees">{i.titol}</Link>
-                    </div>
-                    <div className="context">
-                      <span>{i.estat}</span>
-                      {i.clients?.nom && (
-                        <>
+        <aside className="inici-lateral" aria-label="el dia a dia">
+          {revisions.length > 0 && (
+            <section className="seccio compacta" id="revisions">
+              <header>
+                <span className="titol">
+                  revisions
+                  {perRevisar.length > 0 && <span className="comptador c-vencut">{perRevisar.length}</span>}
+                </span>
+              </header>
+              <table className="taula taula-mobil">
+                <tbody>
+                  {perRevisar.length > 0 && (
+                    <tr className="dia avui"><td colSpan={3}>et toca revisar</td></tr>
+                  )}
+                  {perRevisar.map((r) => (
+                    <FilaRevisio key={r.id} id={r.id} soc="revisor">
+                      <td className="nowrap"><Persona p={persones.get(r.demanada_per)} nomesAvatar /></td>
+                      <td className="ample element">
+                        <div className="titol-el" title={r.el?.titol}>
+                          {r.esEntregable && <span className="etiqueta mr-1">entregable</span>}
+                          {r.el?.titol}
+                        </div>
+                        <div className="context">
+                          <span>t&apos;ho demana {persones.get(r.demanada_per)?.nom}</span>
                           <span className="sep">·</span>
-                          <span>{i.clients.nom}</span>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                  <td className="num nowrap tag-risc">
-                    {dataCurta(i.data_objectiu)} · {diesEntre(hui, i.data_objectiu) === 0 ? "avui" : `d'aquí ${diesEntre(hui, i.data_objectiu)} dies`}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
+                          <Link href={`/projectes/${r.el?.projecte_id}`}>{r.el?.projectes?.titol}</Link>
+                        </div>
+                      </td>
+                    </FilaRevisio>
+                  ))}
+                  {esperant.length > 0 && (
+                    <tr className="dia"><td colSpan={3}>esperant revisió</td></tr>
+                  )}
+                  {esperant.map((r) => (
+                    <FilaRevisio key={r.id} id={r.id} soc="demanant">
+                      <td className="nowrap"><Persona p={persones.get(r.revisor_id)} nomesAvatar /></td>
+                      <td className="ample element">
+                        <div className="titol-el" title={r.el?.titol}>
+                          {r.esEntregable && <span className="etiqueta mr-1">entregable</span>}
+                          {r.el?.titol}
+                        </div>
+                        <div className="context">
+                          <span>la revisa {persones.get(r.revisor_id)?.nom}</span>
+                          <span className="sep">·</span>
+                          <Link href={`/projectes/${r.el?.projecte_id}`}>{r.el?.projectes?.titol}</Link>
+                        </div>
+                      </td>
+                    </FilaRevisio>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
 
-      <section className="seccio">
-        <header>
-          <span className="titol">
-            les meves idees
-            {filesIdees.length > 0 && <span className="comptador">{filesIdees.length}</span>}
-          </span>
-          <span className="meta"><Link href="/idees">totes les idees →</Link></span>
-        </header>
-        {filesIdees.length === 0 ? (
-          <Buit text="cap idea proposada pendent de valorar">
-            <Link href="/idees">proposa&apos;n una</Link>
-          </Buit>
-        ) : (
-          <table className="taula taula-mobil">
-            <tbody>
-              {filesIdees.map((i) => (
-                <tr key={i.id}>
-                  <td className="ample element">
-                    <div className="titol-el">
+          <section className="seccio compacta" id="intern">
+            <header>
+              <span className="titol">
+                gestió interna
+                {internes.length > 0 && (
+                  <span className={`comptador ${internesVencudes > 0 ? "c-vencut" : ""}`}>{internes.length}</span>
+                )}
+              </span>
+              <span className="meta">el que no és de cap client</span>
+            </header>
+            <Formulari accio={creaTascaInterna} boto="afegir" className="en-linia alta-rapida" buidaEnDesar>
+              <input
+                name="titol"
+                placeholder="nova tasca i Enter («… dijous», «… 12/11»)"
+                title="Pots acabar amb una data: avui, demà, dijous, 12/11, d'aquí a 3 dies…"
+                aria-label="nova tasca interna"
+                required
+                autoComplete="off"
+              />
+              <input name="data_prevista" type="date" aria-label="per a quan (opcional)" />
+            </Formulari>
+            {internes.length > 0 && (
+              <table className="taula taula-mobil">
+                <tbody>
+                  {internes.map((t) => (
+                    <FilaAccionable
+                      key={t.id}
+                      taula="tasques"
+                      id={t.id}
+                      estat={estatFila(t.data_prevista, null, "pendent", hui)}
+                      tePrevista={Boolean(t.data_prevista)}
+                      prevista={t.data_prevista}
+                      acabat={false}
+                      desapareix
+                      persones={passables}
+                    >
+                      <td className="ample element">
+                        <div className="titol-el">
+                          {t.titol}
+                          {t.prioritat === "alta" && <span className="etiqueta tag-vencut ml-1">alta</span>}
+                        </div>
+                        {t.descripcio && <div className="context descripcio">{t.descripcio}</div>}
+                      </td>
+                      <td className="nowrap petit">
+                        {t.data_prevista ? (
+                          <span className={t.data_prevista < hui ? "tag-vencut" : "suau"}>{diaRelatiuCurt(t.data_prevista, hui)}</span>
+                        ) : (
+                          <span className="fluix">sense data</span>
+                        )}
+                      </td>
+                    </FilaAccionable>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+
+          <section className="seccio compacta" id="setmana">
+            <header>
+              <span className="titol">
+                aquesta setmana
+                {cites.length > 0 && <span className="comptador">{cites.length}</span>}
+              </span>
+              <span className="meta">fins al {diaCurt(fiSetmana)}</span>
+            </header>
+            {cites.length === 0 ? (
+              <p className="buit-petit">Res amb data per als propers 7 dies.</p>
+            ) : (
+              <ol className="agenda">
+                {[...perDia].map(([dia, llista]) => (
+                  <li key={dia}>
+                    <div className={`agenda-dia ${dia === hui ? "avui" : ""}`}>{diaRelatiu(dia, hui)}</div>
+                    <ul>
+                      {llista.map((c) => (
+                        <li key={c.id}>
+                          <span>
+                            {c.intern ? (
+                              <a href="#intern">{c.titol}</a>
+                            ) : (
+                              <Link href={`/projectes/${c.projecte_id}`}>{c.titol}</Link>
+                            )}
+                            {c.alta && <span className="etiqueta tag-vencut ml-1">alta</span>}
+                          </span>
+                          <span className="on">{c.on}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+
+          {filesMuts.length > 0 && (
+            <section className="seccio compacta" id="muts">
+              <header>
+                <span className="titol">
+                  projectes muts <span className="comptador c-mut">{filesMuts.length}</span>
+                </span>
+                <span className="meta">sense contacte recent</span>
+              </header>
+              <ul className="llista-compacta">
+                {filesMuts.map((m) => (
+                  <li key={m.id} data-estat="mut">
+                    <Link href={`/projectes/${m.id}`}>{m.titol}</Link>
+                    <span className="on">
+                      {m.client} · darrer senyal {dataCurta(m.darrer_senyal)} ({desplacament(-m.dies_silenci)})
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {moment.length > 0 && (
+            <section className="seccio compacta" id="moment">
+              <header>
+                <span className="titol">
+                  moment polític a prop
+                  <span className="comptador c-risc">{moment.length}</span>
+                </span>
+                <span className="meta">idees sense projecte</span>
+              </header>
+              <ul className="llista-compacta">
+                {moment.map((i) => (
+                  <li key={i.id}>
+                    <span className="flex items-center gap-2">
+                      <Persona p={persones.get(i.proposada_per ?? "")} nomesAvatar />
+                      <Link href="/idees">{i.titol}</Link>
+                    </span>
+                    <span className="on">
+                      <span className="tag-risc">
+                        {dataCurta(i.data_objectiu)} · {diesEntre(hui, i.data_objectiu) === 0 ? "avui" : `d'aquí ${diesEntre(hui, i.data_objectiu)} dies`}
+                      </span>
+                      {i.clients?.nom ? ` · ${i.clients.nom}` : ""} · {i.estat}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <section className="seccio compacta">
+            <header>
+              <span className="titol">
+                les meves idees
+                {filesIdees.length > 0 && <span className="comptador">{filesIdees.length}</span>}
+              </span>
+              <span className="meta"><Link href="/idees">totes →</Link></span>
+            </header>
+            {filesIdees.length === 0 ? (
+              <p className="buit-petit">
+                Cap idea pendent de valorar. <Link href="/idees">Proposa&apos;n una</Link>.
+              </p>
+            ) : (
+              <ul className="llista-compacta">
+                {filesIdees.map((i) => (
+                  <li key={i.id}>
+                    <span>
                       <Lightbulb className="icona-petita inline mr-1 tag-risc" aria-hidden />
                       {i.titol}
-                    </div>
-                  </td>
-                  <td className="num suau">{i.data_objectiu ? `per al ${dataCurta(i.data_objectiu)}` : ""}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+                    </span>
+                    {i.data_objectiu && <span className="on">per al {dataCurta(i.data_objectiu)}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </aside>
+      </div>
     </>
   );
 }
 
-function Xifra({
-  href,
-  classe,
-  valor,
-  etiqueta,
-  nota,
-  icona,
-}: {
-  href: string;
-  classe: string;
-  valor: number;
-  etiqueta: string;
-  nota: string;
-  icona: React.ReactNode;
-}) {
+function Pastilla({ href, classe, n, text }: { href: string; classe: string; n: number; text: string }) {
   return (
-    <a href={href} className={`xifra ${classe} ${valor === 0 ? "x-zero" : ""}`}>
-      <div className="etiq">{icona} {etiqueta}</div>
-      <div className="valor">{valor}</div>
-      <div className="nota">{nota}</div>
+    <a href={href} className={`pastilla ${classe} ${n === 0 ? "p-zero" : ""}`}>
+      <strong>{n}</strong> {text}
     </a>
   );
 }
