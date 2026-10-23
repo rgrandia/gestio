@@ -674,3 +674,16 @@ tr.fila-edicio > td { background: var(--fons); border-left: 3px solid var(--acce
 .accions .boto-icona { width: 32px; height: 32px; }
 
 :root[data-tema="fosc"] .rail { border-right: 1px solid var(--linia); }
+
+/* ---------------- les meves tasques (detall del projecte) ---------------- */
+
+.meves-tasques { margin: 0 0 16px; background: var(--panell); border: 1px solid var(--linia); box-shadow: var(--ombra); }
+.meves-tasques > summary {
+  display: flex; align-items: center; gap: 8px; padding: 10px 14px; cursor: pointer;
+  font-weight: 600; font-size: 13px; list-style: none;
+}
+.meves-tasques > summary::-webkit-details-marker { display: none; }
+.meves-tasques > summary .fletxa { transition: transform 120ms; }
+.meves-tasques[open] > summary .fletxa { transform: rotate(90deg); }
+.meves-tasques > p { padding: 0 14px 12px; margin: 0; }
+.meves-tasques .taula { border-top: 1px solid var(--linia); }

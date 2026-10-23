@@ -125,6 +125,20 @@ ok(await p.isVisible("section:has-text('ha lliscat') >> text=el gabinet demana m
 ok(await p.isVisible("section:has-text('venç aquesta setmana') >> text=Revisar ponderació"), "el resum mostra què venç aquesta setmana");
 await p.screenshot({ path: `${SHOTS}/resum.png`, fullPage: true });
 
+// les meves tasques del projecte, i replanificar sense motiu
+await p.goto(u1);
+const meves = p.locator("details.meves-tasques");
+await meves.locator("summary").click();
+ok(await meves.locator("text=Revisar ponderació").isVisible(), "desplegable amb les meves tasques del projecte");
+ok(!(await meves.locator("text=Seguiment de quotes diari").isVisible()), "no hi surten tasques d'altres");
+const filaMeva = meves.locator("tr", { hasText: "Revisar ponderació" });
+await filaMeva.locator("button[data-tip=replanificar]").click();
+await filaMeva.locator("input[type=date]").fill(new Date(Date.now() + 9 * 864e5).toISOString().slice(0, 10));
+await filaMeva.locator("button:has-text('desar')").click();
+await p.waitForTimeout(1200);
+await p.goto(u1 + "?pestanya=historial");
+ok(await p.isVisible("tr:has-text('Revisar ponderació') >> text=sense motiu"), "replanificar sense motiu queda a l'historial com a «sense motiu»");
+
 // preferències: mode fosc i menú desplegat, recordats en recarregar
 await p.click("button.pref-tema");
 await p.click("button.pref-menu");

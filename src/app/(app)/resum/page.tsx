@@ -237,7 +237,7 @@ export default async function ResumSetmanal() {
                     <td className="num">
                       <span className="dies tag-vencut">{desplacament(diesEntre(h.data_antiga!, h.data_nova!))}</span>
                     </td>
-                    <td className="font-sans">{h.motiu}</td>
+                    <td className={h.motiu === "sense motiu" ? "fluix" : "font-sans"}>{h.motiu}</td>
                     <td className="suau nowrap">{h.usuari ?? ""}</td>
                   </tr>
                 ))}
