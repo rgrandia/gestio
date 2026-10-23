@@ -70,7 +70,8 @@ export default async function Cronograma({
       )
       .in("estat", ["actiu", "pausat"])
       .is("arxivat_el", null)
-      .is("eliminat_el", null),
+      .is("eliminat_el", null)
+      .is("intern_de", null),
     obtePersones(),
   ]);
   let projectes = comprova(projectesR) as unknown as Projecte[];

@@ -213,5 +213,5 @@ ni notificacions, ni pujada de fitxers (només enllaços `https://`), ni app
 nativa.
 
 Cada persona tria al peu del menú si el vol plegat (només icones) o
-desplegat i si vol el mode fosc. Es desa en galetes del navegador, no a la
-base de dades: en un altre ordinador cal tornar-ho a triar.
+desplegat i si vol el mode fosc. Es desa al perfil (i en una galeta, perquè
+la pàgina surti bé de seguida): us segueix a qualsevol ordinador.

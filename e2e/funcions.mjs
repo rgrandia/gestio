@@ -139,6 +139,52 @@ await p.waitForTimeout(1200);
 await p.goto(u1 + "?pestanya=historial");
 ok(await p.isVisible("tr:has-text('Revisar ponderació') >> text=sense motiu"), "replanificar sense motiu queda a l'historial com a «sense motiu»");
 
+// gestió interna: alta ràpida amb Enter, no surt a "a revisar"
+await p.goto(B + "/");
+await p.fill("#intern input[name=titol]", "Renovar la subscripció del panel");
+await p.press("#intern input[name=titol]", "Enter");
+await p.waitForTimeout(1200);
+ok(await p.isVisible("#intern >> text=Renovar la subscripció del panel"), "tasca interna creada amb Enter");
+ok(!(await p.isVisible("#a-revisar >> text=Renovar la subscripció del panel")), "la tasca interna no surt a «a revisar»");
+await p.goto(B + "/projectes");
+ok(!(await p.isVisible("text=Gestió interna")), "el projecte intern no surt a la llista de projectes");
+
+// replanificar amb +1 setmana i un motiu d'un clic
+await p.goto(B + "/?tot=1");
+const filaSafata = p.locator("#a-revisar tr", { hasText: "Preparar plantilla de taules" });
+await filaSafata.locator("button[data-tip=replanificar]").click();
+await filaSafata.locator("button:has-text('+1 setm.')").click();
+const novaData = await filaSafata.locator("input[type=date]").inputValue();
+ok(/^\d{4}-\d{2}-\d{2}$/.test(novaData) && novaData > new Date().toISOString().slice(0, 10), "+1 setm. posa una data futura");
+await filaSafata.locator("button:has-text('proveïdor / camp')").click();
+ok((await filaSafata.locator("input[aria-label=motiu]").inputValue()) === "proveïdor / camp", "el motiu d'un clic s'escriu al camp");
+await filaSafata.locator("button:has-text('desar')").click();
+await p.waitForTimeout(1200);
+await p.goto(B + "/resum");
+ok(await p.isVisible("tr:has-text('Preparar plantilla de taules') >> text=proveïdor / camp"), "el motiu d'un clic surt al resum");
+
+// plantilles de tasques
+await p.goto(B + "/plantilles");
+for (const [titol, dies] of [["Guió de la dinàmica", "3"], ["Transcripcions", "20"]]) {
+  await p.fill("input[name=subtipus]", "qualitatiu");
+  await p.fill("input[name=titol]", titol);
+  await p.locator("select[name=fase]").selectOption(titol === "Transcripcions" ? "Dades" : "Qüestionari i mostra");
+  await p.fill("input[name=dies]", dies);
+  await p.click("button:has-text('afegir')");
+  await p.waitForTimeout(800);
+}
+ok(await p.isVisible("section:has-text('qualitatiu') >> text=Transcripcions"), "plantilla desada");
+await p.goto(B + "/projectes/nou");
+ok(await p.isVisible("text=qualitatiu (2)"), "el formulari de projecte nou diu quins subtipus tenen plantilla");
+await p.fill("input[name=titol]", "Grups de discussió joves");
+await p.selectOption("select[name=tipus]", "estudi");
+await p.fill("input[name=subtipus]", "qualitatiu");
+await p.selectOption("select[name=client_id]", { index: 1 });
+await p.fill("input[name=data_inici]", new Date().toISOString().slice(0, 10));
+await p.click("button:has-text('crear projecte')");
+await p.waitForURL(/\/projectes\/[0-9a-f-]{36}$/);
+ok(await p.isVisible("section.seccio:has(header .titol:text-is('tasques')) td:has-text('Transcripcions')"), "el projecte nou té les tasques de la plantilla");
+
 // preferències: mode fosc i menú desplegat, recordats en recarregar
 await p.click("button.pref-tema");
 await p.click("button.pref-menu");
@@ -146,6 +192,11 @@ await p.reload();
 const [tema, menu] = await p.evaluate(() => [document.documentElement.dataset.tema, document.documentElement.dataset.menu]);
 ok(tema === "fosc" && menu === "desplegat", "el mode fosc i el menú desplegat es recorden");
 ok(await p.isVisible("nav[aria-label=principal] >> text=resum setmanal"), "amb el menú desplegat es veuen els noms");
+// desades al perfil: en un navegador nou (sense galetes) també
+const p2 = await login("roc@prova.test");
+await p2.waitForTimeout(500);
+const [tema2, menu2] = await p2.evaluate(() => [document.documentElement.dataset.tema, document.documentElement.dataset.menu]);
+ok(tema2 === "fosc" && menu2 === "desplegat", "les preferències es recuperen del perfil en un altre navegador");
 
 ok(errors.length === 0, "cap error de JS " + errors.join(" | "));
 await browser.close();

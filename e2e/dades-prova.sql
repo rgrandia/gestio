@@ -1,6 +1,8 @@
 -- Dades de prova per a e2e/funcions.mjs. NOMÉS per a l'entorn de proves:
 -- buida les taules de l'app. Usa els usuaris de scripts/e2e/entorn.sh.
-truncate clients, projectes, fases, entregables, tasques, contactes, idees, historial_dates cascade;
+truncate clients, projectes, fases, entregables, tasques, contactes, idees, historial_dates, plantilles_tasques cascade;
+-- el truncate s'emporta el client intern que crea la migració 0016
+insert into clients (nom, tipus, intern) values ('GESOP · gestió interna', 'altre', true);
 delete from perfils where extern;
 do $$
 declare
@@ -61,3 +63,4 @@ end $$;
 update fases f set nom = v.nom
 from (values (1, 'Qüestionari'), (2, 'Camp'), (3, 'Tabulació'), (4, 'Revisió'), (5, 'Informe'), (6, 'Presentació')) v(o, nom)
 where f.ordre = v.o and f.projecte_id = (select id from projectes where titol = 'Enquesta de serveis');
+update perfils set tema = null, menu = null;

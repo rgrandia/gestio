@@ -805,6 +805,96 @@ do $$ begin
 end $$;
 set local role authenticated;
 
+-- ------------------------------------------------------------
+-- 0016: gestió interna
+-- ------------------------------------------------------------
+do $$
+declare
+  p1 uuid;
+  p2 uuid;
+begin
+  p1 := projecte_intern();
+  p2 := projecte_intern();
+  assert p1 = p2, 'projecte_intern() n''ha de crear un segon projecte intern';
+  assert (select tipus = 'altre' and intern_de = '00000000-0000-0000-0000-00000000000a'
+                 and responsable_id = intern_de
+            from projectes where id = p1),
+    'el projecte intern no és de tipus altre o no és de qui l''ha creat';
+  assert (select c.intern from projectes pr join clients c on c.id = pr.client_id where pr.id = p1),
+    'el projecte intern no penja del client intern';
+  insert into tasques (id, projecte_id, titol, assignada_a, data_prevista) values
+    ('30000000-0000-0000-0000-000000000016', p1, 'Renovar el certificat', '00000000-0000-0000-0000-00000000000a', current_date - 1);
+  assert (select intern from v_safata where id = '30000000-0000-0000-0000-000000000016'),
+    'una tasca interna vençuda no surt marcada com a interna a la safata';
+  assert not exists (select 1 from v_safata v join projectes pr on pr.id = v.projecte_id
+                      where v.intern and pr.intern_de is null),
+    'una tasca d''un projecte de client surt com a interna';
+  assert exists (select 1 from v_safata where not intern),
+    'cap tasca de client a la safata: la comprovació anterior no prova res';
+end $$;
+-- ningú no pot fer-se passar per un altre en el projecte intern
+do $$ begin
+  begin
+    insert into projectes (client_id, titol, tipus, responsable_id, intern_de)
+    values ((select id from clients where intern), 'x', 'altre',
+            '00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000c');
+    raise exception 'FALLA: projecte intern amb responsable diferent de la persona';
+  exception when check_violation then null;
+  end;
+end $$;
+
+-- ------------------------------------------------------------
+-- 0016: plantilles de tasques
+-- ------------------------------------------------------------
+do $$ begin
+  begin
+    insert into plantilles_tasques (subtipus, titol) values (' Barometre ', 'x');
+    raise exception 'FALLA: plantilla amb subtipus no normalitzat';
+  exception when check_violation then null;
+  end;
+end $$;
+insert into plantilles_tasques (id, subtipus, titol, fase, dies, ordre) values
+  ('60000000-0000-0000-0000-000000000001', 'barometre', 'Enviar el qüestionari al client', 'qüestionari i mostra', 5, 1),
+  ('60000000-0000-0000-0000-000000000002', 'barometre', 'Preparar la presentació', 'Presentació', 40, 2),
+  ('60000000-0000-0000-0000-000000000003', 'barometre', 'Tasca desactivada', null, null, 3);
+update plantilles_tasques set actiu = false where id = '60000000-0000-0000-0000-000000000003';
+insert into projectes (id, client_id, titol, tipus, subtipus, responsable_id, data_inici) values
+  ('20000000-0000-0000-0000-000000000016', '10000000-0000-0000-0000-000000000001',
+   'Baròmetre amb plantilla', 'estudi', 'Barometre', '00000000-0000-0000-0000-00000000000a', current_date);
+do $$
+declare
+  nou uuid;
+begin
+  assert (select count(*) from tasques where projecte_id = '20000000-0000-0000-0000-000000000016') = 2,
+    'la plantilla no ha creat les dues tasques actives';
+  assert (select f.nom = 'Qüestionari i mostra' and t.data_prevista = current_date + 5
+            from tasques t join fases f on f.id = t.fase_id
+           where t.projecte_id = '20000000-0000-0000-0000-000000000016'
+             and t.titol = 'Enviar el qüestionari al client'),
+    'la tasca de plantilla no penja de la fase o no té la data de l''inici + dies';
+  -- la nova onada copia les tasques i no hi torna a aplicar la plantilla
+  nou := nova_onada('20000000-0000-0000-0000-000000000016', 'Baròmetre amb plantilla 2', current_date + 30, null);
+  assert (select count(*) from tasques where projecte_id = nou) = 2,
+    'la nova onada ha duplicat les tasques de la plantilla';
+end $$;
+
+-- ------------------------------------------------------------
+-- 0016: preferències al perfil
+-- ------------------------------------------------------------
+update perfils set tema = 'fosc', menu = 'desplegat' where id = '00000000-0000-0000-0000-00000000000a';
+update perfils set tema = 'fosc' where id = '00000000-0000-0000-0000-00000000000c';
+do $$ begin
+  assert (select tema = 'fosc' and menu = 'desplegat' from perfils where id = '00000000-0000-0000-0000-00000000000a'),
+    'no s''han pogut desar les preferències pròpies';
+  assert (select tema is null from perfils where id = '00000000-0000-0000-0000-00000000000c'),
+    'algú ha canviat les preferències d''un altre';
+  begin
+    update perfils set tema = 'lila' where id = '00000000-0000-0000-0000-00000000000a';
+    raise exception 'FALLA: tema no vàlid acceptat';
+  exception when check_violation then null;
+  end;
+end $$;
+
 -- historial: cap client hi pot escriure
 do $$ begin
   begin
@@ -828,7 +918,7 @@ begin
   foreach t in array array['perfils', 'clients', 'projectes', 'fases', 'entregables',
                            'tasques', 'contactes', 'idees', 'historial_dates',
                            'projecte_responsables', 'notificacions', 'revisions',
-                           'migracions_aplicades']
+                           'migracions_aplicades', 'plantilles_tasques']
   loop
     begin
       execute format('delete from %I', t);

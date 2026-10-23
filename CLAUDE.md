@@ -378,6 +378,23 @@ ell qui l'ha passat. La traça queda als avisos; no hi ha taula d'historial.
 - **Registre de migracions** (`migracions_aplicades`, `versio_esquema()`):
   cada migració s'hi registra; l'app avisa si en falta alguna.
 
+### 4.4 octies Gestió interna, plantilles i preferències (migració 0016)
+
+- **Gestió interna**: el dia a dia que no és de cap client. Les tasques
+  continuen penjant d'un projecte: cada membre té un **projecte intern** propi
+  (`projectes.intern_de`, tipus `altre`) d'un **client intern** únic
+  (`clients.intern`), creat la primera vegada per `projecte_intern()`. No
+  surten a les llistes de projectes ni de clients, ni al cronograma ni al
+  resum. A "la meva setmana" tenen secció pròpia amb alta ràpida (escriure i
+  Enter) i, per no sortir dues vegades, no surten a la safata ni a l'agenda
+  (`v_safata.intern`). Es poden passar a algú altre com qualsevol tasca.
+- **Plantilles de tasques** (`plantilles_tasques`) per subtipus de projecte:
+  en crear-ne un, se'n creen les tasques (fase pel nom, data = inici + dies,
+  sense persona). La nova onada no les hi torna a aplicar (ja copia les
+  tasques). Una línia es desactiva, no s'esborra.
+- **Preferències al perfil** (`perfils.tema`, `perfils.menu`), a més de la
+  galeta: segueixen la persona a qualsevol ordinador.
+
 ### 4.5 Qui actualitza les fases
 
 **Només el responsable del projecte** (membre del departament). El camp i la
@@ -484,8 +501,8 @@ Quatre, més les afegides l'octubre de 2026: **equip** (membres i persones
 externes), **avisos** (notificacions dins de l'app), **cronograma** (prova de
 Gantt), **feina de l'equip** (què té obert cadascú) i **resum setmanal**
 (per a la reunió de dilluns: què s'ha tancat, què ha lliscat i per què, què
-venç; llistes, sense xifres), a més d'una **cerca global** al menú (tecla
-`/`). Cap més sense preguntar. Estil visual: secció 11.
+venç; llistes, sense xifres) i **plantilles de tasques** (des de projectes),
+a més d'una **cerca global** al menú (tecla `/`). Cap més sense preguntar. Estil visual: secció 11.
 
 ### 6.1 La meva setmana (pàgina d'inici)
 
@@ -496,6 +513,8 @@ Llistes accionables, sense gràfics ni percentatges:
 - **Aquesta setmana** — les meves tasques amb `data_prevista` dins dels 7 dies.
 - **Projectes muts** — només si en soc responsable.
 - **Les meves idees** en estat `proposada`.
+- **Gestió interna** (§4.4 octies): tasques del dia a dia que no són de
+  cap client, amb alta ràpida.
 
 Criteri: si l'obro cada matí i hi ha feina concreta a fer, l'app viu. Si hi ha
 percentatges d'avanç, mor.
@@ -694,5 +713,6 @@ per fer l'app clara i agradable d'utilitzar.
 
 Des de l'octubre de 2026: cada persona pot tenir el menú lateral plegat (només
 icones) o desplegat i el **mode fosc** activat, amb dos botons al peu del menú
-(galetes del navegador). Els botons d'acció de les files (fet, replanificar,
+(desat al perfil des de la migració 0016, i en galeta per pintar de seguida).
+En replanificar hi ha botons «+1 setm.»/«+2 setm.» i motius d'un clic. Els botons d'acció de les files (fet, replanificar,
 revisat, passar, cancel·lar...) són només icona, amb l'etiqueta en passar-hi.

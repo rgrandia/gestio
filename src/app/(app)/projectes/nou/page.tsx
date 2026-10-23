@@ -13,11 +13,19 @@ export default async function NouProjecte({
 }) {
   const perfil = await requereixMembre();
   const { client, idea: ideaId } = await searchParams;
-  const [clients, perfils] = await Promise.all([obteClientsActius(), obtePerfils()]);
+  const supabase = await createClient();
+  const [clients, perfils, plantillesR] = await Promise.all([
+    obteClientsActius(),
+    obtePerfils(),
+    supabase.from("plantilles_tasques").select("subtipus").eq("actiu", true),
+  ]);
+  // Quants subtipus tenen plantilla, i amb quantes tasques.
+  const ambPlantilla = new Map<string, number>();
+  for (const { subtipus } of (plantillesR.data ?? []) as { subtipus: string }[])
+    ambPlantilla.set(subtipus, (ambPlantilla.get(subtipus) ?? 0) + 1);
 
   let idea: { id: string; titol: string; descripcio: string | null; client_id: string | null } | null = null;
   if (ideaId) {
-    const supabase = await createClient();
     const { data } = await supabase
       .from("idees")
       .select("id, titol, descripcio, client_id")
@@ -74,10 +82,16 @@ export default async function NouProjecte({
             subtipus
             <input name="subtipus" list="subtipus" placeholder="barometre, electoral…" />
             <datalist id="subtipus">
-              {["barometre", "electoral", "qualitatiu", "pla_comunicacio", "acompanyament"].map((s) => (
+              {[...new Set(["barometre", "electoral", "qualitatiu", "pla_comunicacio", "acompanyament", ...ambPlantilla.keys()])].map((s) => (
                 <option key={s} value={s} />
               ))}
             </datalist>
+            {ambPlantilla.size > 0 && (
+              <span className="petit suau">
+                amb <Link href="/plantilles">plantilla</Link>:{" "}
+                {[...ambPlantilla].map(([s, n]) => `${s} (${n})`).join(", ")}
+              </span>
+            )}
           </label>
         </div>
         <div className="fila-camps">

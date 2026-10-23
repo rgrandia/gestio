@@ -53,6 +53,8 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
       ? q.or(`responsable_id.eq.${f.responsable},id.in.(${ids.join(",")})`)
       : q.eq("responsable_id", f.responsable);
   }
+  // Els projectes interns (gestió del dia a dia) no són a la llista.
+  q = q.is("intern_de", null);
   // Per defecte, fora tancats i cancel·lats (§7.2)
   // Arxivats i paperera només surten quan es demanen explícitament.
   if (estat === "paperera") q = q.not("eliminat_el", "is", null);
@@ -80,7 +82,10 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
           <h1>projectes</h1>
           <div className="sub">{files.length} {files.length === 1 ? "projecte" : "projectes"}</div>
         </div>
-        <Link href="/projectes/nou" className="boto boto-primari"><Plus className="icona-petita" aria-hidden /> nou projecte</Link>
+        <div className="flex gap-2">
+          <Link href="/plantilles" className="boto">plantilles de tasques</Link>
+          <Link href="/projectes/nou" className="boto boto-primari"><Plus className="icona-petita" aria-hidden /> nou projecte</Link>
+        </div>
       </div>
       <section className="seccio">
       <form className="filtres" method="get">

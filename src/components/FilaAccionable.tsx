@@ -4,6 +4,7 @@ import { Fragment, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRightLeft, CalendarClock, Check, Clock, Pencil, RotateCcw, X } from "lucide-react";
 import { accioItem, transfereix } from "@/lib/accions";
+import { DatesRapides, MotiusRapids } from "@/components/AjudesReplanificar";
 import { avui } from "@/lib/dates";
 import type { TaulaItem } from "@/lib/tipus";
 
@@ -12,6 +13,7 @@ type Props = {
   id: string;
   estat?: string; // valor de data-estat per al filet esquerre
   tePrevista: boolean;
+  prevista?: string | null; // data prevista actual, per als botons "+1 setm."
   acabat: boolean; // té data_real o està cancel·lat: només editar i reobrir
   desapareix?: boolean; // a la safata, la fila marxa amb un fos de 120 ms
   ambRevisat?: boolean;
@@ -33,6 +35,7 @@ export function FilaAccionable({
   id,
   estat,
   tePrevista,
+  prevista,
   acabat,
   desapareix = false,
   ambRevisat = false,
@@ -216,15 +219,19 @@ export function FilaAccionable({
               autoFocus
               onChange={(e) => setNovaData(e.target.value)}
             />
+            <DatesRapides prevista={prevista} hui={hui} setData={setNovaData} />
             {tePrevista && (
-              <input
-                type="text"
-                aria-label="motiu"
-                placeholder="motiu (opcional)"
-                value={motiu}
-                className="font-sans"
-                onChange={(e) => setMotiu(e.target.value)}
-              />
+              <>
+                <input
+                  type="text"
+                  aria-label="motiu"
+                  placeholder="motiu (opcional)"
+                  value={motiu}
+                  className="font-sans"
+                  onChange={(e) => setMotiu(e.target.value)}
+                />
+                <MotiusRapids motiu={motiu} setMotiu={setMotiu} />
+              </>
             )}
             <button className="boto boto-primari" disabled={pendent}>desar</button>
             <button type="button" className="boto boto-suau boto-icona" aria-label="tanca" onClick={() => setObert(null)}><X className="icona-petita" aria-hidden /></button>

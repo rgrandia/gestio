@@ -523,6 +523,77 @@ export async function actualitzaEntregable(_p: Resultat, fd: FormData): Promise<
   return { ok: true };
 }
 
+// Plantilles de tasques per subtipus (s'apliquen en crear el projecte).
+export async function creaPlantilla(_p: Resultat, fd: FormData): Promise<Resultat> {
+  const subtipus = text(fd, "subtipus").toLowerCase();
+  const titol = text(fd, "titol");
+  const diesText = text(fd, "dies");
+  const dies = diesText === "" ? null : Number(diesText);
+  if (!subtipus) return { error: "Indica el subtipus (p. ex. barometre)." };
+  if (!titol) return { error: "La tasca necessita un títol." };
+  if (dies !== null && (!Number.isInteger(dies) || dies < -365 || dies > 730))
+    return { error: "Els dies han de ser un enter entre -365 i 730." };
+
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("plantilles_tasques")
+    .select("id", { count: "exact", head: true })
+    .eq("subtipus", subtipus);
+  const { error } = await supabase.from("plantilles_tasques").insert({
+    subtipus,
+    titol,
+    fase: opcional(fd, "fase"),
+    dies,
+    ordre: (count ?? 0) + 1,
+  });
+  if (error) return { error: missatgeError(error) };
+  revalidatePath("/plantilles");
+  return { ok: true };
+}
+
+export async function activaPlantilla(id: string, actiu: boolean): Promise<Resultat> {
+  const supabase = await createClient();
+  const { error, count } = await supabase
+    .from("plantilles_tasques")
+    .update({ actiu }, { count: "exact" })
+    .eq("id", id);
+  if (error) return { error: missatgeError(error) };
+  if (!count) return { error: "No s'ha trobat la línia. Recarrega la pàgina." };
+  revalidatePath("/plantilles");
+  return { ok: true };
+}
+
+// Preferències de cadascú (tema i menú), desades al perfil per tenir-les a
+// qualsevol ordinador. La galeta continua fent de memòria ràpida.
+export async function desaPreferencia(clau: "tema" | "menu", valor: string): Promise<void> {
+  const valids = { tema: ["clar", "fosc"], menu: ["plegat", "desplegat"] };
+  if (!valids[clau]?.includes(valor)) return;
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const jo = claims?.claims?.sub;
+  if (!jo) return;
+  await supabase.from("perfils").update({ [clau]: valor }).eq("id", jo);
+}
+
+// Gestió interna: tasca meva al meu projecte intern (es crea el primer cop).
+export async function creaTascaInterna(_p: Resultat, fd: FormData): Promise<Resultat> {
+  const titol = text(fd, "titol");
+  const data_prevista = dataOpcional(fd, "data_prevista");
+  if (!titol) return { error: "Escriu què has de fer." };
+  if (data_prevista === "invalida") return { error: "La data ha de tenir format AAAA-MM-DD." };
+
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const jo = claims?.claims?.sub;
+  if (!jo) return { error: "La sessió ha caducat. Torna a entrar." };
+  const { data: projecte_id, error: e1 } = await supabase.rpc("projecte_intern");
+  if (e1) return { error: missatgeError(e1) };
+  const { error } = await supabase.from("tasques").insert({ projecte_id, titol, data_prevista, assignada_a: jo });
+  if (error) return { error: missatgeError(error) };
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function creaContacte(_p: Resultat, fd: FormData): Promise<Resultat> {
   const projecte_id = text(fd, "projecte_id");
   const data = text(fd, "data") || avui();

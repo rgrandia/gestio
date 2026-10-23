@@ -157,6 +157,7 @@ export default async function DetallProjecte({
                   id={t.id}
                   estat={estatFila(t.data_prevista, null, "pendent", hui)}
                   tePrevista={Boolean(t.data_prevista)}
+                    prevista={t.data_prevista}
                   acabat={false}
                   desapareix
                 >
@@ -190,7 +191,7 @@ export default async function DetallProjecte({
           <dd>
             {dataCurta(p.data_fi_prevista)}
             {!p.data_fi_real && p.data_fi_prevista && <Retard prevista={p.data_fi_prevista} real={null} hui={hui} />}
-            {p.estat === "actiu" && <ReplanificaProjecte id={p.id} tePrevista={Boolean(p.data_fi_prevista)} />}
+            {p.estat === "actiu" && <ReplanificaProjecte id={p.id} tePrevista={Boolean(p.data_fi_prevista)} prevista={p.data_fi_prevista} />}
           </dd>
         </div>
         <div>
@@ -369,6 +370,7 @@ async function Detall({
                       id={f.id}
                       estat={estatFila(f.data_prevista, f.data_real, f.estat, hui)}
                       tePrevista={Boolean(f.data_prevista)}
+                      prevista={f.data_prevista}
                       acabat={Boolean(f.data_real) || f.estat === "cancellat"}
                     >
                       <td className="nowrap">
@@ -513,6 +515,7 @@ async function Detall({
                       id={e.id}
                       estat={estatFila(e.data_prevista, e.data_real, e.estat, hui)}
                       tePrevista={Boolean(e.data_prevista)}
+                      prevista={e.data_prevista}
                       acabat={Boolean(e.data_real) || e.estat === "cancellat"}
                       persones={passables}
                       revisors={revisors}
@@ -663,6 +666,7 @@ async function Detall({
                     id={t.id}
                     estat={estatFila(t.data_prevista, t.data_real, t.estat, hui)}
                     tePrevista={Boolean(t.data_prevista)}
+                    prevista={t.data_prevista}
                     acabat={Boolean(t.data_real) || t.estat === "cancellat"}
                     revisors={revisors}
                     persones={passables}

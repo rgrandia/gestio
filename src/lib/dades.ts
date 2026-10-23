@@ -33,7 +33,7 @@ export const etiquetaPersona = (p: Perfil) =>
 
 export const obteClientsActius = cache(async (): Promise<Pick<Client, "id" | "nom">[]> => {
   const supabase = await createClient();
-  const { data } = await supabase.from("clients").select("id, nom").eq("actiu", true).order("nom");
+  const { data } = await supabase.from("clients").select("id, nom").eq("actiu", true).eq("intern", false).order("nom");
   return data ?? [];
 });
 

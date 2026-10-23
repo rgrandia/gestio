@@ -56,6 +56,7 @@ export type Projecte = {
   arxivat_el: string | null;
   eliminat_el: string | null; // a la paperera
   eliminat_per: string | null;
+  intern_de?: string | null; // projecte de gestió interna d'aquesta persona (0016)
 };
 
 export type Fase = {
