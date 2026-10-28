@@ -122,6 +122,47 @@ await roc.waitForSelector(".columna-tauler[data-estat=idea] >> text=Fil sobre pa
 ok(!(await roc.isVisible(".columna-tauler >> text=participació electoral dijous")), "la data es treu del títol");
 await roc.screenshot({ path: SHOTS + "xarxes-tauler.png", fullPage: true });
 
+// planner setmanal: arrossegar una idea sense data al dia d'avui
+const hui = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date());
+const dema = new Date(hui + "T12:00:00Z"); dema.setUTCDate(dema.getUTCDate() + 1);
+const demaIso = dema.toISOString().slice(0, 10);
+await roc.fill("input[aria-label='idea ràpida per a xarxes']", "Idea per planificar");
+await roc.click("button:has-text('afegir idea')");
+await roc.waitForSelector(".columna-tauler[data-estat=idea] >> text=Idea per planificar");
+await roc.goto(B + "/xarxes/setmana");
+const safata = roc.locator(".planner-safata");
+ok(await safata.locator("text=Idea per planificar").isVisible(), "el planner té la safata de publicacions sense data");
+const nansa = safata.locator(".targeta-planner", { hasText: "Idea per planificar" }).locator("button.nansa");
+const desti = roc.locator(`.planner-dia[data-desti='${hui}']`);
+const a = await nansa.boundingBox();
+const b = await desti.boundingBox();
+await roc.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+await roc.mouse.down();
+await roc.mouse.move(b.x + b.width / 2, b.y + 60, { steps: 12 });
+await roc.mouse.up();
+await desti.locator("text=Idea per planificar").waitFor();
+await roc.waitForTimeout(800);
+await roc.reload();
+ok(await desti.locator("text=Idea per planificar").isVisible(), "arrossegar al dia la planifica (i es desa)");
+// amb el teclat: → la passa a demà
+await desti.locator(".targeta-planner", { hasText: "Idea per planificar" }).locator("button.nansa").focus();
+await roc.keyboard.press("ArrowRight");
+await roc.waitForTimeout(1200);
+await roc.goto(B + "/xarxes/tauler");
+await roc.click(".columna-tauler[data-estat=idea] >> text=Idea per planificar");
+await roc.waitForURL(/\/xarxes\/[0-9a-f-]{36}$/);
+ok(await roc.isVisible(`text=prevista el ${demaIso.slice(8, 10)}/${demaIso.slice(5, 7)}/${demaIso.slice(2, 4)}`), "amb el teclat (→) es passa al dia següent");
+ok(await roc.isVisible("text=sense motiu"), "moure-la al planner queda a l'historial de dates");
+// al passat no
+await roc.goto(B + "/xarxes/setmana?d=" + hui);
+await roc.screenshot({ path: SHOTS + "xarxes-setmana.png", fullPage: true });
+
+// pàgina d'inici: el calendari de la setmana hi mostra les publicacions
+await roc.goto(B + "/");
+ok(await roc.isVisible("#setmana >> text=Resultats de l'enquesta de serveis"), "el calendari de la setmana de l'inici mostra les publicacions");
+ok((await roc.locator("#setmana button").count()) === 0, "el calendari de l'inici no té botons");
+await roc.screenshot({ path: SHOTS + "inici-setmana.png", fullPage: true });
+
 // desactivar-la a l'Aina: ja no la veu
 await roc.goto(B + "/equip");
 await roc.locator("tr", { hasText: "aina@prova.test" }).locator("button:has-text('xarxes activades')").click();
@@ -132,7 +173,7 @@ ok((await enllacXarxes(aina).count()) === 0, "desactivada, ja no té l'enllaç a
 
 // mòbil
 const mobil = await login("roc@prova.test", { width: 390, height: 844 });
-for (const ruta of ["/xarxes", "/xarxes/tauler", urlPub.replace(B, "")]) {
+for (const ruta of ["/", "/xarxes", "/xarxes/setmana", "/xarxes/tauler", urlPub.replace(B, "")]) {
   await mobil.goto(B + ruta);
   const ampla = await mobil.evaluate(() => document.documentElement.scrollWidth);
   ok(ampla <= 390, `sense scroll horitzontal a mòbil (${ruta.slice(0, 20)})`);

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const PESTANYES = [
-  { href: "/xarxes", text: "calendari" },
+  { href: "/xarxes", text: "mes" },
+  { href: "/xarxes/setmana", text: "setmana" },
   { href: "/xarxes/tauler", text: "tauler" },
   { href: "/xarxes/comptes", text: "comptes i dates clau" },
 ];

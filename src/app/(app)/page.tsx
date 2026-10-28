@@ -6,13 +6,14 @@ import { assignables, comprova, comptaReplanificacions, membres, obtePersones } 
 import { FilaRevisio } from "@/components/FilaRevisio";
 import { Persona } from "@/components/Persona";
 import { Replanificat } from "@/components/Replanificat";
-import { avui, dataCurta, dataLlarga, desplacament, diaCurt, diaRelatiu, diesEntre, salutacio, sumaDies } from "@/lib/dates";
+import { avui, dataCurta, dataLlarga, desplacament, diaCurt, diesEntre, salutacio, sumaDies } from "@/lib/dates";
 import { FilaAccionable } from "@/components/FilaAccionable";
 import { Formulari } from "@/components/Formulari";
 import { Seleccio } from "@/components/Seleccio";
 import { estatFila } from "@/components/Retard";
 import { creaTascaInterna } from "@/lib/accions";
 import { SeccioXarxesInici } from "@/components/SeccioXarxesInici";
+import { CalendariSetmanaInici, type CitaInici } from "@/components/CalendariSetmanaInici";
 import { TAULA_DE, type FilaSafata, type ProjecteMut } from "@/lib/tipus";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +36,7 @@ export default async function LaMevaSetmana({
   const { tot } = await searchParams;
   const veureTot = tot === "1";
   const hui = avui();
-  const fiSetmana = sumaDies(hui, 7);
+  const fiSetmana = sumaDies(hui, 6); // 7 dies, avui inclòs
   const supabase = await createClient();
 
   let consultaSafata = supabase
@@ -164,11 +165,9 @@ export default async function LaMevaSetmana({
     ...filesSetmana.map((t) => t.id),
   ]);
 
-  // Agenda de la setmana: les meves tasques de projecte i les internes amb data,
-  // agrupades per dia. És un calendari per veure què ve: les accions es fan a
-  // «a revisar» i a «gestió interna» (abans hi eren repetides).
-  type Cita = { id: string; titol: string; data: string; alta: boolean; projecte_id: string; on: string; intern: boolean };
-  const cites: Cita[] = [
+  // Calendari dels 7 dies que venen (sota «a revisar»): les meves tasques de
+  // projecte i les internes amb data, i les publicacions si tinc les xarxes.
+  const cites: CitaInici[] = [
     ...filesSetmana.map((t) => ({
       id: t.id,
       titol: t.titol,
@@ -182,8 +181,6 @@ export default async function LaMevaSetmana({
       .filter((t) => t.data_prevista && t.data_prevista >= hui && t.data_prevista <= fiSetmana)
       .map((t) => ({ id: t.id, titol: t.titol, data: t.data_prevista!, alta: t.prioritat === "alta", projecte_id: "", on: "gestió interna", intern: true })),
   ].sort((a, b) => a.data.localeCompare(b.data));
-  const perDia = new Map<string, Cita[]>();
-  for (const c of cites) perDia.set(c.data, [...(perDia.get(c.data) ?? []), c]);
 
   const vencuts = filesSafata.filter((f) => f.motiu === "vencut").length;
   const enRisc = filesSafata.length - vencuts;
@@ -292,6 +289,8 @@ export default async function LaMevaSetmana({
               <Link href="/feina?tot=1">Posa-hi data</Link>.
             </p>
           )}
+
+          <CalendariSetmanaInici cites={cites} hui={hui} jo={perfil.id} />
         </div>
 
         <aside className="inici-lateral" aria-label="el dia a dia">
@@ -404,42 +403,6 @@ export default async function LaMevaSetmana({
                   ))}
                 </tbody>
               </table>
-            )}
-          </section>
-
-          <section className="seccio compacta" id="setmana">
-            <header>
-              <span className="titol">
-                aquesta setmana
-                {cites.length > 0 && <span className="comptador">{cites.length}</span>}
-              </span>
-              <span className="meta">fins al {diaCurt(fiSetmana)}</span>
-            </header>
-            {cites.length === 0 ? (
-              <p className="buit-petit">Res amb data per als propers 7 dies.</p>
-            ) : (
-              <ol className="agenda">
-                {[...perDia].map(([dia, llista]) => (
-                  <li key={dia}>
-                    <div className={`agenda-dia ${dia === hui ? "avui" : ""}`}>{diaRelatiu(dia, hui)}</div>
-                    <ul>
-                      {llista.map((c) => (
-                        <li key={c.id}>
-                          <span>
-                            {c.intern ? (
-                              <a href="#intern">{c.titol}</a>
-                            ) : (
-                              <Link href={`/projectes/${c.projecte_id}`}>{c.titol}</Link>
-                            )}
-                            {c.alta && <span className="etiqueta tag-vencut ml-1">alta</span>}
-                          </span>
-                          <span className="on">{c.on}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </li>
-                ))}
-              </ol>
             )}
           </section>
 

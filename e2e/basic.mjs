@@ -116,7 +116,7 @@ const safata = p.locator("section:has(header:has-text('a revisar')) tbody tr");
 const n = await safata.count();
 ok(n === 3, `safata amb 3 elements (fase vençuda, entregable vençut, tasca en risc): ${n}`);
 ok(await p.isVisible("section:has(header:has-text('projectes muts')) >> text=Acompanyament comunicació"), "consultoria sense contacte en 60 dies surt muda");
-ok(await p.isVisible("section:has(header:has-text('aquesta setmana')) >> text=Revisar literals"), "tasca a 'aquesta setmana'");
+ok(await p.isVisible("#setmana >> text=Revisar literals"), "tasca al calendari dels propers 7 dies");
 
 // marcar fet amb data anterior, sense sortir de la pantalla
 const filaQ = safata.filter({ hasText: "Qüestionari" });

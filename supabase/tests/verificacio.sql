@@ -919,16 +919,19 @@ end $$;
 -- d'actualitzat_el per envellir-lo; tot es desfà en acabar)
 reset role;
 alter table projectes disable trigger trg_projectes_actualitzat;
+-- Només el projecte intern de l'usuari de prova: a producció, les tasques
+-- internes reals poden estar fetes (data_real obligatòria) i no s'han de tocar.
 update projectes set creat_el = now() - interval '90 days', actualitzat_el = now() - interval '90 days'
-  where intern_de is not null;
-update tasques set creat_el = now() - interval '90 days', data_real = null
-  where projecte_id in (select id from projectes where intern_de is not null);
+  where intern_de = '00000000-0000-0000-0000-00000000000a';
+update tasques set creat_el = now() - interval '90 days', data_real = null, estat = 'pendent'
+  where projecte_id in (select id from projectes where intern_de = '00000000-0000-0000-0000-00000000000a');
 alter table projectes enable trigger trg_projectes_actualitzat;
 set local role authenticated;
 do $$ begin
-  assert exists (select 1 from projectes where intern_de is not null),
+  assert exists (select 1 from projectes where intern_de = '00000000-0000-0000-0000-00000000000a'),
     'cap projecte intern per provar: la comprovació següent no provaria res';
-  assert not exists (select 1 from v_projectes_quiets v join projectes p on p.id = v.id where p.intern_de is not null),
+  assert not exists (select 1 from v_projectes_quiets v join projectes p on p.id = v.id
+                     where p.intern_de = '00000000-0000-0000-0000-00000000000a'),
     'un projecte intern surt com a quiet';
 end $$;
 insert into contactes (projecte_id, data, tipus) values
@@ -955,6 +958,11 @@ end $$;
 -- ------------------------------------------------------------
 -- Xarxes socials (0019): només per a qui té la funció activada
 -- ------------------------------------------------------------
+-- A producció hi pot haver gent amb la funció activada; per provar el cas
+-- «ningú no la té» se'ls treu dins d'aquesta transacció (es desfà al final).
+reset role;
+update perfils set funcions = array_remove(funcions, 'xarxes') where 'xarxes' = any(funcions);
+set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';
 do $$ begin
   assert not te_funcio('xarxes'), 'ningú no hauria de tenir xarxes per defecte';
@@ -1028,7 +1036,8 @@ update publicacions set estat = 'revisio', revisor_id = '00000000-0000-0000-0000
 
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000c"}';
 do $$ begin
-  assert (select count(*) from publicacions) = 2, 'amb la funció activada no es veuen les publicacions';
+  assert (select count(*) from publicacions where id in ('71000000-0000-0000-0000-000000000001',
+          '71000000-0000-0000-0000-000000000002')) = 2, 'amb la funció activada no es veuen les publicacions';
   assert exists (select 1 from notificacions where tipus = 'funcio'), 'no ha arribat l''avís d''activació';
   assert exists (select 1 from notificacions where text like '%et demana revisar la publicació%'),
     'no ha arribat l''avís de revisió';
