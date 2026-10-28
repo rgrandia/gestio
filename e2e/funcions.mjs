@@ -149,10 +149,15 @@ ok(!(await p.isVisible("#a-revisar >> text=Renovar la subscripció del panel")),
 await p.goto(B + "/projectes");
 ok(!(await p.isVisible("text=Gestió interna")), "el projecte intern no surt a la llista de projectes");
 
-// replanificar amb +1 setmana i un motiu d'un clic
+// replanificar amb +1 dia / +1 setmana i un motiu d'un clic
 await p.goto(B + "/?tot=1");
 const filaSafata = p.locator("#a-revisar tr", { hasText: "Preparar plantilla de taules" });
 await filaSafata.locator("button[data-tip=replanificar]").click();
+// vençuda: +1 dia compta des d'avui
+const huiMad = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date());
+const demaMad = new Date(huiMad + "T12:00:00Z"); demaMad.setUTCDate(demaMad.getUTCDate() + 1);
+await filaSafata.locator("button:has-text('+1 dia')").click();
+ok((await filaSafata.locator("input[type=date]").inputValue()) === demaMad.toISOString().slice(0, 10), "+1 dia posa demà (si ja havia vençut)");
 await filaSafata.locator("button:has-text('+1 setm.')").click();
 const novaData = await filaSafata.locator("input[type=date]").inputValue();
 ok(/^\d{4}-\d{2}-\d{2}$/.test(novaData) && novaData > new Date().toISOString().slice(0, 10), "+1 setm. posa una data futura");

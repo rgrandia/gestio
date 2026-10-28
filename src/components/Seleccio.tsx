@@ -33,7 +33,7 @@ export function Seleccio({ children }: { children: ReactNode }) {
       return nou;
     });
 
-  const fes = (accio: "setmana" | "dues_setmanes" | "revisat" | "fet") =>
+  const fes = (accio: "setmana" | "dia" | "revisat" | "fet") =>
     startTransition(async () => {
       setError(null);
       const r = await accioEnBloc([...seleccionats.values()], accio, motiu);
@@ -52,11 +52,11 @@ export function Seleccio({ children }: { children: ReactNode }) {
           <button className="boto boto-fet" disabled={pendent} onClick={() => fes("fet")}>
             <Check className="icona-petita" aria-hidden /> fet avui
           </button>
+          <button className="boto" disabled={pendent} onClick={() => fes("dia")}>
+            <CalendarClock className="icona-petita" aria-hidden /> +1 dia
+          </button>
           <button className="boto" disabled={pendent} onClick={() => fes("setmana")}>
             <CalendarClock className="icona-petita" aria-hidden /> +1 setm.
-          </button>
-          <button className="boto" disabled={pendent} onClick={() => fes("dues_setmanes")}>
-            <CalendarClock className="icona-petita" aria-hidden /> +2 setm.
           </button>
           <MotiusRapids motiu={motiu} setMotiu={setMotiu} />
           <button className="boto" disabled={pendent} onClick={() => fes("revisat")}>

@@ -611,7 +611,7 @@ Llistes accionables, sense gràfics ni percentatges:
   `data_objectiu` en els propers 30 dies.
 
 A "a revisar" es poden seleccionar diverses línies i fer-hi «fet avui»,
-«+1/+2 setm.» (amb motiu d'un clic) o «revisat» de cop, i hi ha dreceres de
+«+1 dia»/«+1 setm.» (amb motiu d'un clic) o «revisat» de cop, i hi ha dreceres de
 teclat (↑↓, f, r, v, p, x, Esc).
 
 Disposició (octubre 2026): a pantalla gran, dues columnes. A l'esquerra el que
@@ -829,5 +829,5 @@ per fer l'app clara i agradable d'utilitzar.
 Des de l'octubre de 2026: cada persona pot tenir el menú lateral plegat (només
 icones) o desplegat i el **mode fosc** activat, amb dos botons al peu del menú
 (desat al perfil des de la migració 0016, i en galeta per pintar de seguida).
-En replanificar hi ha botons «+1 setm.»/«+2 setm.» i motius d'un clic. Els botons d'acció de les files (fet, replanificar,
+En replanificar hi ha botons «+1 dia»/«+1 setm.» i motius d'un clic. Els botons d'acció de les files (fet, replanificar,
 revisat, passar, cancel·lar...) són només icona, amb l'etiqueta en passar-hi.
