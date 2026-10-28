@@ -12,7 +12,8 @@
     "nova_onada(uuid,text,date,text)",
     "projecte_intern()",
     "te_funcio(text)",
-    "activa_funcio(uuid,text,boolean)"
+    "activa_funcio(uuid,text,boolean)",
+    "marca_dies(date[],text,text,boolean)"
   ],
   "columnes": [
     "fases.data_inici",
@@ -39,6 +40,7 @@
     "xarxes_comptes.cadencia_setmanal",
     "publicacions.aprovada_per",
     "publicacio_canals.text_adaptat",
-    "efemerides.recurrent"
+    "efemerides.recurrent",
+    "calendari_dies.tipus"
   ]
 }

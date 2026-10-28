@@ -6,6 +6,7 @@ import {
   Bell,
   Building2,
   CalendarCheck,
+  CalendarCog,
   CalendarRange,
   ClipboardList,
   FolderKanban,
@@ -18,6 +19,7 @@ import {
 const ENLLACOS = [
   { href: "/", text: "la meva setmana", Icona: CalendarCheck, compte: "pendents" as const },
   { href: "/avisos", text: "avisos", Icona: Bell, compte: "avisos" as const },
+  { href: "/calendari", text: "el meu calendari", Icona: CalendarCog },
   { href: "/projectes", text: "projectes", Icona: FolderKanban },
   { href: "/cronograma", text: "cronograma", Icona: CalendarRange },
   { href: "/feina", text: "feina de l'equip", Icona: UsersRound },

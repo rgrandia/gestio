@@ -937,13 +937,27 @@ td.tria input { min-height: 0; width: 16px; height: 16px; accent-color: var(--ac
 .dia-inici:last-child { border-right: 0; }
 .dia-inici.avui { background: var(--accent-suau); }
 .dia-inici.festiu:not(.avui) { background: var(--hover); }
-.cita > a { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.cos-cita > a { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .cita .on { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
 .cita-xarxa .on { white-space: normal; display: flex; }
 .cap-dia-inici { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--text-suau); padding-bottom: 4px; border-bottom: 1px solid var(--linia); margin-bottom: 2px; }
 .cap-dia-inici span { color: var(--text); }
 .dia-inici.avui .cap-dia-inici, .dia-inici.avui .cap-dia-inici span { color: var(--accent); }
-.cita { display: grid; gap: 1px; padding: 3px 5px; font-size: 12px; line-height: 1.3; background: var(--panell); border: 1px solid var(--linia); border-left: 3px solid var(--accent); min-width: 0; overflow-wrap: anywhere; }
+.cita { display: flex; align-items: stretch; font-size: 12px; line-height: 1.3; background: var(--panell); border: 1px solid var(--linia); border-left: 3px solid var(--accent); min-width: 0; overflow-wrap: anywhere; }
+.cos-cita { display: grid; gap: 1px; padding: 3px 5px; min-width: 0; flex: 1; }
+.cita .nansa {
+  flex: none; display: flex; align-items: center; padding: 0 1px; color: var(--text-fluix);
+  cursor: grab; touch-action: none; background: none; border: 0; min-height: 0;
+}
+.cita .nansa:hover, .cita .nansa:focus-visible { color: var(--text); background: var(--hover); }
+.cita.fantasma-origen { opacity: .35; }
+.cita.desant { opacity: .6; }
+.cita.fantasma { z-index: 50; pointer-events: none; box-shadow: var(--ombra-alta); }
+.cita.en-dia-lliure { outline: 1px dashed var(--vencut); outline-offset: -1px; }
+.setmana-arrossegable.arrossegant { user-select: none; cursor: grabbing; }
+.dia-inici.sobre { box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-suau); }
+.dia-inici.prohibit { box-shadow: inset 0 0 0 2px var(--vencut); }
+.dia-inici .marca-dia { font-size: 10px; }
 .cita a { color: var(--text); }
 .cita a:hover { color: var(--accent); }
 .cita .on { font-size: 10px; color: var(--text-suau); display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
@@ -955,4 +969,32 @@ td.tria input { min-height: 0; width: 16px; height: 16px; accent-color: var(--ac
   .setmana-inici { grid-template-columns: 1fr !important; }
   .dia-inici { min-height: 0; border-right: 0; border-bottom: 1px solid var(--linia); }
   .dia-inici.sense-res:not(.avui) { display: none; }
+}
+
+/* calendari personal (0020) */
+.barra-dies {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 14px;
+  border-bottom: 1px solid var(--linia); background: var(--hover); position: sticky; top: 0; z-index: 5;
+}
+.barra-dies.inactiva .boto-dia { opacity: .5; }
+.boto-dia { border-left: 3px solid; }
+.graella-calendari .dia-cal {
+  display: flex; flex-direction: column; align-items: stretch; gap: 3px; text-align: left;
+  background: var(--panell); border-top: 0; border-left: 0; font: inherit; color: inherit; cursor: pointer; min-height: 96px;
+}
+.graella-calendari .dia-cal:hover { background: var(--hover); }
+.graella-calendari .dia-cal.fora { background: var(--hover); }
+.graella-calendari .dia-cal.triat { box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-suau); }
+.marca-dia { display: flex; align-items: center; gap: 4px; font-size: 11px; line-height: 1.25; padding: 2px 4px; border-left: 3px solid; background: var(--hover); overflow: hidden; }
+.marca-dia.meva { background: var(--fons); font-weight: 600; }
+.altres-dia { display: flex; flex-wrap: wrap; gap: 3px; margin-top: auto; }
+.avatar-dia {
+  display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px;
+  font-size: 10px; font-weight: 700; color: #fff; border: 2px solid;
+}
+.llegenda-dies { display: flex; flex-wrap: wrap; gap: 12px; padding: 0 14px 12px; }
+.llegenda-dies span { display: inline-flex; align-items: center; gap: 4px; border-left: 3px solid; padding-left: 4px; }
+.llegenda-dies .sense-vora { border-left: 0; }
+@media (max-width: 860px) {
+  .graella-calendari .dia-cal { min-height: 0; flex-direction: row; flex-wrap: wrap; }
 }

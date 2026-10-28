@@ -1104,6 +1104,50 @@ end $$;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';
 
 -- ------------------------------------------------------------
+-- Calendari personal (0020)
+-- ------------------------------------------------------------
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';
+select marca_dies(array[current_date + 1, current_date + 2]::date[], 'teletreball', 'casa', false);
+select marca_dies(array[current_date + 1]::date[], 'vacances', null, false);   -- canvia, no duplica
+select marca_dies(array['2099-01-06'::date], 'festiu', 'Reis', true);           -- tot l'equip
+do $$ begin
+  assert (select count(*) from calendari_dies where perfil_id = auth.uid() and actiu
+          and data in (current_date + 1, current_date + 2)) = 2, 'marca_dies no ha marcat els dos dies';
+  assert (select tipus from calendari_dies where perfil_id = auth.uid() and data = current_date + 1) = 'vacances',
+    'tornar a marcar un dia no el canvia';
+  assert exists (select 1 from calendari_dies where perfil_id is null and data = '2099-01-06' and actiu),
+    'no s''ha marcat el festiu de l''equip';
+  begin
+    perform marca_dies(array['2099-01-07'::date], 'teletreball', null, true);
+    raise exception 'FALLA: s''ha marcat un teletreball per a tot l''equip';
+  exception when raise_exception then null;
+  end;
+  begin
+    insert into calendari_dies (perfil_id, data, tipus)
+    values ('00000000-0000-0000-0000-00000000000c', current_date, 'vacances');
+    raise exception 'FALLA: algú ha marcat el calendari d''un altre';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+select marca_dies(array[current_date + 2]::date[], null, null, false);         -- treure
+do $$ begin
+  assert (select actiu from calendari_dies where perfil_id = auth.uid() and data = current_date + 2) = false,
+    'treure una marca no la desactiva';
+end $$;
+-- el company ho veu, però no ho pot tocar
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000c"}';
+do $$ begin
+  assert exists (select 1 from calendari_dies where perfil_id = '00000000-0000-0000-0000-00000000000a'),
+    'l''equip no veu el calendari dels altres';
+end $$;
+update calendari_dies set tipus = 'oficina' where perfil_id = '00000000-0000-0000-0000-00000000000a';
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';
+do $$ begin
+  assert not exists (select 1 from calendari_dies where perfil_id = auth.uid() and tipus = 'oficina'),
+    'un company ha canviat el calendari d''un altre';
+end $$;
+
+-- ------------------------------------------------------------
 -- Comprovació 2: cap delete, enlloc, ni per a membres actius
 -- ------------------------------------------------------------
 do $$
@@ -1113,7 +1157,8 @@ begin
                            'tasques', 'contactes', 'idees', 'historial_dates',
                            'projecte_responsables', 'notificacions', 'revisions',
                            'migracions_aplicades', 'plantilles_tasques',
-                           'xarxes_comptes', 'publicacions', 'publicacio_canals', 'efemerides']
+                           'xarxes_comptes', 'publicacions', 'publicacio_canals', 'efemerides',
+                           'calendari_dies']
   loop
     begin
       execute format('delete from %I', t);
@@ -1148,6 +1193,7 @@ do $$ begin
   assert (select count(*) from v_safata) = 0,        'inactiu veu la safata (vista sense security_invoker?)';
   assert (select count(*) from v_projectes_muts) = 0,'inactiu veu projectes muts';
   assert (select count(*) from v_historial_projecte) = 0, 'inactiu veu historial de projecte';
+  assert (select count(*) from calendari_dies) = 0,  'inactiu veu calendaris';
 end $$;
 do $$ begin
   update perfils set actiu = true where id = '00000000-0000-0000-0000-00000000000b';

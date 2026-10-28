@@ -160,7 +160,7 @@ await roc.screenshot({ path: SHOTS + "xarxes-setmana.png", fullPage: true });
 // pàgina d'inici: el calendari de la setmana hi mostra les publicacions
 await roc.goto(B + "/");
 ok(await roc.isVisible("#setmana >> text=Resultats de l'enquesta de serveis"), "el calendari de la setmana de l'inici mostra les publicacions");
-ok((await roc.locator("#setmana button").count()) === 0, "el calendari de l'inici no té botons");
+ok((await roc.locator("#setmana button:not(.nansa)").count()) === 0, "el calendari de l'inici no té botons d'acció");
 await roc.screenshot({ path: SHOTS + "inici-setmana.png", fullPage: true });
 
 // desactivar-la a l'Aina: ja no la veu

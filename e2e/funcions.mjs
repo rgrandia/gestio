@@ -188,7 +188,7 @@ ok(await p.isVisible("section.seccio:has(header .titol:text-is('tasques')) td:ha
 // pàgina d'inici: pastilles de resum i agenda sense botons (no repeteix accions)
 await p.goto(B + "/");
 ok(await p.isVisible(".pastilles >> text=vençuts"), "pastilles de resum a dalt");
-ok((await p.locator("#setmana button").count()) === 0, "l'agenda no repeteix botons d'acció");
+ok((await p.locator("#setmana button:not(.nansa)").count()) === 0, "el calendari de l'inici no repeteix botons d'acció (només la nansa per arrossegar)");
 ok(await p.isVisible("#setmana >> text=Enviar fitxer de quotes"), "l'agenda mostra les tasques de la setmana");
 
 // dates en català a l'alta ràpida

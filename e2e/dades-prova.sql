@@ -1,6 +1,6 @@
 -- Dades de prova per a e2e/funcions.mjs. NOMÉS per a l'entorn de proves:
 -- buida les taules de l'app. Usa els usuaris de scripts/e2e/entorn.sh.
-truncate clients, projectes, fases, entregables, tasques, contactes, idees, historial_dates, plantilles_tasques, xarxes_comptes cascade;
+truncate clients, projectes, fases, entregables, tasques, contactes, idees, historial_dates, plantilles_tasques, xarxes_comptes, calendari_dies cascade;
 -- xarxes (0019): ningú no les té activades a l'inici de les proves
 update perfils set funcions = '{}';
 -- el truncate s'emporta el client intern que crea la migració 0016
