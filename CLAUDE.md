@@ -432,6 +432,11 @@ començar). Ningú no se la pot posar amb un update directe.
   canvia per `replanificar('publicacions', …)`, amb historial (§4.2).
 - **Dates clau** (`efemerides`, recurrents o no) i idees amb `data_objectiu`
   surten al calendari.
+- **Planner setmanal** (`/xarxes/setmana`): set columnes i una safata «sense
+  data». Les publicacions s'arrosseguen d'un dia a l'altre (ratolí o dit,
+  des de la nansa; amb el teclat, nansa + ←/→ i Supr per treure la data).
+  Moure és replanificar: passa per `replanificar()` i queda a l'historial
+  («sense motiu»). Ni al passat ni les ja publicades.
 - Editor amb **comptador de caràcters com el de cada xarxa** (grafemes; a X un
   enllaç compta 23) i avisos objectius (passa del límit, sense text, xarxa que
   necessita imatge i no hi ha enllaç als recursos). Botó de copiar per xarxa.
@@ -550,7 +555,8 @@ Gantt), **feina de l'equip** (què té obert cadascú) i **resum setmanal**
 (per a la reunió de dilluns: què s'ha tancat, què ha lliscat i per què, què
 venç; llistes, sense xifres) i **plantilles de tasques** (des de projectes),
 a més d'una **cerca global** al menú (tecla `/`), i **xarxes socials**
-(calendari editorial, tauler per estat, comptes i dates clau; només per a qui
+(calendari del mes, planner setmanal per arrossegar, tauler per estat, comptes
+i dates clau; només per a qui
 té la funció activada, §4.4 decies). Cap més sense preguntar. Estil visual: secció 11.
 
 ### 6.1 La meva setmana (pàgina d'inici)
@@ -573,10 +579,12 @@ A "a revisar" es poden seleccionar diverses línies i fer-hi «fet avui»,
 teclat (↑↓, f, r, v, p, x, Esc).
 
 Disposició (octubre 2026): a pantalla gran, dues columnes. A l'esquerra el que
-demana decisions («a revisar»); a la dreta, compacte, el dia a dia (revisions,
-gestió interna, l'agenda de la setmana, muts, moment polític, idees). L'agenda
-és un calendari sense botons: les accions es fan a «a revisar» i no es
-repeteixen. A dalt, una línia de pastilles amb els comptadors.
+demana decisions («a revisar») i, a sota, un **calendari dels propers 7 dies**
+(avui inclòs) amb les meves tasques, les internes i, si tinc les xarxes
+activades, les meves publicacions. És un calendari sense botons: les accions
+es fan a «a revisar» i no es repeteixen. A la dreta, compacte, el dia a dia
+(revisions, xarxes, gestió interna, muts, moment polític, idees). A dalt, una
+línia de pastilles amb els comptadors.
 
 Criteri: si l'obro cada matí i hi ha feina concreta a fer, l'app viu. Si hi ha
 percentatges d'avanç, mor.

@@ -76,3 +76,11 @@ insert into projectes (client_id, titol, tipus, responsable_id, creat_el, actual
 select c.id, 'Estudi de mercat aturat', 'altre', p.id, now() - interval '90 days', now() - interval '90 days'
 from clients c, perfils p
 where c.nom = 'Ajuntament de Mataró' and p.email = 'roc@prova.test';
+
+-- Com a producció: algú té una tasca interna feta (verificacio.sql no la pot
+-- tocar; vegeu el pas de la CI que la torna a executar sobre aquestes dades).
+insert into projectes (client_id, titol, tipus, responsable_id, intern_de)
+select (select id from clients where intern), 'Gestió interna · Aina', 'altre', id, id
+from perfils where email = 'aina@prova.test';
+insert into tasques (projecte_id, titol, estat, data_real)
+select id, 'Feina interna ja feta', 'fet', current_date - 2 from projectes where titol = 'Gestió interna · Aina';

@@ -770,15 +770,11 @@ td.tria input { min-height: 0; width: 16px; height: 16px; accent-color: var(--ac
 .inici-lateral .alta-rapida input[type="date"] { flex: 1; }
 .buit-petit { margin: 0; padding: 12px 14px; font-size: 12px; color: var(--text-suau); }
 
-/* agenda: calendari de la setmana, sense botons */
-.agenda { list-style: none; margin: 0; padding: 4px 0 8px; }
-.agenda-dia { padding: 8px 14px 4px; font-size: 11px; font-weight: 600; color: var(--text-suau); text-transform: lowercase; }
-.agenda-dia.avui { color: var(--accent); }
-.agenda ul { list-style: none; margin: 0; padding: 0; }
-.agenda ul li, .llista-compacta li { display: grid; gap: 1px; padding: 5px 14px 5px 22px; font-size: 13px; }
-.agenda ul li a, .llista-compacta li a { color: var(--text); }
-.agenda ul li a:hover, .llista-compacta li a:hover { color: var(--accent); }
-.agenda .on, .llista-compacta .on { font-size: 11px; color: var(--text-suau); }
+/* llistes compactes del lateral */
+.llista-compacta li { display: grid; gap: 1px; padding: 5px 14px 5px 22px; font-size: 13px; }
+.llista-compacta li a { color: var(--text); }
+.llista-compacta li a:hover { color: var(--accent); }
+.llista-compacta .on { font-size: 11px; color: var(--text-suau); }
 .llista-compacta { list-style: none; margin: 0; padding: 6px 0; }
 .llista-compacta li { padding-left: 14px; border-left: 3px solid transparent; }
 .llista-compacta li[data-estat="mut"] { border-left-color: var(--mut); }
@@ -889,3 +885,74 @@ td.tria input { min-height: 0; width: 16px; height: 16px; accent-color: var(--ac
 .xips-projecte { display: grid; gap: 4px 12px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); padding-top: 8px; }
 .formulari .fila-camps > label { min-width: 0; }
 .formulari label > select { width: 100%; min-width: 0; text-overflow: ellipsis; }
+
+/* planner setmanal de xarxes */
+.planner-cap { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.cadencies { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+.cadencia { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-variant-numeric: tabular-nums; padding: 2px 6px; background: var(--panell); border: 1px solid var(--linia); }
+.cadencia.curta { border-color: var(--risc); color: var(--risc); }
+.planner { position: relative; }
+.planner.arrossegant { user-select: none; cursor: grabbing; }
+.planner-graella { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--linia); background: var(--panell); }
+.planner-dia { min-height: 320px; padding: 6px; border-right: 1px solid var(--linia); display: flex; flex-direction: column; gap: 6px; min-width: 0; transition: background .1s; }
+.planner-dia:last-child { border-right: 0; }
+.planner-dia > header { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; color: var(--text-suau); padding: 2px 2px 4px; border-bottom: 1px solid var(--linia); }
+.planner-dia.avui > header { color: var(--accent); }
+.planner-dia.avui { background: var(--accent-suau); }
+.planner-dia.passat { background: var(--hover); }
+.planner-dia.passat > header { color: var(--text-fluix); }
+.planner-dia.sobre, .planner-safata.sobre { background: var(--accent-suau); box-shadow: inset 0 0 0 2px var(--accent); }
+.planner-dia.prohibit { box-shadow: inset 0 0 0 2px var(--vencut); }
+.planner-dia:hover .afegir-dia { opacity: 1; }
+.targeta-planner {
+  display: flex; align-items: stretch; background: var(--panell); border: 1px solid var(--linia); border-left: 3px solid;
+  font-size: 12px; line-height: 1.3; min-width: 0;
+}
+.targeta-planner:hover { border-color: var(--accent); }
+.targeta-planner .nansa {
+  flex: none; display: flex; align-items: center; padding: 0 2px; color: var(--text-fluix);
+  cursor: grab; touch-action: none; background: none; border: 0; min-height: 0;
+}
+.targeta-planner .nansa:hover, .targeta-planner .nansa:focus-visible { color: var(--text); background: var(--hover); }
+.targeta-planner .cos-targeta { display: grid; gap: 2px; padding: 4px 6px; color: var(--text); flex: 1; min-width: 0; }
+.targeta-planner[data-estat="idea"] { border-style: dashed; border-left-style: solid; }
+.targeta-planner[data-estat="publicada"] { background: var(--fet-suau); }
+.targeta-planner[data-estat="revisio"] .xip-estat { color: var(--risc); font-weight: 600; }
+.targeta-planner[data-estat="aprovada"] .xip-estat, .targeta-planner[data-estat="programada"] .xip-estat { color: var(--accent); font-weight: 600; }
+.targeta-planner[data-estat="publicada"] .xip-estat { color: var(--fet); font-weight: 600; }
+.targeta-planner.fantasma-origen { opacity: .35; }
+.targeta-planner.desant { opacity: .6; }
+.targeta-planner.fantasma { position: fixed; z-index: 50; pointer-events: none; box-shadow: var(--ombra-alta); transform: rotate(1deg); }
+.planner-safata { margin-top: 16px; border: 1px solid var(--linia); background: var(--panell); }
+.planner-safata > header { display: flex; align-items: center; gap: 6px; padding: 10px 12px; font-size: 13px; font-weight: 600; border-bottom: 1px solid var(--linia); }
+.planner-safata-llista { display: grid; gap: 6px; padding: 8px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); min-height: 56px; }
+@media (max-width: 860px) {
+  .planner-graella { grid-template-columns: 1fr; }
+  .planner-dia { min-height: 64px; border-right: 0; border-bottom: 1px solid var(--linia); }
+}
+
+/* calendari dels 7 dies que venen, a la pàgina d'inici */
+.setmana-inici { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); } /* (amplades reals: inline, caps de setmana més estrets) */
+.dia-inici { min-height: 150px; padding: 6px; border-right: 1px solid var(--linia); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.dia-inici:last-child { border-right: 0; }
+.dia-inici.avui { background: var(--accent-suau); }
+.dia-inici.festiu:not(.avui) { background: var(--hover); }
+.cita > a { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.cita .on { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.cita-xarxa .on { white-space: normal; display: flex; }
+.cap-dia-inici { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--text-suau); padding-bottom: 4px; border-bottom: 1px solid var(--linia); margin-bottom: 2px; }
+.cap-dia-inici span { color: var(--text); }
+.dia-inici.avui .cap-dia-inici, .dia-inici.avui .cap-dia-inici span { color: var(--accent); }
+.cita { display: grid; gap: 1px; padding: 3px 5px; font-size: 12px; line-height: 1.3; background: var(--panell); border: 1px solid var(--linia); border-left: 3px solid var(--accent); min-width: 0; overflow-wrap: anywhere; }
+.cita a { color: var(--text); }
+.cita a:hover { color: var(--accent); }
+.cita .on { font-size: 10px; color: var(--text-suau); display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+.cita .etiqueta { justify-self: start; font-size: 9px; padding: 0 4px; }
+.cita-interna { border-left-color: var(--mut); }
+.cita-xarxa[data-estat="publicada"] { background: var(--fet-suau); }
+.cita-xarxa[data-estat="idea"] { border-style: dashed; border-left-style: solid; }
+@media (max-width: 860px) {
+  .setmana-inici { grid-template-columns: 1fr !important; }
+  .dia-inici { min-height: 0; border-right: 0; border-bottom: 1px solid var(--linia); }
+  .dia-inici.sense-res:not(.avui) { display: none; }
+}
