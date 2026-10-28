@@ -10,7 +10,9 @@
     "transfereix(text,uuid,uuid,text)",
     "aplica_fases_per_defecte(uuid)",
     "nova_onada(uuid,text,date,text)",
-    "projecte_intern()"
+    "projecte_intern()",
+    "te_funcio(text)",
+    "activa_funcio(uuid,text,boolean)"
   ],
   "columnes": [
     "fases.data_inici",
@@ -32,6 +34,11 @@
     "plantilles_tasques.subtipus",
     "perfils.tema",
     "perfils.menu",
-    "v_projectes_quiets.darrer_moviment"
+    "v_projectes_quiets.darrer_moviment",
+    "perfils.funcions",
+    "xarxes_comptes.cadencia_setmanal",
+    "publicacions.aprovada_per",
+    "publicacio_canals.text_adaptat",
+    "efemerides.recurrent"
   ]
 }

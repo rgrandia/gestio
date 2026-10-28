@@ -96,6 +96,11 @@ jobs:
       - name: Edició, reobrir, fases noves, revisions, nova onada i resum
         run: node funcions.mjs
         working-directory: e2e
+      - name: Dades de prova de nou (xarxes parteix de zero)
+        run: psql "$DB_PROVES" -X -q -v ON_ERROR_STOP=1 -f e2e/dades-prova.sql
+      - name: Xarxes socials
+        run: node xarxes.mjs
+        working-directory: e2e
       - name: Captures i registres
         if: failure()
         uses: actions/upload-artifact@v4

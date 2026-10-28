@@ -6,6 +6,8 @@ import { NavRail } from "@/components/NavRail";
 import { CercaGlobal } from "@/components/CercaGlobal";
 import { Persona } from "@/components/Persona";
 import { ESQUEMA_ESPERAT } from "@/lib/versio";
+import { teXarxes } from "@/lib/funcions";
+import { avui } from "@/lib/dates";
 import requerit from "@/lib/esquema-requerit.json";
 import { cookies } from "next/headers";
 import { Preferencies } from "@/components/Preferencies";
@@ -37,6 +39,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     // Què falta de debò (0018): no ens refiem només del registre de migracions.
     supabase.rpc("falten_objectes", { p_funcions: requerit.funcions, p_columnes: requerit.columnes }),
   ]);
+  // Xarxes (0019): només si la tinc activada; si no, l'enllaç no surt.
+  let xarxes: number | null = null;
+  if (await teXarxes()) {
+    const { data } = await supabase
+      .from("publicacions")
+      .select("id, estat, data_prevista, responsable_id, revisor_id")
+      .in("estat", ["idea", "esborrany", "revisio", "aprovada", "programada"])
+      .or(`responsable_id.eq.${perfil.id},revisor_id.eq.${perfil.id}`);
+    const hui = avui();
+    xarxes = (data ?? []).filter(
+      (p) =>
+        (p.estat === "revisio" && p.revisor_id === perfil.id) ||
+        (p.responsable_id === perfil.id && p.data_prevista && p.data_prevista < hui),
+    ).length;
+  }
   const falten: string[] = faltenR.error ? [] : ((faltenR.data as string[] | null) ?? []);
   const prefs = (prefsR.error ? null : prefsR.data) as { tema: Tema | null; menu: Menu | null } | null;
   // Si falla la crida, la base de dades és anterior a la migració 0014.
@@ -55,7 +72,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
         <CercaGlobal />
         <div className="seccio-nav">menú</div>
-        <NavRail pendents={(count ?? 0) + (perRevisar ?? 0)} avisos={avisos ?? 0} />
+        <NavRail pendents={(count ?? 0) + (perRevisar ?? 0)} avisos={avisos ?? 0} xarxes={xarxes} />
         <div className="peu">
           <Persona p={perfil} nomesAvatar gran />
           <span className="nom">

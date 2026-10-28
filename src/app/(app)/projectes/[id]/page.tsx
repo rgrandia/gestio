@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SeccioXarxesProjecte } from "@/components/SeccioXarxesProjecte";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -227,6 +228,7 @@ export default async function DetallProjecte({
       {pestanya === "detall" && (
         <Detall p={p} hui={hui} persones={persones} perfils={perfils} mostraTancats={mostraTancats} base={base} />
       )}
+      {pestanya === "detall" && !p.intern_de && <SeccioXarxesProjecte projecteId={id} />}
     </>
   );
 }
