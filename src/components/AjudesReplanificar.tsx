@@ -24,7 +24,7 @@ export function MotiusRapids({ motiu, setMotiu }: { motiu: string; setMotiu: (m:
   );
 }
 
-// +1 i +2 setmanes des de la data prevista (o des d'avui, si ja ha passat
+// +1 dia i +1 setmana des de la data prevista (o des d'avui, si ja ha passat
 // o no n'hi ha).
 export function DatesRapides({
   prevista,
@@ -38,9 +38,12 @@ export function DatesRapides({
   const base = prevista && prevista > hui ? prevista : hui;
   return (
     <span className="xips" role="group" aria-label="dates ràpides">
-      {[7, 14].map((d) => (
-        <button key={d} type="button" className="xip" onClick={() => setData(sumaDies(base, d))}>
-          +{d / 7} setm.
+      {[
+        [1, "+1 dia"],
+        [7, "+1 setm."],
+      ].map(([d, text]) => (
+        <button key={d} type="button" className="xip" onClick={() => setData(sumaDies(base, d as number))}>
+          {text}
         </button>
       ))}
     </span>

@@ -142,7 +142,7 @@ export type ElementBloc = { taula: TaulaItem; id: string; prevista: string | nul
 
 export async function accioEnBloc(
   elements: ElementBloc[],
-  accio: "setmana" | "dues_setmanes" | "revisat" | "fet",
+  accio: "dia" | "setmana" | "revisat" | "fet",
   motiu = "",
 ): Promise<Resultat> {
   if (elements.length === 0) return { ok: true };
@@ -155,7 +155,7 @@ export async function accioEnBloc(
     else if (accio === "revisat") r = await accioItem({ accio: "revisat", taula: e.taula, id: e.id });
     else {
       const base = e.prevista && e.prevista > hui ? e.prevista : hui;
-      const data = sumaDies(base, accio === "setmana" ? 7 : 14);
+      const data = sumaDies(base, accio === "setmana" ? 7 : 1);
       r = await accioItem({ accio: "replanificar", taula: e.taula, id: e.id, data, motiu });
     }
     if (r.error) errors.push(r.error);
