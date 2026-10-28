@@ -36,6 +36,7 @@ export function SetmanaArrossegable({ dies, items, hui }: { dies: DiaSetmana[]; 
         ? replanificaPublicacio(id, data, "")
         : accioItem({ accio: "replanificar", taula: "tasques", id, data, motiu: "" });
     },
+    historial: (clau) => ({ taula: clau.startsWith("p:") ? "publicacions" : "tasques", id: clau.slice(2) }),
   });
 
   const delDia = (d: string) => items.filter((i) => dates[i.clau] === d);

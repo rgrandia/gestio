@@ -4,6 +4,9 @@ import { comprova, obtePerfils } from "@/lib/dades";
 import { avui, dataCurta, desplacament, diesEntre, sumaDies } from "@/lib/dates";
 import { Persona } from "@/components/Persona";
 import type { Perfil } from "@/lib/tipus";
+import { diesMarcats } from "@/lib/dades-calendari";
+import { TIPUS_DIA, trams } from "@/lib/calendari";
+import { IconaDia } from "@/components/IconaDia";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +38,7 @@ export default async function FeinaEquip({
   const hui = avui();
   const supabase = await createClient();
 
-  const [tasquesR, fasesR, entregablesR, perfils, quietsR] = await Promise.all([
+  const [tasquesR, fasesR, entregablesR, perfils, quietsR, marques] = await Promise.all([
     supabase
       .from("tasques")
       .select(`id, titol, data_prevista, projecte_id, assignada_a, ${OBERTS}`)
@@ -63,7 +66,11 @@ export default async function FeinaEquip({
     obtePerfils(),
     // Projectes actius sense moviment en 60 dies (vista, migració 0018).
     supabase.from("v_projectes_quiets").select("id, titol, numero_estudi, responsable_id, darrer_moviment").order("darrer_moviment"),
+    // Qui no hi serà els propers 14 dies (calendari personal, migració 0020).
+    diesMarcats(hui, sumaDies(hui, 13)),
   ]);
+  const festiusEquip = marques.filter((m) => m.perfil_id === null);
+  const absenciesDe = (id: string) => trams(marques.filter((m) => m.perfil_id === id && m.tipus !== "oficina"));
   // Si la base de dades encara no té la migració 0018, la vista no hi és: sense llista.
   const quiets = (quietsR.error ? [] : quietsR.data ?? []) as {
     id: string;
@@ -191,6 +198,13 @@ export default async function FeinaEquip({
         </section>
       )}
 
+      {festiusEquip.length > 0 && (
+        <p className="petit suau mb-3">
+          <IconaDia tipus="festiu" /> festius de tot l&apos;equip els propers 14 dies:{" "}
+          {festiusEquip.map((f) => `${dataCurta(f.data)}${f.nota ? ` (${f.nota})` : ""}`).join(", ")}
+        </p>
+      )}
+
       <div className="tauler">
         {columnes.map(({ persona, tots, items }) => {
           const vencuts = items.filter((e) => e.data_prevista && e.data_prevista < hui).length;
@@ -201,6 +215,15 @@ export default async function FeinaEquip({
             <section key={persona?.id ?? "ningu"} className="columna">
               <header style={persona && !persona.extern ? { borderTopColor: persona.color ?? undefined } : undefined}>
                 {persona ? <Persona p={persona} /> : <span className="titol-el">sense assignar</span>}
+                {persona && !persona.extern && absenciesDe(persona.id).length > 0 && (
+                  <span className="absencies" aria-label="propers 14 dies">
+                    {absenciesDe(persona.id).map((t, i) => (
+                      <span key={i} style={{ borderLeftColor: TIPUS_DIA[t.tipus].color }} title={TIPUS_DIA[t.tipus].nom}>
+                        <IconaDia tipus={t.tipus} /> {TIPUS_DIA[t.tipus].nom} {t.text}
+                      </span>
+                    ))}
+                  </span>
+                )}
                 <span className="xifres-columna">
                   <span title="obertes">{tots.length} obertes</span>
                   {vencuts > 0 && <span className="tag-vencut" title="vençudes">{vencuts} vençudes</span>}

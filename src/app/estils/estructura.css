@@ -1,0 +1,63 @@
+/* Estructura de l'app: menú lateral i contingut. */
+
+/* ---------------- estructura ---------------- */
+
+.app {
+  display: grid; grid-template-columns: 64px 1fr; min-height: 100vh;
+  /* la columna del rail és fosca fins a baix encara que la pàgina sigui llarga */
+  background: linear-gradient(to right, var(--tinta) 64px, var(--fons) 64px);
+}
+
+.rail {
+  position: sticky; top: 0; height: 100vh;
+  background: var(--tinta);
+  color: #C9D1DC;
+  display: flex; flex-direction: column;
+  padding: 16px 0 14px;
+  z-index: 20;
+}
+/* Rail només d'icones: el nom surt en passar-hi per sobre (i el llegeixen els lectors de pantalla). */
+.rail .marca { display: flex; justify-content: center; padding: 0 0 16px; }
+.rail .marca div { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.rail .marca .logo {
+  width: 32px; height: 32px; display: grid; place-items: center;
+  background: var(--accent); color: #fff; font-weight: 600; font-size: 16px;
+}
+.rail .marca strong { display: block; color: #fff; font-size: 15px; line-height: 1.2; }
+.rail .marca span { display: block; font-size: 11px; color: #8592A6; }
+.rail .seccio-nav { display: none; }
+.rail nav { display: flex; flex-direction: column; gap: 2px; }
+.rail nav a {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  height: 42px;
+  color: #C9D1DC;
+  border-left: 3px solid transparent;
+}
+.rail nav a svg.icona { width: 20px; height: 20px; }
+.rail nav a:hover { background: var(--tinta-2); color: #fff; }
+.rail nav a[aria-current="page"] {
+  background: var(--tinta-2); color: #fff; border-left-color: var(--accent); font-weight: 600;
+}
+.rail nav a .text {
+  position: absolute; left: calc(100% + 6px); top: 50%; transform: translateY(-50%);
+  background: var(--tinta); color: #fff; padding: 5px 10px; font-size: 12px; font-weight: 500;
+  white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 80ms;
+  box-shadow: var(--ombra-alta);
+}
+.rail nav a:hover .text, .rail nav a:focus-visible .text { opacity: 1; }
+.rail nav a .comptador {
+  position: absolute; top: 4px; right: 8px;
+  min-width: 16px; height: 16px; padding: 0 4px; font-size: 10px; line-height: 16px;
+  background: var(--vencut); color: #fff;
+}
+.rail .peu {
+  margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 12px 0 0; border-top: 1px solid var(--tinta-2);
+}
+.rail .peu .nom { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.rail .peu .nom small { display: block; color: #8592A6; font-size: 11px; }
+.rail .peu button { color: #8592A6; background: none; border: 0; cursor: pointer; padding: 4px; display: grid; }
+.rail .peu button:hover { color: #fff; }
+
+.contingut { padding: 28px 36px 64px; min-width: 0; max-width: 1280px; }

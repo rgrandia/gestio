@@ -7,6 +7,7 @@ import { accioItem, transfereix } from "@/lib/accions";
 import { DatesRapides, MotiusRapids } from "@/components/AjudesReplanificar";
 import { avui } from "@/lib/dates";
 import { clauElement, useSeleccio } from "@/components/Seleccio";
+import { mostraToast } from "@/components/Toasts";
 import type { TaulaItem } from "@/lib/tipus";
 
 type Props = {
@@ -57,6 +58,7 @@ export function FilaAccionable({
   const [dataReal, setDataReal] = useState(hui);
   const [novaData, setNovaData] = useState("");
   const [motiu, setMotiu] = useState("");
+  const [cascada, setCascada] = useState(true); // fases: arrossegar també les següents
   const [revisor, setRevisor] = useState("");
   const [desti, setDesti] = useState("");
   const [nota, setNota] = useState("");
@@ -72,6 +74,8 @@ export function FilaAccionable({
         setError(r.error);
         return;
       }
+      if (r.missatge) mostraToast({ text: r.missatge });
+      if (r.avis) mostraToast({ text: r.avis, tipus: "avis", durada: 9000 });
       setObert(null);
       if (treu && desapareix) {
         setSortint(true);
@@ -256,7 +260,7 @@ export function FilaAccionable({
             onSubmit={(e) => {
               e.preventDefault();
               executa(
-                () => accioItem({ accio: "replanificar", taula, id, data: novaData, motiu }),
+                () => accioItem({ accio: "replanificar", taula, id, data: novaData, motiu, cascada: taula === "fases" && tePrevista && cascada }),
                 true,
               );
             }}
@@ -281,6 +285,12 @@ export function FilaAccionable({
                   onChange={(e) => setMotiu(e.target.value)}
                 />
                 <MotiusRapids motiu={motiu} setMotiu={setMotiu} />
+                {taula === "fases" && (
+                  <label className="petit flex items-center gap-1" title="les fases posteriors no acabades, i les seves tasques obertes, es mouen els mateixos dies">
+                    <input type="checkbox" checked={cascada} onChange={(e) => setCascada(e.target.checked)} className="min-h-0" />
+                    moure també les fases següents
+                  </label>
+                )}
               </>
             )}
             <button className="boto boto-primari" disabled={pendent}>desar</button>

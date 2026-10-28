@@ -1,0 +1,161 @@
+/* Preferències del menú, botons d'icona, replanificar, safata en bloc i «la meva setmana». */
+
+/* ---------------- preferències: menú desplegat ---------------- */
+
+.rail .peu .pref-tema, .rail .peu .pref-menu { color: #8592A6; }
+
+@media (min-width: 721px) {
+  :root[data-menu="desplegat"] .app {
+    grid-template-columns: 232px 1fr;
+    background: linear-gradient(to right, var(--tinta) 232px, var(--fons) 232px);
+  }
+  :root[data-menu="desplegat"] .rail { padding: 20px 12px 16px; }
+  :root[data-menu="desplegat"] .rail .marca { justify-content: flex-start; gap: 10px; padding: 0 8px 20px; }
+  :root[data-menu="desplegat"] .rail .marca div { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  :root[data-menu="desplegat"] .rail .seccio-nav { display: block; font-size: 11px; color: #6B778A; padding: 8px 10px 6px; }
+  :root[data-menu="desplegat"] .rail nav a { justify-content: flex-start; gap: 10px; padding: 0 10px; height: 38px; }
+  :root[data-menu="desplegat"] .rail nav a svg.icona { width: 16px; height: 16px; }
+  :root[data-menu="desplegat"] .rail nav a .text {
+    position: static; transform: none; opacity: 1; background: none; box-shadow: none;
+    padding: 0; font-size: 13px; font-weight: inherit; flex: 1;
+  }
+  :root[data-menu="desplegat"] .rail nav a .comptador { position: static; height: auto; line-height: 1.5; font-size: 11px; }
+  :root[data-menu="desplegat"] .rail .peu { flex-direction: row; padding: 12px 8px 0; gap: 4px; }
+  :root[data-menu="desplegat"] .rail .peu .avatar { margin-right: 6px; }
+  :root[data-menu="desplegat"] .rail .peu .nom {
+    position: static; width: auto; height: auto; overflow: hidden; clip: auto; flex: 1; min-width: 0;
+    color: #fff; font-size: 12px; line-height: 1.2; text-overflow: ellipsis;
+  }
+  :root[data-menu="desplegat"] .cerca-global { padding: 0 8px 12px; }
+  :root[data-menu="desplegat"] .cerca-global .camp input,
+  :root[data-menu="desplegat"] .cerca-global .camp kbd { width: auto; opacity: 1; }
+  :root[data-menu="desplegat"] .cerca-global:focus-within .camp { position: static; width: auto; box-shadow: none; }
+}
+@media (max-width: 720px) {
+  .rail .peu .pref-menu { display: none; }
+}
+
+/* ---------------- botons només d'icona amb etiqueta ---------------- */
+
+/* L'etiqueta surt a l'esquerra en passar-hi el ratolí o amb el teclat; el
+   text real és dins del botó (sr-only) per als lectors de pantalla. */
+.boto[data-tip] { position: relative; }
+.boto[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute; right: calc(100% + 6px); top: 50%; transform: translateY(-50%);
+  background: var(--tinta); color: #fff; padding: 4px 8px; font-size: 11px; font-weight: 500;
+  white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 80ms; z-index: 15;
+}
+.boto[data-tip]:hover::after, .boto[data-tip]:focus-visible::after { opacity: 1; }
+.accions .boto-icona { width: 32px; height: 32px; }
+
+:root[data-tema="fosc"] .rail { border-right: 1px solid var(--linia); }
+
+/* ---------------- les meves tasques (detall del projecte) ---------------- */
+
+.meves-tasques { margin: 0 0 16px; background: var(--panell); border: 1px solid var(--linia); box-shadow: var(--ombra); }
+.meves-tasques > summary {
+  display: flex; align-items: center; gap: 8px; padding: 10px 14px; cursor: pointer;
+  font-weight: 600; font-size: 13px; list-style: none;
+}
+.meves-tasques > summary::-webkit-details-marker { display: none; }
+.meves-tasques > summary .fletxa { transition: transform 120ms; }
+.meves-tasques[open] > summary .fletxa { transform: rotate(90deg); }
+.meves-tasques > p { padding: 0 14px 12px; margin: 0; }
+.meves-tasques .taula { border-top: 1px solid var(--linia); }
+
+/* ---------------- xips: motius i dates ràpides en replanificar ---------------- */
+
+.xips { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.xip {
+  font: inherit; font-size: 11px; padding: 3px 8px; cursor: pointer; white-space: nowrap;
+  background: var(--panell); color: var(--text-suau); border: 1px solid var(--linia-forta);
+}
+.xip:hover { color: var(--text); border-color: var(--text-fluix); }
+.xip[aria-pressed="true"] { background: var(--accent-suau); color: var(--accent); border-color: var(--accent); }
+
+/* alta ràpida de tasques internes */
+.alta-rapida input[name="titol"] { flex: 1; min-width: 14rem; }
+tr.inactiu td { color: var(--text-fluix); text-decoration: line-through; }
+tr.inactiu td.accions { text-decoration: none; }
+/* amb el formulari de replanificar obert, la columna d'accions s'eixampla */
+@media (min-width: 721px) {
+  .taula tr.expandida td.accions { min-width: 32rem; white-space: normal; }
+}
+.accions form .xips { flex-wrap: wrap; justify-content: flex-end; }
+
+/* ---------------- safata: selecció en bloc i dreceres ---------------- */
+
+tr[data-fila]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+tr.marcada > td { background: var(--accent-suau); }
+td.tria { width: 1%; padding-right: 0; }
+td.tria input { min-height: 0; width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+.barra-bloc {
+  position: sticky; top: 0; z-index: 12;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: 10px 16px; background: var(--panell); border-bottom: 2px solid var(--accent);
+}
+.barra-bloc strong { margin-right: 6px; font-size: 13px; }
+.dreceres { cursor: help; border-bottom: 1px dotted var(--text-fluix); margin-right: 12px; }
+@media (max-width: 720px) { .dreceres { display: none; } }
+
+/* ---------------- la meva setmana: dues columnes ---------------- */
+
+/* A l'esquerra el que demana decisions (a revisar); a la dreta el dia a dia,
+   compacte. En pantalles estretes, una sola columna amb el mateix ordre. */
+.inici { display: grid; gap: 24px; align-items: start; }
+@media (min-width: 1180px) {
+  .inici { grid-template-columns: minmax(0, 1fr) 380px; }
+}
+.inici-principal, .inici-lateral { display: grid; gap: 20px; min-width: 0; align-content: start; }
+.inici .seccio { margin: 0; }
+
+/* pastilles de resum sota la salutació */
+.pastilles { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.pastilla {
+  display: inline-flex; align-items: baseline; gap: 4px; padding: 3px 10px;
+  font-size: 12px; color: var(--text-suau); background: var(--panell);
+  border: 1px solid var(--linia); border-left-width: 3px;
+}
+.pastilla strong { font-size: 14px; color: var(--text); }
+.pastilla:hover { border-color: var(--linia-forta); color: var(--text); }
+.pastilla.p-vencut { border-left-color: var(--vencut); } .pastilla.p-vencut strong { color: var(--vencut); }
+.pastilla.p-risc   { border-left-color: var(--risc); }   .pastilla.p-risc strong   { color: var(--risc); }
+.pastilla.p-mut    { border-left-color: var(--mut); }    .pastilla.p-mut strong    { color: var(--mut); }
+.pastilla.p-accent { border-left-color: var(--accent); } .pastilla.p-accent strong { color: var(--accent); }
+.pastilla.p-zero strong { color: var(--text-fluix); }
+.pastilla.p-zero { border-left-color: var(--linia-forta); }
+
+/* columna lateral: seccions compactes, files apilades (com al mòbil) */
+.seccio.compacta > header { padding: 10px 14px; }
+.seccio.compacta > header .meta { font-size: 11px; }
+.inici-lateral .taula.taula-mobil tr { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 10px 14px; border-bottom: 1px solid var(--linia); border-left: 3px solid transparent; }
+.inici-lateral .taula.taula-mobil tr:last-child { border-bottom: 0; }
+.inici-lateral .taula.taula-mobil td, .inici-lateral .taula.taula-mobil td:first-child { border: 0; padding: 0; background: transparent; }
+.inici-lateral .taula.taula-mobil tr[data-estat="vencut"] { border-left-color: var(--vencut); }
+.inici-lateral .taula.taula-mobil tr[data-estat="risc"] { border-left-color: var(--risc); }
+.inici-lateral .taula.taula-mobil td.ample { flex: 1 1 0; min-width: 0; max-width: none; }
+.inici-lateral .taula.taula-mobil .element .context { white-space: normal; }
+.inici-lateral .taula.taula-mobil td.accions { margin-left: auto; white-space: nowrap; min-width: 0; }
+.inici-lateral .taula.taula-mobil tr.expandida td.accions { flex-basis: 100%; white-space: normal; text-align: left; }
+.inici-lateral .taula.taula-mobil .accions .boto-icona { width: 28px; height: 28px; }
+.inici-lateral .taula.taula-mobil tr.dia { padding: 6px 14px; }
+.inici-lateral .alta-rapida { padding: 10px 14px; gap: 6px; }
+.inici-lateral .alta-rapida input[name="titol"] { min-width: 0; flex: 1 1 100%; }
+.inici-lateral .alta-rapida input[type="date"] { flex: 1; }
+.buit-petit { margin: 0; padding: 12px 14px; font-size: 12px; color: var(--text-suau); }
+
+/* llistes compactes del lateral */
+.llista-compacta li { display: grid; gap: 1px; padding: 5px 14px 5px 22px; font-size: 13px; }
+.llista-compacta li a { color: var(--text); }
+.llista-compacta li a:hover { color: var(--accent); }
+.llista-compacta .on { font-size: 11px; color: var(--text-suau); }
+.llista-compacta { list-style: none; margin: 0; padding: 6px 0; }
+.llista-compacta li { padding-left: 14px; border-left: 3px solid transparent; }
+.llista-compacta li[data-estat="mut"] { border-left-color: var(--mut); }
+/* les files són flex: la taula i el tbody han de cenyir-se a l'amplada del panell */
+.inici-lateral .taula.taula-mobil, .inici-lateral .taula.taula-mobil tbody { display: block; width: 100%; }
+.inici-lateral .taula.taula-mobil td.ample { order: 0; }
+.inici-lateral .taula.taula-mobil td.accions { order: 5; }
+@media (max-width: 720px) { .taula.taula-mobil td.tria { width: auto; flex: none; } }
+.inici-lateral .taula.taula-mobil td:not(.ample) { flex: none; width: auto; }

@@ -40,7 +40,11 @@ const col = (n) => roc.locator(`#setmana [data-desti='${dia(n)}']`);
 ok(await col(4).locator(`text=${tasca}`).isVisible(), "la tasca surt al seu dia al calendari de l'inici");
 await arrossega(roc, col(4).locator(".cita", { hasText: tasca }).locator("button.nansa"), col(1));
 await col(1).locator(`text=${tasca}`).waitFor();
-await roc.waitForTimeout(800);
+// motiu d'un clic (migració 0021)
+await roc.locator(".toast >> text=Per què?").waitFor();
+await roc.click(".toast button:has-text('proveïdor / camp')");
+await roc.locator(".toast >> text=Motiu desat").waitFor();
+ok(true, "després d'arrossegar es pot posar el motiu d'un clic");
 await roc.reload();
 ok(await col(1).locator(`text=${tasca}`).isVisible(), "arrossegar-la a demà la replanifica (i es desa)");
 await col(1).locator(".cita", { hasText: tasca }).locator("button.nansa").focus();
@@ -53,6 +57,19 @@ await roc.click(`#setmana a:has-text('${tasca}')`);
 await roc.waitForURL(/projectes\/[0-9a-f-]{36}/);
 await roc.goto(roc.url().split("?")[0] + "?pestanya=historial");
 ok(await roc.isVisible(`tr:has-text('${tasca}') >> text=sense motiu`), "moure-la queda a l'historial de replanificacions");
+ok(await roc.isVisible(`tr:has-text('${tasca}') >> text=proveïdor / camp`), "el motiu d'un clic queda a l'historial");
+
+// cascada: replanificar una fase arrossega les següents (migració 0021)
+const fila = roc.locator("tbody.fase tr", { hasText: "Informe" }).first();
+await roc.goto(roc.url().split("?")[0]);
+await fila.locator("button[data-tip=replanificar]").click();
+ok(await fila.locator("text=moure també les fases següents").isVisible(), "en replanificar una fase s'ofereix moure les següents");
+await fila.locator("input[aria-label='nova data prevista']").fill(dia(22));
+await fila.locator("button:has-text('desar')").click();
+await roc.locator(".toast >> text=També s'han mogut 1 fase següent").waitFor();
+ok(true, "avisa de quantes fases s'han mogut de més");
+await roc.goto(roc.url().split("?")[0] + "?pestanya=historial");
+ok(await roc.isVisible("tr:has-text('Presentació') >> text=en cascada (Informe)"), "la fase següent s'ha mogut, amb historial");
 
 // el meu calendari
 await roc.goto(B + "/");
@@ -85,6 +102,18 @@ await cel(dia(2)).locator(".marca-dia.meva >> text=vacances").waitFor();
 await roc.goto(B + "/");
 ok(await col(2).locator(".marca-dia >> text=vacances").isVisible(), "l'inici mostra com és cada dia meu");
 ok(await col(2).locator(".cita.en-dia-lliure", { hasText: tasca }).isVisible(), "avisa si una tasca cau en un dia de vacances");
+// avís: arrossegar una tasca meva a un dia de vacances (migració 0020)
+await roc.goto(B + "/calendari?mes=" + dia(4).slice(0, 7));
+await cel(dia(4)).click();
+await roc.click(".barra-dies button:has-text('vacances')");
+await cel(dia(4)).locator(".marca-dia.meva >> text=vacances").waitFor();
+await roc.goto(B + "/");
+await arrossega(roc, col(2).locator(".cita", { hasText: tasca }).locator("button.nansa"), col(4));
+await roc.locator(".toast-avis >> text=té vacances").waitFor();
+ok(true, "avisa si la persona té vacances el dia on es mou la tasca");
+await roc.goto(B + "/feina");
+ok(await roc.isVisible(".columna header .absencies >> text=vacances"), "feina de l'equip mostra qui no hi serà");
+
 // repetir cada setmana
 await roc.goto(B + "/calendari?mes=" + dia(3).slice(0, 7));
 await cel(dia(3)).click();
@@ -103,6 +132,14 @@ await roc.click(".barra-dies button:has-text('festiu')");
 await cel(dia(5)).locator("text=Festa local · equip").waitFor();
 ok(true, "festiu de tot l'equip");
 await roc.screenshot({ path: SHOTS + "calendari.png", fullPage: true });
+
+// cerca global: també troba dies marcats
+await roc.goto(B + "/");
+await roc.waitForLoadState("networkidle");
+await roc.click(".cerca-global .camp");
+await roc.keyboard.type("Festa local");
+await roc.locator(".cerca-global >> text=Festa local").first().waitFor();
+ok(true, "la cerca troba els dies marcats amb nota");
 
 // l'Aina ho veu: el festiu, i el teletreball/vacances del Roc
 const aina = await login("aina@prova.test");

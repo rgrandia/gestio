@@ -13,7 +13,9 @@
     "projecte_intern()",
     "te_funcio(text)",
     "activa_funcio(uuid,text,boolean)",
-    "marca_dies(date[],text,text,boolean)"
+    "marca_dies(date[],text,text,boolean)",
+    "replanifica_en_cascada(uuid,date,text)",
+    "posa_motiu(text,uuid,text)"
   ],
   "columnes": [
     "fases.data_inici",

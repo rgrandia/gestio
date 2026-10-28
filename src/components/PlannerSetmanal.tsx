@@ -37,6 +37,7 @@ export function PlannerSetmanal({
     hui,
     desa: (id, data) => replanificaPublicacio(id, data, ""),
     senseData: true,
+    historial: (id) => ({ taula: "publicacions", id }),
   });
 
   const targeta = (item: ItemPlanner) => {

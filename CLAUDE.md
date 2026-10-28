@@ -124,6 +124,12 @@ cada canvi de data continua quedant a l'historial (antiga, nova, qui, quan) i
 un update directe sense passar per `replanificar()` continua fallant. Es perd
 el *perquè* quan no s'escriu, no el *que*.
 
+**Motiu d'un clic després d'arrossegar (migració 0021):** arrossegar desa
+«sense motiu» per no trencar el gest, i un avís ofereix els motius habituals.
+`posa_motiu()` és l'única escriptura a `historial_dates` fora del trigger: només
+omple un «sense motiu» **propi i de fa menys de 5 minuts**. No toca dates, ni
+canvis d'un altre, ni un motiu ja escrit.
+
 ### 4.3 Esquema SQL
 
 ```sql
@@ -461,6 +467,20 @@ i s'avisa si una tasca cau en un dia de vacances o festiu.
 
 Límit RGPD: no hi ha cap tipus «baixa» ni «malaltia» i la nota és curta. Una
 absència per salut es marca «fora» sense explicar-la.
+
+### 4.4 duodecies Cascada i disponibilitat (migració 0021)
+
+- **Replanificar en cascada** (`replanifica_en_cascada()`): en replanificar una
+  fase amb data (opció marcada per defecte), les fases següents no acabades ni
+  cancel·lades, i les seves tasques obertes, es mouen els mateixos dies. Cada
+  canvi passa per `replanificar()` amb el motiu «en cascada (fase): …». L'inici
+  previst també es desplaça. Les tasques de la fase moguda no es toquen.
+- **Avís de disponibilitat**: en replanificar, passar o arrossegar, si qui ho
+  ha de fer (o el responsable del projecte, si és d'un extern o de ningú) té
+  vacances o és festiu aquell dia, l'app ho diu. No ho impedeix.
+- **Feina de l'equip** mostra qui no hi serà els propers 14 dies.
+- **Cerca global** troba també publicacions (si tens xarxes) i dies marcats
+  amb nota.
 
 ### 4.5 Qui actualitza les fases
 
@@ -802,7 +822,8 @@ ho seran, i les que faltin de debò es veuran de seguida.
 ## 11. Estil visual
 
 Lliure. Només dues constants: tipografia **Montserrat** i **cantonades rectes**
-(`border-radius: 0`). La resta (color, jerarquia, icones, ombres) s'ha de decidir
+(`border-radius: 0`). Els estils són a `src/app/estils/*.css`, importats per
+`globals.css` en un ordre fix (la cascada en depèn). La resta (color, jerarquia, icones, ombres) s'ha de decidir
 per fer l'app clara i agradable d'utilitzar.
 
 Des de l'octubre de 2026: cada persona pot tenir el menú lateral plegat (només

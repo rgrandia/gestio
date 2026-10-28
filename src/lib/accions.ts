@@ -4,15 +4,18 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { avui, esDataValida, extreuData, sumaDies } from "@/lib/dates";
+import { avui, dataCurta, esDataValida, extreuData, sumaDies } from "@/lib/dates";
 import { missatgeError } from "@/lib/errors";
 import { feinaOberta } from "@/lib/dades";
+import { avisDisponibilitat } from "@/lib/disponibilitat";
 import type { EstatIdea, EstatProjecte, TaulaItem } from "@/lib/tipus";
 
 // Totes les escriptures passen per aquí, amb la sessió de l'usuari i la clau
 // pública: l'RLS és qui decideix. Cap acció esborra res (§7.2).
 
-export type Resultat = { error?: string; ok?: boolean };
+// `avis`: s'ha fet, però hi ha alguna cosa a saber (p. ex. la persona té
+// vacances aquell dia). `missatge`: informació del que s'ha fet de més.
+export type Resultat = { error?: string; ok?: boolean; avis?: string; missatge?: string };
 
 const TAULES_ITEM: TaulaItem[] = ["fases", "entregables", "tasques"];
 const ESTATS_PROJECTE: EstatProjecte[] = ["actiu", "pausat", "tancat", "cancellat"];
@@ -38,7 +41,7 @@ function dataOpcional(fd: FormData, clau: string): string | null | "invalida" {
 
 export type AccioItem =
   | { accio: "fet"; taula: TaulaItem; id: string; data: string; revisor?: string }
-  | { accio: "replanificar"; taula: TaulaItem | "projectes"; id: string; data: string; motiu: string }
+  | { accio: "replanificar"; taula: TaulaItem | "projectes"; id: string; data: string; motiu: string; cascada?: boolean }
   | { accio: "revisat"; taula: TaulaItem; id: string }
   | { accio: "cancellar"; taula: TaulaItem; id: string }
   | { accio: "reobrir"; taula: TaulaItem; id: string };
@@ -87,6 +90,25 @@ export async function accioItem(a: AccioItem): Promise<Resultat> {
     if (!esDataValida(a.data)) return { error: "Indica la nova data en format AAAA-MM-DD." };
     // El motiu és opcional (migració 0015): si arriba buit, la base de dades
     // hi posa «sense motiu». El canvi queda a l'historial igualment (§4.2).
+    // Una fase pot arrossegar les següents i les seves tasques (migració 0021).
+    if (a.taula === "fases" && a.cascada) {
+      const { data: r, error } = await supabase.rpc("replanifica_en_cascada", {
+        p_fase: a.id,
+        p_data: a.data,
+        p_motiu: a.motiu.trim(),
+      });
+      if (error) return { error: missatgeError(error) };
+      const { fases = 0, tasques = 0 } = (r ?? {}) as { fases?: number; tasques?: number };
+      const parts = [
+        fases ? `${fases} ${fases === 1 ? "fase següent" : "fases següents"}` : "",
+        tasques ? `${tasques} ${tasques === 1 ? "tasca" : "tasques"}` : "",
+      ].filter(Boolean);
+      return {
+        ok: true,
+        missatge: parts.length ? `També s'han mogut ${parts.join(" i ")}.` : undefined,
+        avis: await avisDisponibilitat(supabase, "fases", a.id, { data: a.data }),
+      };
+    }
     const { error } = await supabase.rpc("replanificar", {
       p_taula: a.taula,
       p_id: a.id,
@@ -94,7 +116,8 @@ export async function accioItem(a: AccioItem): Promise<Resultat> {
       p_motiu: a.motiu.trim(),
     });
     if (error) return { error: missatgeError(error) };
-    return { ok: true };
+    if (a.taula === "projectes") return { ok: true };
+    return { ok: true, avis: await avisDisponibilitat(supabase, a.taula, a.id, { data: a.data }) };
   }
 
   const canvi =
@@ -753,7 +776,12 @@ export async function marcaAvisosLlegits(): Promise<void> {
 // Cerca global (projectes, clients, tasques i idees)
 // ------------------------------------------------------------------
 
-export type ResultatCerca = { tipus: "projecte" | "client" | "tasca" | "idea"; titol: string; detall: string; href: string };
+export type ResultatCerca = {
+  tipus: "projecte" | "client" | "tasca" | "idea" | "publicacio" | "dia";
+  titol: string;
+  detall: string;
+  href: string;
+};
 
 export async function cercaGlobal(consulta: string): Promise<ResultatCerca[]> {
   // Es treuen els caràcters amb significat dins dels filtres de PostgREST.
@@ -762,7 +790,7 @@ export async function cercaGlobal(consulta: string): Promise<ResultatCerca[]> {
   const supabase = await createClient();
   const patro = `%${q}%`;
 
-  const [projectes, clients, tasques, idees] = await Promise.all([
+  const [projectes, clients, tasques, idees, publicacions, dies] = await Promise.all([
     supabase
       .from("projectes")
       .select("id, titol, numero_estudi, tipus, clients(nom)")
@@ -778,10 +806,27 @@ export async function cercaGlobal(consulta: string): Promise<ResultatCerca[]> {
       .is("projectes.eliminat_el", null)
       .limit(5),
     supabase.from("idees").select("id, titol, estat").ilike("titol", patro).neq("estat", "descartada").limit(3),
+    // Sense les xarxes activades l'RLS no en retorna cap (migració 0019).
+    supabase
+      .from("publicacions")
+      .select("id, titol, estat, data_prevista")
+      .or(`titol.ilike.${patro},text.ilike.${patro}`)
+      .neq("estat", "cancellada")
+      .order("data_prevista", { ascending: false, nullsFirst: false })
+      .limit(4),
+    // Dies marcats amb una nota (festius, vacances…; migració 0020).
+    supabase
+      .from("calendari_dies")
+      .select("data, tipus, nota, perfil_id, perfils!calendari_dies_perfil_id_fkey(nom)")
+      .ilike("nota", patro)
+      .eq("actiu", true)
+      .order("data", { ascending: false })
+      .limit(3),
   ]);
 
   type P = { id: string; titol: string; numero_estudi: string | null; tipus: string; clients: { nom: string } | null };
   type T = { id: string; titol: string; projecte_id: string; projectes: { titol: string } | null };
+  type D = { data: string; tipus: string; nota: string | null; perfil_id: string | null; perfils: { nom: string } | null };
   return [
     ...((projectes.data ?? []) as unknown as P[]).map((p) => ({
       tipus: "projecte" as const,
@@ -806,6 +851,18 @@ export async function cercaGlobal(consulta: string): Promise<ResultatCerca[]> {
       titol: i.titol,
       detall: i.estat,
       href: "/idees",
+    })),
+    ...((publicacions.error ? [] : publicacions.data) ?? []).map((p) => ({
+      tipus: "publicacio" as const,
+      titol: p.titol,
+      detall: ["xarxes", p.estat, p.data_prevista ? dataCurta(p.data_prevista) : null].filter(Boolean).join(" · "),
+      href: `/xarxes/${p.id}`,
+    })),
+    ...((dies.error ? [] : dies.data) as unknown as D[] | null ?? []).map((d) => ({
+      tipus: "dia" as const,
+      titol: d.nota ?? d.tipus,
+      detall: [dataCurta(d.data), d.tipus, d.perfil_id ? d.perfils?.nom : "tot l'equip"].filter(Boolean).join(" · "),
+      href: `/calendari?mes=${d.data.slice(0, 7)}`,
     })),
   ];
 }
@@ -878,5 +935,15 @@ export async function transfereix(
   });
   if (error) return { error: missatgeError(error) };
   revalidatePath("/", "layout");
+  return { ok: true, avis: await avisDisponibilitat(supabase, taula, id, { persona }) };
+}
+
+// Motiu d'un clic just després d'arrossegar (migració 0021): omple el
+// «sense motiu» del darrer canvi propi, com a molt 5 minuts després.
+export async function posaMotiu(taula: TaulaItem | "publicacions", id: string, motiu: string): Promise<Resultat> {
+  if (!["fases", "entregables", "tasques", "publicacions"].includes(taula)) return { error: "Tipus d'element no vàlid." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("posa_motiu", { p_taula: taula, p_id: id, p_motiu: motiu });
+  if (error) return { error: missatgeError(error) };
   return { ok: true };
 }
