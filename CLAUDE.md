@@ -447,6 +447,21 @@ començar). Ningú no se la pot posar amb un update directe.
 - Límits: cap dada de seguidors, comentaris ni missatges (§2), cap mètrica
   d'abast, imatges només per enllaç.
 
+### 4.4 undecies Calendari personal (migració 0020)
+
+Cadascú marca com és cada dia seu (`calendari_dies`): **oficina,
+teletreball, fora, vacances o festiu**, amb una nota curta opcional. Qualsevol
+membre pot marcar **festius de tot l'equip** (`perfil_id` null; només
+`festiu`). Tothom ho veu; cadascú només escriu el seu (RLS). Es fa per RPC
+`marca_dies()` (un any com a molt de cop); treure una marca la desactiva.
+Pantalla **el meu calendari** (`/calendari`): mes, tria de dies (clic, Maj+clic
+per a un interval), «cada setmana fins al» per repetir, i qui de l'equip no hi
+és aquesta setmana. Al calendari dels 7 dies de l'inici surt com és cada dia
+i s'avisa si una tasca cau en un dia de vacances o festiu.
+
+Límit RGPD: no hi ha cap tipus «baixa» ni «malaltia» i la nota és curta. Una
+absència per salut es marca «fora» sense explicar-la.
+
 ### 4.5 Qui actualitza les fases
 
 **Només el responsable del projecte** (membre del departament). El camp i la
@@ -557,7 +572,8 @@ venç; llistes, sense xifres) i **plantilles de tasques** (des de projectes),
 a més d'una **cerca global** al menú (tecla `/`), i **xarxes socials**
 (calendari del mes, planner setmanal per arrossegar, tauler per estat, comptes
 i dates clau; només per a qui
-té la funció activada, §4.4 decies). Cap més sense preguntar. Estil visual: secció 11.
+té la funció activada, §4.4 decies) i **el meu calendari** (teletreball,
+vacances, festius; §4.4 undecies). Cap més sense preguntar. Estil visual: secció 11.
 
 ### 6.1 La meva setmana (pàgina d'inici)
 
@@ -580,9 +596,11 @@ teclat (↑↓, f, r, v, p, x, Esc).
 
 Disposició (octubre 2026): a pantalla gran, dues columnes. A l'esquerra el que
 demana decisions («a revisar») i, a sota, un **calendari dels propers 7 dies**
-(avui inclòs) amb les meves tasques, les internes i, si tinc les xarxes
-activades, les meves publicacions. És un calendari sense botons: les accions
-es fan a «a revisar» i no es repeteixen. A la dreta, compacte, el dia a dia
+(avui inclòs) amb les meves tasques, les internes, si tinc les xarxes
+activades les meves publicacions, i com és cada dia al meu calendari (§4.4
+undecies). Les tasques i les publicacions s'hi **arrosseguen** a un altre dia
+(o nansa + ←/→): és replanificar, amb historial («sense motiu»). Cap altre
+botó: les altres accions es fan a «a revisar» i no es repeteixen. A la dreta, compacte, el dia a dia
 (revisions, xarxes, gestió interna, muts, moment polític, idees). A dalt, una
 línia de pastilles amb els comptadors.
 

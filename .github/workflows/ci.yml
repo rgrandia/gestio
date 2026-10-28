@@ -101,6 +101,11 @@ jobs:
       - name: Xarxes socials
         run: node xarxes.mjs
         working-directory: e2e
+      - name: Dades de prova de nou (calendari)
+        run: psql "$DB_PROVES" -X -q -v ON_ERROR_STOP=1 -f e2e/dades-prova.sql
+      - name: Calendari de l'inici i el meu calendari
+        run: node calendari.mjs
+        working-directory: e2e
       - name: Verificació sobre dades com les de producció
         # migracions.yml l'executa contra producció: no pot dependre d'una base buida
         run: psql "$DB_PROVES" -X -q -v ON_ERROR_STOP=1 -f supabase/tests/verificacio.sql
