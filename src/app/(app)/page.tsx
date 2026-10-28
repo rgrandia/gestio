@@ -12,6 +12,7 @@ import { Formulari } from "@/components/Formulari";
 import { Seleccio } from "@/components/Seleccio";
 import { estatFila } from "@/components/Retard";
 import { creaTascaInterna } from "@/lib/accions";
+import { SeccioXarxesInici } from "@/components/SeccioXarxesInici";
 import { TAULA_DE, type FilaSafata, type ProjecteMut } from "@/lib/tipus";
 
 export const dynamic = "force-dynamic";
@@ -346,6 +347,8 @@ export default async function LaMevaSetmana({
               </table>
             </section>
           )}
+
+          <SeccioXarxesInici jo={perfil.id} hui={hui} />
 
           <section className="seccio compacta" id="intern">
             <header>

@@ -50,6 +50,9 @@ resta (client, tasques, responsables, dates, idees) és compartida.
   l'octubre de 2026, migració 0009; el correu continua fora.)
 - Pujada de fitxers (només enllaços a SharePoint/Drive).
 - App mòbil nativa (només web responsive).
+- Publicar o llegir res de les xarxes socials (cap API ni token). El mòdul de
+  xarxes (§4.4 decies) planifica, redacta i deixa constància; la publicació es
+  fa a la xarxa, a mà o amb la seva eina de programar.
 
 Si una funció no apareix a la secció 6, no s'implementa sense preguntar.
 
@@ -407,6 +410,38 @@ ell qui l'ha passat. La traça queda als avisos; no hi ha taula d'historial.
 - **`v_projectes_quiets`**: projectes actius sense cap moviment en 60 dies
   (calculat, no desat), a "feina de l'equip".
 
+### 4.4 decies Xarxes socials corporatives (migració 0019)
+
+Funció **opcional per persona** (`perfils.funcions` conté `'xarxes'`). No és un
+rol (§7.1): no dona cap permís sobre la resta de l'app, només obre aquest
+mòdul. L'RLS de les seves taules exigeix `pot_xarxes()`; sense la funció no es
+veu ni el menú ni les dades. L'activa o la treu (`activa_funcio()`, des de la
+pantalla d'equip) qui ja la té; si no la té ningú, qualsevol membre (per
+començar). Ningú no se la pot posar amb un update directe.
+
+- **Comptes** (`xarxes_comptes`): xarxa, nom, objectiu setmanal opcional
+  (cadència) i signatura (etiquetes fixes que s'afegeixen en copiar).
+- **Publicacions** (`publicacions`), lligades a un projecte **o no**, a un o
+  més comptes (`publicacio_canals`, amb text adaptat per xarxa i l'enllaç un
+  cop publicada). Circuit: idea → esborrany → (revisió → aprovada) →
+  programada → publicada, o cancel·lada. La revisió és opcional, però
+  «aprovada» només la posa una altra persona amb la funció; retornar demana
+  comentari. **Si es toca el text d'una cosa aprovada, l'aprovació caduca**
+  (torna a esborrany). Tot ho fa complir un trigger.
+- Com a tot arreu: publicada ⇔ `data_real` (§4.1), i la data prevista només
+  canvia per `replanificar('publicacions', …)`, amb historial (§4.2).
+- **Dates clau** (`efemerides`, recurrents o no) i idees amb `data_objectiu`
+  surten al calendari.
+- Editor amb **comptador de caràcters com el de cada xarxa** (grafemes; a X un
+  enllaç compta 23) i avisos objectius (passa del límit, sense text, xarxa que
+  necessita imatge i no hi ha enllaç als recursos). Botó de copiar per xarxa.
+- «Cal atenció»: vençudes, per revisar, retornades, avui/demà sense aprovar,
+  comptes que no arriben a l'objectiu setmanal i **estudis amb la presentació
+  a ±2-3 setmanes sense cap publicació** (amb el recordatori que només si el
+  client n'autoritza la difusió).
+- Límits: cap dada de seguidors, comentaris ni missatges (§2), cap mètrica
+  d'abast, imatges només per enllaç.
+
 ### 4.5 Qui actualitza les fases
 
 **Només el responsable del projecte** (membre del departament). El camp i la
@@ -514,7 +549,9 @@ externes), **avisos** (notificacions dins de l'app), **cronograma** (prova de
 Gantt), **feina de l'equip** (què té obert cadascú) i **resum setmanal**
 (per a la reunió de dilluns: què s'ha tancat, què ha lliscat i per què, què
 venç; llistes, sense xifres) i **plantilles de tasques** (des de projectes),
-a més d'una **cerca global** al menú (tecla `/`). Cap més sense preguntar. Estil visual: secció 11.
+a més d'una **cerca global** al menú (tecla `/`), i **xarxes socials**
+(calendari editorial, tauler per estat, comptes i dates clau; només per a qui
+té la funció activada, §4.4 decies). Cap més sense preguntar. Estil visual: secció 11.
 
 ### 6.1 La meva setmana (pàgina d'inici)
 
@@ -580,6 +617,10 @@ No hi ha rols. Amb un equip de tres, un rol d'administrador només hauria servit
 per obligar algú a demanar permís per esborrar una tasca mal creada, i això
 acaba en "ja ho deixo, total no molesta". Si algun dia l'equip creix i cal
 diferenciar permisos, s'afegeix llavors.
+
+Excepció acotada (octubre 2026, migració 0019): el mòdul de **xarxes socials**
+només el veu qui el té activat (§4.4 decies). Sobre la resta de l'app, tothom
+continua tenint els mateixos permisos.
 
 ### 7.2 Res no s'esborra mai
 

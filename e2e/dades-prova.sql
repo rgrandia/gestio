@@ -1,6 +1,8 @@
 -- Dades de prova per a e2e/funcions.mjs. NOMÉS per a l'entorn de proves:
 -- buida les taules de l'app. Usa els usuaris de scripts/e2e/entorn.sh.
-truncate clients, projectes, fases, entregables, tasques, contactes, idees, historial_dates, plantilles_tasques cascade;
+truncate clients, projectes, fases, entregables, tasques, contactes, idees, historial_dates, plantilles_tasques, xarxes_comptes cascade;
+-- xarxes (0019): ningú no les té activades a l'inici de les proves
+update perfils set funcions = '{}';
 -- el truncate s'emporta el client intern que crea la migració 0016
 insert into clients (nom, tipus, intern) values ('GESOP · gestió interna', 'altre', true);
 delete from perfils where extern;
@@ -33,6 +35,10 @@ begin
     (p1,f_tab,'Revisar ponderació',roc,current_date+2),
     (p1,f_camp,'Seguiment de quotes diari',aina,current_date-8);
   update fases set data_prevista = current_date - 3 + (ordre-1)*12 where projecte_id=p2;
+  -- presentació a punt i cap publicació: surt a «cal atenció» de xarxes
+  perform set_config('app.motiu_canvi', 'dades de prova', true);
+  update fases set data_prevista = current_date + 10 where projecte_id = p2 and nom = 'Presentació';
+  perform set_config('app.motiu_canvi', '', true);
   insert into entregables (projecte_id,titol,tipus,data_prevista) values (p3,'Nota de posicionament pressupostos','nota',current_date+2),(p3,'Argumentari ple d''octubre','discurs',current_date-6),(p4,'Diagnosi inicial','informe',current_date+12);
   insert into contactes (projecte_id,data,tipus,resum,usuari_id) values (p4,current_date-3,'reunio','Reunió de kick-off amb gabinet',aina);
   insert into tasques (projecte_id,titol,assignada_a,data_prevista,prioritat) values

@@ -6,12 +6,26 @@ import { requereixMembre } from "@/lib/auth/session";
 import { SelectorColor } from "@/components/SelectorColor";
 import { Formulari } from "@/components/Formulari";
 import { Persona } from "@/components/Persona";
+import { BotoFuncio } from "@/components/BotoFuncio";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function Equip() {
   const jo = await requereixMembre();
-  const [perfils, oberta] = await Promise.all([obtePerfils(), feinaOberta()]);
+  const supabase = await createClient();
+  const [perfils, oberta, funcionsR] = await Promise.all([
+    obtePerfils(),
+    feinaOberta(),
+    // Consulta a part: si la base de dades no té la 0019, falla sola.
+    supabase.from("perfils").select("id, funcions").eq("extern", false),
+  ]);
+  const ambXarxes = new Set(
+    funcionsR.error ? [] : (funcionsR.data ?? []).filter((p) => (p.funcions as string[]).includes("xarxes")).map((p) => p.id as string),
+  );
+  // La dona qui ja la té; si no la té cap membre actiu, qualsevol (per començar).
+  const ningu = !perfils.some((p) => p.actiu && !p.extern && ambXarxes.has(p.id));
+  const potDonarXarxes = !funcionsR.error && (ambXarxes.has(jo.id) || ningu);
   const membres = perfils.filter((p) => !p.extern);
   const externs = perfils.filter((p) => p.extern);
   // colors que ja fan servir altres membres actius
@@ -52,6 +66,9 @@ export default async function Equip() {
                 </td>
                 <td className="suau nowrap">{p.email}</td>
                 <td className="nowrap"><FeinaOberta n={oberta.get(p.id) ?? 0} actiu={p.actiu} /></td>
+                <td className="nowrap">
+                  {p.actiu && <BotoFuncio persona={p.id} actiu={ambXarxes.has(p.id)} potCanviar={potDonarXarxes} />}
+                </td>
                 <td className="nowrap">
                   <span className={`etiqueta ${p.actiu ? "tag-fet" : ""}`}>{p.actiu ? "actiu" : "inactiu"}</span>
                 </td>

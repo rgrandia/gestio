@@ -953,6 +953,148 @@ do $$ begin
 end $$;
 
 -- ------------------------------------------------------------
+-- Xarxes socials (0019): només per a qui té la funció activada
+-- ------------------------------------------------------------
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';
+do $$ begin
+  assert not te_funcio('xarxes'), 'ningú no hauria de tenir xarxes per defecte';
+  assert (select count(*) from efemerides) = 0, 'sense la funció es veuen les dates clau';
+  begin
+    insert into xarxes_comptes (plataforma, nom) values ('x', '@intrus');
+    raise exception 'FALLA: sense la funció s''ha pogut crear un compte';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    update perfils set funcions = '{xarxes}' where id = auth.uid();
+    raise exception 'FALLA: un usuari s''ha pogut activar funcions directament';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- la primera persona l'activa per a si mateixa (ningú no la tenia)
+select activa_funcio('00000000-0000-0000-0000-00000000000a', 'xarxes', true);
+do $$ begin
+  assert te_funcio('xarxes'), 'activa_funcio no ha activat la funció';
+  assert (select count(*) from efemerides) >= 8, 'falten les dates clau inicials';
+end $$;
+
+insert into xarxes_comptes (id, plataforma, nom, cadencia_setmanal) values
+  ('70000000-0000-0000-0000-000000000001', 'linkedin', 'GESOP', 3),
+  ('70000000-0000-0000-0000-000000000002', 'x', '@gesop', null);
+insert into publicacions (id, titol, text, projecte_id, data_prevista) values
+  ('71000000-0000-0000-0000-000000000001', 'Resultats baròmetre', 'Text base',
+   '20000000-0000-0000-0000-000000000001', current_date + 3),
+  ('71000000-0000-0000-0000-000000000002', 'Sense projecte', null, null, null);
+insert into publicacio_canals (publicacio_id, compte_id, text_adaptat) values
+  ('71000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000001', null),
+  ('71000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000002', 'Text curt');
+
+-- el company no la té: no veu res, no pot donar-se-la i no pot revisar
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000c"}';
+do $$ begin
+  assert (select count(*) from publicacions) = 0, 'sense la funció es veuen publicacions';
+  assert (select count(*) from xarxes_comptes) = 0, 'sense la funció es veuen comptes';
+  assert (select count(*) from publicacio_canals) = 0, 'sense la funció es veuen canals';
+  begin
+    perform activa_funcio('00000000-0000-0000-0000-00000000000c', 'xarxes', true);
+    raise exception 'FALLA: algú sense la funció se l''ha donada';
+  exception when raise_exception then null;
+  end;
+end $$;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';
+do $$ begin
+  begin
+    update publicacions set estat = 'revisio', revisor_id = '00000000-0000-0000-0000-00000000000c'
+      where id = '71000000-0000-0000-0000-000000000001';
+    raise exception 'FALLA: s''ha enviat a revisar a algú sense la funció';
+  exception when raise_exception then null;
+  end;
+  begin
+    update publicacions set estat = 'revisio', revisor_id = '00000000-0000-0000-0000-00000000000a'
+      where id = '71000000-0000-0000-0000-000000000001';
+    raise exception 'FALLA: algú s''ha pogut revisar ell mateix';
+  exception when raise_exception then null;
+  end;
+  begin
+    update publicacions set estat = 'aprovada' where id = '71000000-0000-0000-0000-000000000001';
+    raise exception 'FALLA: s''ha aprovat sense revisió';
+  exception when raise_exception then null;
+  end;
+end $$;
+
+select activa_funcio('00000000-0000-0000-0000-00000000000c', 'xarxes', true);
+update publicacions set estat = 'revisio', revisor_id = '00000000-0000-0000-0000-00000000000c'
+  where id = '71000000-0000-0000-0000-000000000001';
+
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000c"}';
+do $$ begin
+  assert (select count(*) from publicacions) = 2, 'amb la funció activada no es veuen les publicacions';
+  assert exists (select 1 from notificacions where tipus = 'funcio'), 'no ha arribat l''avís d''activació';
+  assert exists (select 1 from notificacions where text like '%et demana revisar la publicació%'),
+    'no ha arribat l''avís de revisió';
+  begin
+    update publicacions set estat = 'esborrany' where id = '71000000-0000-0000-0000-000000000001';
+    raise exception 'FALLA: s''ha retornat sense nota';
+  exception when raise_exception then null;
+  end;
+end $$;
+update publicacions set estat = 'aprovada' where id = '71000000-0000-0000-0000-000000000001';
+do $$ begin
+  assert (select aprovada_per from publicacions where id = '71000000-0000-0000-0000-000000000001')
+         = '00000000-0000-0000-0000-00000000000c', 'no consta qui l''ha aprovada';
+end $$;
+
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';
+-- tocar el text adaptat fa caducar l'aprovació
+update publicacio_canals set text_adaptat = 'Text curt canviat'
+  where publicacio_id = '71000000-0000-0000-0000-000000000001' and compte_id = '70000000-0000-0000-0000-000000000002';
+do $$ begin
+  assert (select estat from publicacions where id = '71000000-0000-0000-0000-000000000001') = 'esborrany',
+    'canviar el text d''una publicació aprovada no l''ha tornat a esborrany';
+  assert (select aprovada_per from publicacions where id = '71000000-0000-0000-0000-000000000001') is null,
+    'l''aprovació no ha caducat';
+  -- data prevista: com a tot arreu, només per replanificar() i amb historial
+  begin
+    update publicacions set data_prevista = current_date + 9 where id = '71000000-0000-0000-0000-000000000001';
+    raise exception 'FALLA: update directe de la data d''una publicació';
+  exception when raise_exception then null;
+  end;
+end $$;
+select replanificar('publicacions', '71000000-0000-0000-0000-000000000001', current_date + 9, null);
+do $$ begin
+  assert exists (select 1 from historial_dates where taula = 'publicacions'
+                 and registre_id = '71000000-0000-0000-0000-000000000001' and motiu = 'sense motiu'),
+    'replanificar una publicació no deixa historial';
+  -- publicada ⇔ data real, que no pot ser futura
+  begin
+    update publicacions set estat = 'publicada', data_real = current_date + 1
+      where id = '71000000-0000-0000-0000-000000000001';
+    raise exception 'FALLA: publicada amb data futura';
+  exception when raise_exception then null;
+  end;
+  begin
+    update publicacions set estat = 'publicada' where id = '71000000-0000-0000-0000-000000000001';
+    raise exception 'FALLA: publicada sense data real';
+  exception when check_violation then null;
+  end;
+end $$;
+update publicacions set estat = 'publicada', data_real = current_date
+  where id = '71000000-0000-0000-0000-000000000001';
+update publicacions set estat = 'esborrany' where id = '71000000-0000-0000-0000-000000000001';
+do $$ begin
+  assert (select data_real from publicacions where id = '71000000-0000-0000-0000-000000000001') is null,
+    'reobrir una publicació no li treu la data real';
+end $$;
+
+-- es pot desactivar; qui no la té ja no la pot tornar a donar
+select activa_funcio('00000000-0000-0000-0000-00000000000c', 'xarxes', false);
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000c"}';
+do $$ begin
+  assert (select count(*) from publicacions) = 0, 'desactivada, encara es veuen publicacions';
+end $$;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';
+
+-- ------------------------------------------------------------
 -- Comprovació 2: cap delete, enlloc, ni per a membres actius
 -- ------------------------------------------------------------
 do $$
@@ -961,7 +1103,8 @@ begin
   foreach t in array array['perfils', 'clients', 'projectes', 'fases', 'entregables',
                            'tasques', 'contactes', 'idees', 'historial_dates',
                            'projecte_responsables', 'notificacions', 'revisions',
-                           'migracions_aplicades', 'plantilles_tasques']
+                           'migracions_aplicades', 'plantilles_tasques',
+                           'xarxes_comptes', 'publicacions', 'publicacio_canals', 'efemerides']
   loop
     begin
       execute format('delete from %I', t);
