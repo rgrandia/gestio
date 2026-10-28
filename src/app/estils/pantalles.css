@@ -1,0 +1,281 @@
+/* Pantalles: projecte, entrada, mòbil, fases, cerca, feina de l'equip, cronograma, impressió. */
+
+/* ---------------- detall de projecte ---------------- */
+
+.pestanyes { display: flex; gap: 4px; border-bottom: 1px solid var(--linia-forta); margin-bottom: 20px; }
+.pestanyes a {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 14px; color: var(--text-suau); border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.pestanyes a:hover { color: var(--text); }
+.pestanyes a[aria-current="page"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+
+.capcalera {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0;
+  background: var(--panell); border: 1px solid var(--linia); box-shadow: var(--ombra); margin-bottom: 24px;
+}
+.capcalera > div { padding: 14px 16px; border-right: 1px solid var(--linia); }
+.capcalera > div:last-child { border-right: 0; }
+.capcalera dt { color: var(--text-suau); font-size: 11px; margin-bottom: 4px; }
+.capcalera dd { font-weight: 500; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.notes { background: var(--panell); border: 1px solid var(--linia); border-left: 3px solid var(--accent); padding: 14px 16px; margin-bottom: 24px; }
+
+/* ---------------- entrada ---------------- */
+
+.entrada { min-height: 100vh; display: grid; place-items: center; padding: 16px; background: var(--tinta); }
+.entrada .caixa { width: 100%; max-width: 400px; background: var(--panell); box-shadow: var(--ombra-alta); padding: 32px; }
+.entrada .marca { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.entrada .logo { width: 40px; height: 40px; display: grid; place-items: center; background: var(--accent); color: #fff; font-weight: 600; font-size: 20px; }
+.entrada h1 { font-size: 20px; }
+.entrada .sub { color: var(--text-suau); font-size: 12px; }
+
+/* ---------------- mòbil ---------------- */
+
+@media (max-width: 860px) {
+  .xifres { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; background: var(--fons); }
+  .rail { position: sticky; top: 0; z-index: 10; height: auto; flex-direction: row; align-items: center; padding: 8px 12px; gap: 8px; }
+  .rail .marca { padding: 0; }
+  .rail .marca div, .rail .seccio-nav, .rail .peu .nom, .rail .peu .avatar { display: none; }
+  .rail nav { flex-direction: row; flex: 1; min-width: 0; gap: 0; overflow-x: auto; }
+  .rail nav a { width: 40px; height: 40px; flex: none; border-left: 0; border-bottom: 2px solid transparent; }
+  .rail nav a .text { width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); padding: 0; }
+  .rail .peu { flex-direction: row; }
+  .rail nav a[aria-current="page"] { border-bottom-color: var(--accent); }
+  .rail .peu { margin: 0; padding: 0; border: 0; }
+  .contingut { padding: 20px 16px 48px; }
+  h1 { font-size: 20px; }
+  .xifres { gap: 10px; }
+  .xifra .valor { font-size: 26px; }
+
+  /* llistes accionables: accions a sota del text */
+  .taula.taula-mobil tr { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 12px; border-bottom: 1px solid var(--linia); border-left: 3px solid transparent; }
+  .taula.taula-mobil td, .taula.taula-mobil td:first-child { border: 0; padding: 0; background: transparent; }
+  .taula.taula-mobil tr[data-estat="vencut"] { border-left-color: var(--vencut); }
+  .taula.taula-mobil tr[data-estat="risc"]   { border-left-color: var(--risc); }
+  .taula.taula-mobil tr[data-estat="mut"]    { border-left-color: var(--mut); }
+  .taula.taula-mobil td.ample { flex-basis: 100%; order: 3; max-width: none; }
+  .taula.taula-mobil .element .context { white-space: normal; }
+  .taula.taula-mobil td.accions { flex-basis: 100%; order: 4; text-align: left; white-space: normal; }
+  .taula.taula-mobil .amaga-mobil { display: none; }
+  .taula.taula-mobil .boto-suau .text-boto { display: none; }
+  .taula.taula-mobil .boto-suau { width: 36px; height: 32px; padding: 0; justify-content: center; }
+  .taula.taula-mobil .trunc { max-width: 100%; white-space: normal; }
+}
+
+/* ---------------- moviment ---------------- */
+
+.sortint { opacity: 0; transition: opacity 160ms linear; }
+@media (prefers-reduced-motion: reduce) {
+  .sortint, .xifra, .boto { transition: none; }
+  a.xifra:hover { transform: none; }
+}
+
+/* títol de pàgina sense capçalera composta */
+.contingut > h1 { margin-bottom: 20px; }
+
+/* persona externa: sense accés a l'app */
+.avatar.extern { background: var(--panell); border: 1px dashed; }
+
+/* ---------------- fases desplegables ---------------- */
+
+.desplega { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.desplega:focus-visible + label { outline: 2px solid var(--accent); }
+.fletxa { transition: transform 120ms; }
+tr.fase-detall { display: none; }
+tbody.fase:has(.desplega:checked) tr.fase-detall { display: table-row; }
+tbody.fase:has(.desplega:checked) .fletxa { transform: rotate(90deg); }
+tbody.fase:has(.desplega:checked) > tr:first-child td { background: var(--hover); }
+.taula tr.fase-detall > td { padding: 0; background: var(--hover); }
+.taula tr.fase-detall:hover > td { background: var(--hover); }
+.fase-panell { padding: 4px 16px 16px 56px; }
+.taula-interior { background: var(--panell); border: 1px solid var(--linia); }
+.taula-interior td { padding: 7px 10px; }
+.fase-forms { display: grid; gap: 10px; margin-top: 12px; }
+@media (prefers-reduced-motion: reduce) { .fletxa { transition: none; } }
+.taula-fases .boto-suau .text-boto { display: none; }
+.taula-fases .boto-suau { width: 30px; padding: 0; justify-content: center; }
+
+/* avisos de projecte arxivat / a la paperera */
+.notes.avis-vencut { border-left-color: var(--vencut); background: var(--vencut-suau); font-family: var(--font-mono); font-size: 13px; }
+.notes.avis-mut    { border-left-color: var(--mut); background: var(--mut-suau); font-family: var(--font-mono); font-size: 13px; }
+
+/* selector de color de persona */
+.selector-color { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.selector-color label { position: relative; cursor: pointer; }
+.selector-color input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.selector-color span { display: block; width: 22px; height: 22px; border: 2px solid var(--panell); outline: 1px solid var(--linia); }
+.selector-color input:checked + span { outline: 2px solid var(--text); }
+.selector-color input:focus-visible + span { outline: 2px solid var(--accent); }
+.selector-color input:disabled + span { opacity: 0.2; cursor: not-allowed; }
+
+/* ---------------- tira de fases ---------------- */
+
+.tira-fases { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; padding: 16px; list-style: none; margin: 0; border-bottom: 1px solid var(--linia); }
+.tira-fases li { display: flex; flex-direction: column; gap: 2px; padding: 0 2px; min-width: 0; }
+.tira-fases .barra { height: 8px; background: var(--linia); margin-bottom: 6px; }
+.tira-fases .nom { font-weight: 600; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tira-fases .quan { font-size: 11px; color: var(--text-suau); white-space: nowrap; }
+.tira-fases .e-fet .barra    { background: var(--fet); }
+.tira-fases .e-vencut .barra { background: var(--vencut); }
+.tira-fases .e-vencut .quan b { color: var(--vencut); }
+.tira-fases .e-risc .barra   { background: var(--risc); }
+.tira-fases .e-risc .quan b  { color: var(--risc); }
+.tira-fases .e-fet .nom      { color: var(--text-suau); }
+.tira-fases .actual .barra   { outline: 2px solid var(--text); outline-offset: 2px; }
+.tira-fases .actual .nom::after { content: " · ara"; color: var(--accent); font-weight: 500; }
+
+.tira-compacta { display: inline-flex; flex-direction: column; gap: 4px; }
+.tira-compacta .blocs { display: inline-flex; gap: 2px; }
+.tira-compacta .bloc { width: 14px; height: 6px; background: var(--linia); }
+.tira-compacta .bloc.e-fet { background: var(--fet); }
+.tira-compacta .bloc.e-vencut { background: var(--vencut); }
+.tira-compacta .bloc.e-risc { background: var(--risc); }
+.tira-compacta .bloc.actual { outline: 1px solid var(--text); outline-offset: 1px; }
+.tira-compacta .nom-fase { font-size: 12px; }
+
+@media (max-width: 720px) {
+  .tira-fases { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* replanificacions */
+.replanificat { gap: 2px; margin-left: 6px; vertical-align: middle; }
+.replanificat svg { width: 12px; height: 12px; }
+
+/* agenda: capçalera de dia */
+.taula tr.dia td { background: var(--hover); font-size: 11px; font-weight: 600; color: var(--text-suau); padding: 6px 12px; border-left: 3px solid transparent; }
+.taula tr.dia.avui td { color: var(--accent); }
+.taula tr.dia:hover td { background: var(--hover); }
+
+/* cercador */
+.cerca { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--linia-forta); background: var(--panell); padding: 0 8px; }
+.cerca input { border: 0; min-height: 32px; padding: 0; outline: none; width: 170px; }
+.cerca input:focus { outline: none; }
+.cerca:focus-within { border-color: var(--accent); outline: 3px solid var(--accent-suau); }
+.rail nav a .comptador.c-avis { background: var(--accent); }
+
+/* avisos */
+.avis-nou td { background: var(--accent-suau); }
+.avis-nou .avis-text { font-weight: 600; }
+.avis-llegit .avis-text { color: var(--text-suau); font-weight: 400; }
+.avis-text { color: var(--text); display: inline-flex; gap: 6px; align-items: baseline; }
+.avis-icona { color: var(--accent); }
+
+/* ---------------- cerca global ---------------- */
+
+.cerca-global { position: relative; padding: 0 12px 12px; }
+.cerca-global .camp { display: flex; align-items: center; gap: 8px; background: var(--tinta-2); padding: 0 12px; color: #8592A6; height: 40px; cursor: text; overflow: hidden; }
+/* Al rail estret només es veu la lupa; en entrar-hi s'obre cap a la dreta. */
+.cerca-global .camp input, .cerca-global .camp kbd { width: 0; opacity: 0; }
+.cerca-global:focus-within .camp {
+  position: absolute; left: 12px; top: 0; width: 360px; z-index: 31; box-shadow: var(--ombra-alta);
+}
+.cerca-global:focus-within .camp input { width: auto; opacity: 1; }
+.cerca-global:focus-within .camp kbd { width: auto; opacity: 1; }
+.cerca-global input { background: transparent; border: 0; color: #fff; min-height: 34px; padding: 0; flex: 1; min-width: 0; }
+.cerca-global input::placeholder { color: #8592A6; }
+.cerca-global input:focus { outline: none; }
+.cerca-global .camp:focus-within { outline: 2px solid var(--accent); }
+.cerca-global kbd { font: inherit; font-size: 11px; border: 1px solid #39465c; padding: 0 5px; color: #8592A6; }
+.cerca-global .resultats {
+  position: absolute; left: 12px; top: 40px; z-index: 30; width: 420px; max-width: calc(100vw - 32px);
+  list-style: none; margin: 0; padding: 4px 0; background: var(--panell); color: var(--text);
+  border: 1px solid var(--linia); box-shadow: var(--ombra-alta);
+}
+.cerca-global .resultats button {
+  width: 100%; display: grid; grid-template-columns: 16px 1fr; column-gap: 10px; align-items: center;
+  text-align: left; padding: 8px 12px; background: none; border: 0; cursor: pointer; font: inherit; color: var(--text);
+}
+.cerca-global .resultats button svg { grid-row: span 2; color: var(--text-suau); }
+.cerca-global .resultats .t { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cerca-global .resultats .d { font-size: 11px; color: var(--text-suau); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cerca-global [aria-selected="true"] button { background: var(--accent-suau); }
+.cerca-global .cap { padding: 10px 12px; color: var(--text-suau); }
+@media (max-width: 720px) { .cerca-global { display: none; } }
+
+/* ---------------- feina de l'equip ---------------- */
+
+.tauler { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(260px, 1fr); gap: 16px; overflow-x: auto; padding-bottom: 8px; align-items: start; }
+.columna { background: var(--panell); border: 1px solid var(--linia); box-shadow: var(--ombra); }
+.columna > header { padding: 12px 14px; border-bottom: 1px solid var(--linia); border-top: 3px solid var(--linia-forta); display: grid; gap: 6px; }
+.xifres-columna { display: flex; gap: 10px; font-size: 11px; color: var(--text-suau); }
+.xifres-columna > span:first-child { font-weight: 700; color: var(--text); }
+.columna ul { list-style: none; margin: 0; padding: 0; }
+.columna li { border-bottom: 1px solid var(--linia); border-left: 3px solid transparent; }
+.columna li:last-child { border-bottom: 0; }
+.columna li[data-estat="vencut"] { border-left-color: var(--vencut); }
+.columna li[data-estat="risc"] { border-left-color: var(--risc); }
+.columna li a { display: grid; gap: 2px; padding: 9px 12px; color: var(--text); }
+.columna li a:hover { background: var(--hover); }
+.columna li .t { font-weight: 500; }
+.columna li .d { font-size: 11px; color: var(--text-suau); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.columna li .q { font-size: 11px; color: var(--text-suau); }
+.columna li .q b { font-weight: 700; }
+
+/* ---------------- cronograma ---------------- */
+
+.gantt { overflow-x: auto; }
+.g-fila { display: grid; grid-template-columns: 260px minmax(720px, 1fr); border-bottom: 1px solid var(--linia); }
+.g-nom { display: flex; align-items: center; gap: 8px; padding: 0 12px; min-width: 0; border-right: 1px solid var(--linia); }
+.g-temps {
+  position: relative; height: 34px;
+  /* línies verticals: una per setmana */
+  background-image: repeating-linear-gradient(to right, var(--linia) 0 1px, transparent 1px calc(100% / var(--setmanes)));
+}
+.g-capcalera { position: sticky; top: 0; background: var(--hover); z-index: 2; }
+.g-capcalera .g-nom { font-size: 11px; color: var(--text-suau); }
+.g-capcalera .g-temps { height: 40px; }
+.g-setmana { position: absolute; bottom: 6px; padding-left: 4px; font-size: 11px; color: var(--text-suau); display: grid; line-height: 1.2; }
+.g-setmana b { color: var(--text); font-weight: 600; }
+.g-projecte { background: var(--panell); }
+.g-projecte .g-nom { font-weight: 500; }
+.g-projecte .g-nom a { color: var(--text); }
+.g-projecte .g-nom a:hover { color: var(--accent); }
+.g-fase .g-nom { padding-left: 44px; font-size: 12px; color: var(--text-suau); }
+.g-fase .g-temps { height: 26px; }
+.g-barra { position: absolute; top: 50%; transform: translateY(-50%); }
+.g-b-projecte { height: 12px; background: var(--accent); opacity: 0.85; }
+.g-b-projecte.obert { -webkit-mask-image: linear-gradient(to right, #000 70%, transparent); mask-image: linear-gradient(to right, #000 70%, transparent); }
+.g-b-fase { height: 10px; background: var(--linia-forta); }
+.g-b-fase.e-fet { background: var(--fet); }
+.g-b-fase.e-vencut { background: var(--vencut); }
+.g-b-fase.e-risc { background: var(--risc); }
+.g-fita { position: absolute; top: 50%; width: 10px; height: 10px; background: var(--text); transform: translate(-50%, -50%) rotate(45deg); outline: 2px solid var(--panell); }
+.g-fita.e-fet { background: var(--fet); }
+.g-fita.e-vencut { background: var(--vencut); }
+.g-fita.e-risc { background: var(--risc); }
+.g-avui { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--vencut); opacity: 0.6; z-index: 1; }
+.columna li.mes a { font-size: 11px; color: var(--accent); }
+.xifres-columna { flex-wrap: wrap; }
+.xifres-columna > span { white-space: nowrap; }
+.avis-sense-data { margin: -12px 0 24px; padding: 8px 12px; font-size: 12px; color: var(--risc); background: var(--risc-suau); border-left: 3px solid var(--risc); }
+
+/* ---------------- edició en línia de tasques i entregables ---------------- */
+
+tr.fila-edicio > td { background: var(--fons); border-left: 3px solid var(--accent); padding: 16px 20px; }
+.seccio .formulari-edicio { gap: 12px; }
+.formulari-edicio .fila-camps { gap: 12px; }
+.context.descripcio { white-space: pre-line; max-width: 60ch; }
+.avis-fases-noves { padding: 10px 16px; background: var(--accent-suau); border-bottom: 1px solid var(--linia); }
+
+/* ---------------- impressió (resum setmanal) ---------------- */
+
+@media print {
+  /* sempre en clar, encara que la pantalla sigui fosca */
+  :root[data-tema] {
+    --fons: #fff; --panell: #fff; --text: #111827; --text-suau: #6B7280; --text-fluix: #9CA3AF;
+    --linia: #E5E7EB; --linia-forta: #D1D5DB; --hover: #F9FAFB; color-scheme: light;
+  }
+  .app { display: block; background: #fff; }
+  .rail, .amaga-imprimir { display: none !important; }
+  .contingut { padding: 0; max-width: none; }
+  .seccio { box-shadow: none; break-inside: avoid; }
+  a { color: inherit; }
+}
+
+.avis-esquema { margin: 0 0 20px; padding: 12px 16px; background: var(--vencut-suau); border-left: 3px solid var(--vencut); color: var(--text); font-size: 13px; }
+.avis-esquema code { font-size: 12px; }

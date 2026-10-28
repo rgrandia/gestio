@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { avui, esDataValida, extreuData } from "@/lib/dates";
 import { missatgeError } from "@/lib/errors";
+import { avisDisponibilitat } from "@/lib/disponibilitat";
 import type { Resultat } from "@/lib/accions";
 import { LLISTA_PLATAFORMES, type Plataforma } from "@/lib/xarxes";
 
@@ -254,7 +255,7 @@ export async function replanificaPublicacio(id: string, data: string | null, mot
   });
   if (error) return { error: missatgeError(error) };
   refresca(id);
-  return { ok: true };
+  return { ok: true, avis: await avisDisponibilitat(supabase, "publicacions", id, { data }) };
 }
 
 export async function passaPublicacio(id: string, persona: string): Promise<Resultat> {

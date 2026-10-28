@@ -9,8 +9,8 @@ jobs:
   app:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -40,7 +40,7 @@ jobs:
       PGUSER: postgres
       PGPASSWORD: postgres
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: La versió que espera l'app és la darrera migració, i cada migració es registra
         run: scripts/comprova-migracions.sh
       - name: Migracions + verificació RLS/triggers/vistes (CLAUDE.md §7.3)
@@ -64,8 +64,8 @@ jobs:
       E2E_CAPTURES: /tmp/gestio-e2e/captures
       DB_PROVES: postgres://postgres:postgres@127.0.0.1:5432/postgres
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -111,7 +111,7 @@ jobs:
         run: psql "$DB_PROVES" -X -q -v ON_ERROR_STOP=1 -f supabase/tests/verificacio.sql
       - name: Captures i registres
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: e2e-captures
           path: |

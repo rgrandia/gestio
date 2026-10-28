@@ -3,6 +3,9 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { diaCurt, sumaDies } from "@/lib/dates";
+import { posaMotiu } from "@/lib/accions";
+import { MOTIUS_RAPIDS } from "@/components/AjudesReplanificar";
+import { mostraToast } from "@/components/Toasts";
 
 export const SENSE_DATA = "sense-data";
 
@@ -13,17 +16,20 @@ type Arrossegant = { id: string; x: number; y: number; dx: number; dy: number; a
 // `touch-action: none`) i amb el teclat (nansa + ←/→; Supr per treure la data
 // si `senseData`). Els destins són elements amb `data-desti` (una data ISO o
 // SENSE_DATA). Moure és desar a la base de dades amb `desa`; si falla, es
-// desfà. Mai al passat.
+// desfà. Mai al passat. Després, un avís ofereix posar el motiu d'un clic.
 export function useArrossegar({
   items,
   hui,
   desa,
   senseData = false,
+  historial,
 }: {
   items: { id: string; data: string | null }[];
   hui: string;
-  desa: (id: string, data: string | null) => Promise<{ error?: string }>;
+  desa: (id: string, data: string | null) => Promise<{ error?: string; avis?: string }>;
   senseData?: boolean;
+  // A quina fila de l'historial va el motiu d'un clic (migració 0021).
+  historial: (id: string) => { taula: "tasques" | "publicacions"; id: string };
 }) {
   const router = useRouter();
   const [dates, setDates] = useState<Record<string, string | null>>(() => Object.fromEntries(items.map((i) => [i.id, i.data])));
@@ -54,6 +60,17 @@ export function useArrossegar({
       return;
     }
     if (anunci.current) anunci.current.textContent = nova ? `Mogut al ${diaCurt(nova)}` : "Sense data";
+    // Arrossegar desa «sense motiu»; durant uns segons es pot dir per què
+    // amb un clic (si ja tenia data: posar-ne la primera no és lliscar).
+    if (abans && nova) {
+      const h = historial(id);
+      mostraToast({
+        text: `Mogut al ${diaCurt(nova)}. Per què?`,
+        durada: 8000,
+        accions: MOTIUS_RAPIDS.map((m) => ({ etiqueta: m, fes: () => posaMotiu(h.taula, h.id, m) })),
+      });
+    }
+    if (r.avis) mostraToast({ text: r.avis, tipus: "avis", durada: 9000 });
     router.refresh();
   };
 

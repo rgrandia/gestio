@@ -12,6 +12,7 @@ import {
 } from "@/lib/accions-xarxes";
 import { NOM_ESTAT, PLATAFORMES, type EstatPublicacio, type Plataforma } from "@/lib/xarxes";
 import { sumaDies } from "@/lib/dates";
+import { mostraToast } from "@/components/Toasts";
 
 type Props = {
   id: string;
@@ -49,6 +50,7 @@ export function AccionsPublicacio(p: Props) {
       setError(null);
       const r = await f();
       if (r?.error) return setError(r.error);
+      if (r && "avis" in r && r.avis) mostraToast({ text: r.avis as string, tipus: "avis", durada: 9000 });
       setObert(null);
       router.refresh();
     });

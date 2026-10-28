@@ -1148,6 +1148,75 @@ do $$ begin
 end $$;
 
 -- ------------------------------------------------------------
+-- Replanificar en cascada i motiu d'un clic (0021)
+-- ------------------------------------------------------------
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';
+insert into projectes (id, client_id, titol, tipus, responsable_id) values
+  ('20000000-0000-0000-0000-000000000021', '10000000-0000-0000-0000-000000000001',
+   'Estudi en cascada', 'estudi', '00000000-0000-0000-0000-00000000000a');
+-- fases amb dates (planificació inicial: update directe des de null)
+update fases set data_inici = current_date + ordre * 10 - 5, data_prevista = current_date + ordre * 10
+ where projecte_id = '20000000-0000-0000-0000-000000000021';
+update fases set data_real = current_date - 1, estat = 'fet'
+ where projecte_id = '20000000-0000-0000-0000-000000000021' and ordre = 5;  -- feta: no es mou
+insert into tasques (id, projecte_id, fase_id, titol, data_prevista)
+select '30000000-0000-0000-0000-000000000021', projecte_id, id, 'Tasca del camp', current_date + 28
+  from fases where projecte_id = '20000000-0000-0000-0000-000000000021' and ordre = 3;
+insert into tasques (id, projecte_id, fase_id, titol, data_prevista)
+select '30000000-0000-0000-0000-000000000022', projecte_id, id, 'Tasca del briefing', current_date + 18
+  from fases where projecte_id = '20000000-0000-0000-0000-000000000021' and ordre = 2;
+do $$
+declare
+  r jsonb;
+  f2 uuid := (select id from fases where projecte_id = '20000000-0000-0000-0000-000000000021' and ordre = 2);
+begin
+  r := replanifica_en_cascada(f2, current_date + 25, 'el client');
+  assert (r->>'fases')::int = 3, 'la cascada havia de moure 3 fases (3, 4 i 6; la 5 és feta): ' || r::text;
+  assert (r->>'tasques')::int = 1, 'la cascada havia de moure 1 tasca (la del camp): ' || r::text;
+  assert (select data_prevista from fases where projecte_id = '20000000-0000-0000-0000-000000000021' and ordre = 3) = current_date + 35,
+    'la fase 3 no s''ha mogut 5 dies';
+  assert (select data_inici from fases where projecte_id = '20000000-0000-0000-0000-000000000021' and ordre = 3) = current_date + 30,
+    'l''inici de la fase 3 no s''ha mogut';
+  assert (select data_prevista from fases where projecte_id = '20000000-0000-0000-0000-000000000021' and ordre = 5) = current_date + 50,
+    'una fase feta no s''ha de moure';
+  assert (select data_prevista from tasques where id = '30000000-0000-0000-0000-000000000021') = current_date + 33,
+    'la tasca de la fase 3 no s''ha mogut';
+  assert (select data_prevista from tasques where id = '30000000-0000-0000-0000-000000000022') = current_date + 18,
+    'les tasques de la fase moguda no s''han de moure';
+  assert exists (select 1 from historial_dates h join fases x on x.id = h.registre_id
+                  where x.projecte_id = '20000000-0000-0000-0000-000000000021' and x.ordre = 4
+                    and h.motiu = 'en cascada (Briefing): el client'),
+    'la cascada no deixa historial amb el motiu';
+  -- endarrere també (l'inici es mou abans per no passar del final)
+  r := replanifica_en_cascada(f2, current_date + 20, null);
+  assert (select data_prevista from fases where projecte_id = '20000000-0000-0000-0000-000000000021' and ordre = 3) = current_date + 30,
+    'la cascada enrere no ha funcionat';
+end $$;
+
+-- motiu després d'arrossegar: només el propi, recent i «sense motiu»
+select replanificar('tasques', '30000000-0000-0000-0000-000000000022', current_date + 19, null);
+select posa_motiu('tasques', '30000000-0000-0000-0000-000000000022', 'ho demana el client');
+do $$ begin
+  assert (select motiu from historial_dates where registre_id = '30000000-0000-0000-0000-000000000022'
+          order by id desc limit 1) = 'ho demana el client', 'posa_motiu no ha posat el motiu';
+  begin
+    perform posa_motiu('tasques', '30000000-0000-0000-0000-000000000022', 'un altre');
+    raise exception 'FALLA: s''ha canviat un motiu ja escrit';
+  exception when raise_exception then null;
+  end;
+end $$;
+select replanificar('tasques', '30000000-0000-0000-0000-000000000022', current_date + 20, null);
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000c"}';
+do $$ begin
+  begin
+    perform posa_motiu('tasques', '30000000-0000-0000-0000-000000000022', 'no és meu');
+    raise exception 'FALLA: algú ha posat el motiu al canvi d''un altre';
+  exception when raise_exception then null;
+  end;
+end $$;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';
+
+-- ------------------------------------------------------------
 -- Comprovació 2: cap delete, enlloc, ni per a membres actius
 -- ------------------------------------------------------------
 do $$

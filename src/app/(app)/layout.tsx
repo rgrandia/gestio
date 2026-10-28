@@ -11,6 +11,7 @@ import { avui } from "@/lib/dates";
 import requerit from "@/lib/esquema-requerit.json";
 import { cookies } from "next/headers";
 import { Preferencies } from "@/components/Preferencies";
+import { Toasts } from "@/components/Toasts";
 import { GALETA_MENU, GALETA_TEMA, llegeixMenu, llegeixTema, type Menu, type Tema } from "@/lib/preferencies";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -112,6 +113,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         )}
         {children}
       </main>
+      <Toasts />
     </div>
   );
 }

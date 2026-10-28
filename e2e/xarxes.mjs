@@ -113,6 +113,11 @@ await roc.goto(B + "/projectes");
 await roc.click("a:has-text('Enquesta de serveis')");
 await roc.waitForURL(/projectes\/[0-9a-f-]{36}/);
 ok(await roc.isVisible("#xarxes >> text=Resultats de l'enquesta de serveis"), "el projecte mostra les seves publicacions");
+await roc.waitForLoadState("networkidle");
+await roc.click(".cerca-global .camp");
+await roc.keyboard.type("enquesta de serveis");
+await roc.locator(".cerca-global button", { hasText: "Resultats de l'enquesta de serveis" }).waitFor();
+ok(true, "la cerca global troba publicacions");
 
 // tauler: idea ràpida amb data en català
 await roc.goto(B + "/xarxes/tauler");

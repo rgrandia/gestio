@@ -1,0 +1,96 @@
+/* Variables de color (clar i fosc), tipografia i elements base. */
+
+/* ==========================================================
+   Estil (CLAUDE.md §11): Montserrat i cantonades rectes.
+   La resta és lliure.
+   ========================================================== */
+
+:root {
+  --fons:        #F3F4F6;
+  --panell:      #FFFFFF;
+  --tinta:       #0E1726;   /* barra lateral */
+  --tinta-2:     #1B2638;
+  --text:        #111827;
+  --text-suau:   #6B7280;
+  --text-fluix:  #9CA3AF;
+  --linia:       #E5E7EB;
+  --linia-forta: #D1D5DB;
+  --hover:       #F9FAFB;
+
+  --accent:      #2563EB;
+  --accent-fort: #1D4ED8;
+  --accent-suau: #EFF4FF;
+
+  --vencut:      #DC2626;
+  --vencut-suau: #FEF2F2;
+  --risc:        #D97706;
+  --risc-suau:   #FFF7E6;
+  --mut:         #475569;
+  --mut-suau:    #F1F5F9;
+  --fet:         #16A34A;
+  --fet-suau:    #F0FDF4;
+  --fet-fort:    #15803D;
+
+  --ombra:       0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.07);
+  --ombra-alta:  0 8px 24px rgba(16, 24, 40, 0.10);
+  color-scheme: light;
+}
+
+/* Mode fosc (botó de la lluna al peu del menú). Només canvien les variables;
+   la barra lateral ja és fosca en tots dos modes. */
+:root[data-tema="fosc"] {
+  --fons:        #0B111C;
+  --panell:      #141C2B;
+  --tinta:       #101827;
+  --tinta-2:     #1B2638;
+  --text:        #E5E9F0;
+  --text-suau:   #9AA5B5;
+  --text-fluix:  #677386;
+  --linia:       #243045;
+  --linia-forta: #34425A;
+  --hover:       #1A2334;
+
+  --accent:      #4F8BFF;
+  --accent-fort: #3B76EE;
+  --accent-suau: #16264A;
+
+  --vencut:      #F05252;
+  --vencut-suau: #3A1618;
+  --risc:        #F0A23A;
+  --risc-suau:   #3A2A12;
+  --mut:         #94A3B8;
+  --mut-suau:    #1E293B;
+  --fet:         #22A55A;
+  --fet-suau:    #11301F;
+  --fet-fort:    #1C8A4B;
+
+  --ombra:       0 1px 2px rgba(0, 0, 0, 0.4);
+  --ombra-alta:  0 8px 24px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-mono: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+}
+
+*, *::before, *::after { border-radius: 0 !important; }
+
+html, body { background: var(--fons); color: var(--text); }
+
+body {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  /* xifres d'amplada fixa: dates i retards alineats a les taules */
+  font-variant-numeric: tabular-nums;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-fort); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+svg.icona { width: 16px; height: 16px; flex: none; stroke-width: 1.75; }
+svg.icona-petita { width: 14px; height: 14px; flex: none; stroke-width: 2; }

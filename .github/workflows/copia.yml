@@ -41,7 +41,7 @@ jobs:
           else
             echo "hi_es=true" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: steps.secret.outputs.hi_es == 'true'
       - name: Client de Postgres 17 (pg_dump ha de ser igual o més nou que el servidor)
         if: steps.secret.outputs.hi_es == 'true'
@@ -71,7 +71,7 @@ jobs:
       - name: Esborra la còpia sense xifrar
         if: always()
         run: rm -f copia.dump
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: steps.secret.outputs.hi_es == 'true' && env.CONTRASENYA != ''
         with:
           name: ${{ env.NOM }}

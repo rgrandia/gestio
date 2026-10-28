@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, FolderKanban, Lightbulb, ListTodo, Search } from "lucide-react";
+import { Building2, CalendarCog, FolderKanban, Lightbulb, ListTodo, Megaphone, Search } from "lucide-react";
 import { cercaGlobal, type ResultatCerca } from "@/lib/accions";
 
 const ICONA = {
@@ -10,6 +10,8 @@ const ICONA = {
   client: Building2,
   tasca: ListTodo,
   idea: Lightbulb,
+  publicacio: Megaphone,
+  dia: CalendarCog,
 };
 
 // Cerca a tot arreu. "/" o Ctrl+K hi posen el focus; fletxes i Enter per triar.
