@@ -27,6 +27,7 @@
 .dia-inici.sobre { box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-suau); }
 .dia-inici.prohibit { box-shadow: inset 0 0 0 2px var(--vencut); }
 .dia-inici .marca-dia { font-size: 10px; }
+.dia-inici .fases-dia { margin-top: 2px; }
 .cita a { color: var(--text); }
 .cita a:hover { color: var(--accent); }
 .cita .on { font-size: 10px; color: var(--text-suau); display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }

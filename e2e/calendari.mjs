@@ -38,6 +38,8 @@ const roc = await login("roc@prova.test");
 const tasca = "Enviar fitxer de quotes al proveïdor"; // data prevista: d'aquí a 4 dies
 const col = (n) => roc.locator(`#setmana [data-desti='${dia(n)}']`);
 ok(await col(4).locator(`text=${tasca}`).isVisible(), "la tasca surt al seu dia al calendari de l'inici");
+ok(await col(3).locator(".fases-dia .fd-fase-inici", { hasText: "Camp" }).isVisible(), "l'inici d'una fase que porto surt, en petit, als 7 dies de l'inici");
+ok((await roc.locator("#setmana .fases-dia li", { hasText: "Dades" }).count()) === 0, "la fase d'un extern no surt als 7 dies de l'inici");
 await arrossega(roc, col(4).locator(".cita", { hasText: tasca }).locator("button.nansa"), col(1));
 await col(1).locator(`text=${tasca}`).waitFor();
 // motiu d'un clic (migració 0021)
@@ -154,6 +156,11 @@ ok(await roc.isVisible(`.dia-cel:has(button[data-data='${dia(2)}']) .feina-dia >
 await roc.goto(B + "/calendari");
 ok((await roc.locator(".feina-dia .fd-fase-fi").count()) > 0, "les fases que porto surten al meu calendari, en petit");
 ok((await roc.locator(".feina-dia .fd-fase-fi[title*='Dades · 2614']").count()) === 0, "la fase d'un extern no em surt a mi");
+
+// pantalla gran: la columna principal de l'inici s'eixampla més enllà dels 1280px
+const gran = await login("roc@prova.test", { width: 2400, height: 1200 });
+const ampla = await gran.locator(".inici-principal").evaluate((e) => e.getBoundingClientRect().width);
+ok(ampla > 1300, `a pantalla gran la columna principal s'eixampla (${Math.round(ampla)}px)`);
 
 // mòbil
 const mobil = await login("roc@prova.test", { width: 390, height: 844 });

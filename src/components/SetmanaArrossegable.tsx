@@ -7,6 +7,7 @@ import { replanificaPublicacio } from "@/lib/accions-xarxes";
 import { TIPUS_DIA, type TipusDia } from "@/lib/calendari";
 import { useArrossegar } from "@/components/useArrossegar";
 import { IconaDia } from "@/components/IconaDia";
+import type { FeinaDia } from "@/components/CalendariPersonal";
 
 export type CitaSetmana = {
   clau: string; // "t:<id>" tasca (també interna) · "p:<id>" publicació
@@ -25,7 +26,7 @@ export type DiaSetmana = { data: string; etiqueta: string; capDeSetmana: boolean
 // Calendari dels 7 dies de la pàgina d'inici. Les tasques i les publicacions
 // s'arrosseguen a un altre dia (o nansa + ←/→): és replanificar, amb historial
 // (§4.2, «sense motiu»). Avisa si una cosa cau en un dia de vacances o festiu.
-export function SetmanaArrossegable({ dies, items, hui }: { dies: DiaSetmana[]; items: CitaSetmana[]; hui: string }) {
+export function SetmanaArrossegable({ dies, items, fases = [], hui }: { dies: DiaSetmana[]; items: CitaSetmana[]; fases?: FeinaDia[]; hui: string }) {
   const { dates, arrossegant, desant, error, anunci, nansa, classeDesti, fantasma } = useArrossegar({
     items: items.map((i) => ({ id: i.clau, data: i.data })),
     hui,
@@ -40,6 +41,7 @@ export function SetmanaArrossegable({ dies, items, hui }: { dies: DiaSetmana[]; 
   });
 
   const delDia = (d: string) => items.filter((i) => dates[i.clau] === d);
+  const fasesDel = (d: string) => fases.filter((f) => f.data === d);
   const noLaborable = (d: DiaSetmana) => !!d.marca && !TIPUS_DIA[d.marca.tipus].laborable;
   const arrossegat = fantasma ? items.find((i) => i.clau === fantasma.id) : null;
 
@@ -51,12 +53,13 @@ export function SetmanaArrossegable({ dies, items, hui }: { dies: DiaSetmana[]; 
         className="setmana-inici"
         style={{
           gridTemplateColumns: dies
-            .map((d) => ((d.capDeSetmana || noLaborable(d)) && delDia(d.data).length === 0 ? "minmax(0, .5fr)" : "minmax(0, 1fr)"))
+            .map((d) => ((d.capDeSetmana || noLaborable(d)) && delDia(d.data).length + fasesDel(d.data).length === 0 ? "minmax(0, .5fr)" : "minmax(0, 1fr)"))
             .join(" "),
         }}
       >
         {dies.map((d) => {
           const llista = delDia(d.data);
+          const fs = fasesDel(d.data);
           return (
             <div
               key={d.data}
@@ -64,7 +67,7 @@ export function SetmanaArrossegable({ dies, items, hui }: { dies: DiaSetmana[]; 
               className={[
                 "dia-inici",
                 d.data === hui ? "avui" : "",
-                llista.length === 0 ? "sense-res" : "",
+                llista.length + fs.length === 0 ? "sense-res" : "",
                 d.capDeSetmana || noLaborable(d) ? "festiu" : "",
                 classeDesti(d.data),
               ].join(" ")}
@@ -110,6 +113,19 @@ export function SetmanaArrossegable({ dies, items, hui }: { dies: DiaSetmana[]; 
                   </span>
                 </div>
               ))}
+              {fs.length > 0 && (
+                <ul className="feina-dia fases-dia">
+                  {fs.map((f) => (
+                    <li key={f.clau} className={`fd-${f.tipus}`} title={`${f.tipus === "fase-fi" ? "final previst" : "inici previst"} de la fase «${f.titol}» · ${f.on}`}>
+                      <Link href={f.href}>
+                        {f.tipus === "fase-fi" ? "fi " : "inici "}
+                        {f.titol}
+                      </Link>
+                      <span className="on"> · {f.on}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           );
         })}

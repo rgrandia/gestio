@@ -107,6 +107,12 @@ td.tria input { min-height: 0; width: 16px; height: 16px; accent-color: var(--ac
 @media (min-width: 1180px) {
   .inici { grid-template-columns: minmax(0, 1fr) 380px; }
 }
+/* En pantalles grans, la pàgina d'inici no es queda als 1280px de la resta:
+   la columna principal (a revisar i els 7 dies) s'eixampla; el lateral, poc. */
+.contingut:has(> .inici) { max-width: 2200px; }
+@media (min-width: 1700px) {
+  .inici { grid-template-columns: minmax(0, 1fr) 420px; gap: 32px; }
+}
 .inici-principal, .inici-lateral { display: grid; gap: 20px; min-width: 0; align-content: start; }
 .inici .seccio { margin: 0; }
 
