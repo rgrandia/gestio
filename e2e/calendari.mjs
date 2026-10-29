@@ -148,6 +148,13 @@ await aina.goto(B + "/calendari?mes=" + dia(2).slice(0, 7));
 ok(await aina.isVisible(`.graella-calendari button[data-data='${dia(2)}'] .avatar-dia[title^='Roc: vacances']`), "l'equip veu el calendari dels altres");
 ok(!(await aina.isVisible(`.graella-calendari button[data-data='${dia(2)}'] .marca-dia.meva`)), "però no com a seu");
 
+// el meu calendari també mostra la meva feina: tasques i, en petit, fases meves
+await roc.goto(B + "/calendari?mes=" + dia(2).slice(0, 7));
+ok(await roc.isVisible(`.dia-cel:has(button[data-data='${dia(2)}']) .feina-dia >> text=Revisar ponderació`), "les meves tasques surten al meu calendari");
+await roc.goto(B + "/calendari");
+ok((await roc.locator(".feina-dia .fd-fase-fi").count()) > 0, "les fases que porto surten al meu calendari, en petit");
+ok((await roc.locator(".feina-dia .fd-fase-fi[title*='Dades · 2614']").count()) === 0, "la fase d'un extern no em surt a mi");
+
 // mòbil
 const mobil = await login("roc@prova.test", { width: 390, height: 844 });
 for (const ruta of ["/", "/calendari"]) {

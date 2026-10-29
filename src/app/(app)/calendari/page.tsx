@@ -6,7 +6,8 @@ import { avui, diaCurt, sumaDies } from "@/lib/dates";
 import { diesMarcats } from "@/lib/dades-calendari";
 import { TIPUS_DIA } from "@/lib/calendari";
 import { dilluns } from "@/lib/xarxes";
-import { CalendariPersonal } from "@/components/CalendariPersonal";
+import { CalendariPersonal, type FeinaDia } from "@/components/CalendariPersonal";
+import { createClient } from "@/lib/supabase/server";
 import { IconaDia } from "@/components/IconaDia";
 
 export const dynamic = "force-dynamic";
@@ -25,11 +26,67 @@ export default async function Calendari({ searchParams }: { searchParams: Promis
   const fi = sumaDies(dilluns(darrer), 6);
   const setmana = [dilluns(hui), sumaDies(dilluns(hui), 6)];
 
-  const [marques, deLaSetmana, perfils] = await Promise.all([
+  const supabase = await createClient();
+  const prj = "projectes!inner(id, titol, numero_estudi, responsable_id, estat, intern_de, arxivat_el, eliminat_el)";
+  const [marques, deLaSetmana, perfils, tasquesR, fasesR] = await Promise.all([
     diesMarcats(inici, fi),
     diesMarcats(setmana[0], setmana[1]),
     obtePerfils(),
+    // les meves tasques obertes amb data dins del mes (de projecte i internes)
+    supabase
+      .from("tasques")
+      .select(`id, titol, data_prevista, ${prj}`)
+      .eq("assignada_a", jo.id)
+      .is("data_real", null)
+      .neq("estat", "cancellat")
+      .gte("data_prevista", inici)
+      .lte("data_prevista", fi)
+      .eq("projectes.estat", "actiu")
+      .is("projectes.arxivat_el", null)
+      .is("projectes.eliminat_el", null),
+    // fases obertes que comencen o acaben dins del mes; després es queden les
+    // que porto jo (assignades a mi, o sense ningú en un projecte meu)
+    supabase
+      .from("fases")
+      .select(`id, nom, data_inici, data_prevista, responsable_id, ${prj}`)
+      .is("data_real", null)
+      .neq("estat", "cancellat")
+      .or(`and(data_prevista.gte.${inici},data_prevista.lte.${fi}),and(data_inici.gte.${inici},data_inici.lte.${fi})`)
+      .eq("projectes.estat", "actiu")
+      .is("projectes.arxivat_el", null)
+      .is("projectes.eliminat_el", null),
   ]);
+  type P = { id: string; titol: string; numero_estudi: string | null; responsable_id: string; intern_de: string | null };
+  const nomProjecte = (p: P) => (p.numero_estudi ? `${p.numero_estudi} · ` : "") + p.titol;
+  const feina: FeinaDia[] = [
+    ...((tasquesR.data ?? []) as unknown as { id: string; titol: string; data_prevista: string; projectes: P }[]).map((t) => ({
+      clau: `t${t.id}`,
+      data: t.data_prevista,
+      tipus: t.projectes.intern_de ? ("interna" as const) : ("tasca" as const),
+      titol: t.titol,
+      on: t.projectes.intern_de ? "" : nomProjecte(t.projectes),
+      href: t.projectes.intern_de ? "/#intern" : `/projectes/${t.projectes.id}`,
+      vencut: t.data_prevista < hui,
+    })),
+    ...((fasesR.data ?? []) as unknown as {
+      id: string;
+      nom: string;
+      data_inici: string | null;
+      data_prevista: string | null;
+      responsable_id: string | null;
+      projectes: P;
+    }[])
+      .filter((f) => f.responsable_id === jo.id || (!f.responsable_id && f.projectes.responsable_id === jo.id))
+      .flatMap((f) => {
+        const base = { titol: f.nom, on: nomProjecte(f.projectes), href: `/projectes/${f.projectes.id}` };
+        const r: FeinaDia[] = [];
+        if (f.data_inici && f.data_inici >= inici && f.data_inici <= fi && f.data_inici !== f.data_prevista)
+          r.push({ ...base, clau: `fi${f.id}`, data: f.data_inici, tipus: "fase-inici", vencut: false });
+        if (f.data_prevista && f.data_prevista >= inici && f.data_prevista <= fi)
+          r.push({ ...base, clau: `ff${f.id}`, data: f.data_prevista, tipus: "fase-fi", vencut: f.data_prevista < hui });
+        return r;
+      }),
+  ].sort((a, b) => (a.tipus.startsWith("fase") ? 1 : 0) - (b.tipus.startsWith("fase") ? 1 : 0));
   const equip = membres(perfils);
   const persones = new Map(equip.map((p) => [p.id, p]));
   // Qui no és a l'oficina aquesta setmana (sense comptar-me a mi)
@@ -46,7 +103,10 @@ export default async function Calendari({ searchParams }: { searchParams: Promis
       <div className="cap-pagina">
         <div>
           <h1>el meu calendari</h1>
-          <div className="sub">teletreball, dies fora, vacances i festius: ho veu tot l&apos;equip i surt al calendari de la pàgina d&apos;inici</div>
+          <div className="sub">
+            teletreball, dies fora, vacances i festius (ho veu tot l&apos;equip), i a cada dia la teva feina: tasques i, en
+            petit, les fases que portes
+          </div>
         </div>
       </div>
 
@@ -92,6 +152,7 @@ export default async function Calendari({ searchParams }: { searchParams: Promis
           jo={jo.id}
           marques={marques}
           persones={equip.map((p) => ({ id: p.id, nom: p.nom, color: p.color }))}
+          feina={feina}
         />
       </section>
     </>
