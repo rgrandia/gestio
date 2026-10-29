@@ -6,6 +6,7 @@ import { Ban, CalendarClock, Check, CheckCheck, Copy, RotateCcw, Send, Undo2, Us
 import {
   canviaEstatPublicacio,
   duplicaPublicacio,
+  marcaCanalsPublicats,
   passaPublicacio,
   replanificaPublicacio,
   type CanviEstat,
@@ -23,7 +24,7 @@ type Props = {
   dataPrevista: string | null;
   hui: string;
   persones: { id: string; nom: string }[]; // membres amb xarxes
-  canals: { compte_id: string; nom: string; plataforma: Plataforma; enllac_publicat: string | null }[];
+  canals: { compte_id: string; nom: string; plataforma: Plataforma; enllac_publicat: string | null; publicat_el: string | null }[];
 };
 
 type Obert = null | "revisar" | "retornar" | "publicada" | "data" | "passar";
@@ -44,6 +45,10 @@ export function AccionsPublicacio(p: Props) {
   const [novaData, setNovaData] = useState(p.dataPrevista ?? "");
   const [motiu, setMotiu] = useState("");
   const [persona, setPersona] = useState("");
+  // xarxes on encara no consta publicada: per defecte, totes marcades
+  const pendents = p.canals.filter((c) => !c.publicat_el);
+  const [triats, setTriats] = useState<Set<string>>(() => new Set(pendents.map((c) => c.compte_id)));
+  const nTriats = pendents.filter((c) => triats.has(c.compte_id)).length;
 
   const fes = (f: () => Promise<{ error?: string }>) =>
     startTransition(async () => {
@@ -105,8 +110,11 @@ export function AccionsPublicacio(p: Props) {
           </button>
         )}
         {["esborrany", "aprovada", "programada"].includes(p.estat) && (
-          <button className="boto boto-primari" disabled={pendent} onClick={() => setObert(obert === "publicada" ? null : "publicada")}>
-            <Check className="icona-petita" aria-hidden /> marcar publicada
+          <button className="boto boto-primari" disabled={pendent} onClick={() => {
+              setTriats(new Set(pendents.map((c) => c.compte_id)));
+              setObert(obert === "publicada" ? null : "publicada");
+            }}>
+            <Check className="icona-petita" aria-hidden /> {p.canals.length > 1 ? "marcar publicada a…" : "marcar publicada"}
           </button>
         )}
         {["aprovada", "programada"].includes(p.estat) && (
@@ -173,12 +181,29 @@ export function AccionsPublicacio(p: Props) {
             publicada el
             <input type="date" value={dataReal} max={p.hui} onChange={(e) => setDataReal(e.target.value)} />
           </label>
-          {p.canals.map((c) => (
+          {pendents.length > 1 && <span className="petit suau">a quines xarxes? (la resta queda pendent)</span>}
+          {pendents.map((c) => (
             <label key={c.compte_id} className="petit flex items-center gap-2">
+              {pendents.length > 1 && (
+                <input
+                  type="checkbox"
+                  checked={triats.has(c.compte_id)}
+                  onChange={(e) =>
+                    setTriats((t) => {
+                      const n = new Set(t);
+                      if (e.target.checked) n.add(c.compte_id);
+                      else n.delete(c.compte_id);
+                      return n;
+                    })
+                  }
+                  aria-label={`publicada a ${c.nom}`}
+                />
+              )}
               <span className="xarxa" style={{ background: PLATAFORMES[c.plataforma].color }}>{PLATAFORMES[c.plataforma].curt}</span>
               <input
                 className="flex-1"
                 value={enllacos[c.compte_id] ?? ""}
+                disabled={!triats.has(c.compte_id)}
                 onChange={(e) => setEnllacos((x) => ({ ...x, [c.compte_id]: e.target.value }))}
                 placeholder={`enllaç a la publicació a ${c.nom} (opcional)`}
                 aria-label={`enllaç publicat a ${c.nom}`}
@@ -186,8 +211,22 @@ export function AccionsPublicacio(p: Props) {
             </label>
           ))}
           <div>
-            <button className="boto boto-primari" disabled={pendent || !dataReal} onClick={() => estat({ estat: "publicada", data: dataReal, enllacos })}>
-              desar com a publicada
+            <button
+              className="boto boto-primari"
+              disabled={pendent || !dataReal || (pendents.length > 0 && nTriats === 0)}
+              onClick={() =>
+                pendents.length === 0
+                  ? estat({ estat: "publicada", data: dataReal, enllacos })
+                  : fes(() =>
+                      marcaCanalsPublicats(
+                        p.id,
+                        dataReal,
+                        pendents.filter((c) => triats.has(c.compte_id)).map((c) => ({ compte_id: c.compte_id, enllac: enllacos[c.compte_id] ?? "" })),
+                      ),
+                    )
+              }
+            >
+              {pendents.length > 1 && nTriats < pendents.length ? "desar on s'ha publicat" : "desar com a publicada"}
             </button>
           </div>
         </div>

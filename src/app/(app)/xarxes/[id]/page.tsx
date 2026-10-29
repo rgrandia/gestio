@@ -1,20 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ExternalLink } from "lucide-react";
 import { requereixMembre } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { comprova, obtePersones } from "@/lib/dades";
 import { avui, dataCurta, diesEntre } from "@/lib/dates";
 import { comptes } from "@/lib/dades-xarxes";
 import { projectesPerLligar } from "@/lib/projectes-actius";
-import { NOM_ESTAT, PLATAFORMES, type Publicacio } from "@/lib/xarxes";
+import { NOM_ESTAT, type Publicacio } from "@/lib/xarxes";
 import { EditorPublicacio } from "@/components/EditorPublicacio";
 import { AccionsPublicacio } from "@/components/AccionsPublicacio";
 import { Persona } from "@/components/Persona";
+import { CanalsPublicats } from "@/components/CanalsPublicats";
 
 export const dynamic = "force-dynamic";
 
-type Canal = { compte_id: string; text_adaptat: string | null; enllac_publicat: string | null; actiu: boolean };
+type Canal = { compte_id: string; text_adaptat: string | null; enllac_publicat: string | null; publicat_el: string | null; actiu: boolean };
 
 export default async function DetallPublicacio({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -26,7 +26,7 @@ export default async function DetallPublicacio({ params }: { params: Promise<{ i
   const [pubR, cs, projectes, persones, ambXarxesR, historialR] = await Promise.all([
     supabase
       .from("publicacions")
-      .select("id, titol, text, projecte_id, responsable_id, revisor_id, estat, data_prevista, hora, data_real, enllac_recursos, nota_revisio, aprovada_per, sense_revisio, notes, publicacio_canals(compte_id, text_adaptat, enllac_publicat, actiu)")
+      .select("id, titol, text, projecte_id, responsable_id, revisor_id, estat, data_prevista, hora, data_real, enllac_recursos, nota_revisio, aprovada_per, sense_revisio, notes, publicacio_canals(compte_id, text_adaptat, enllac_publicat, publicat_el, actiu)")
       .eq("id", id)
       .maybeSingle(),
     comptes(),
@@ -45,6 +45,14 @@ export default async function DetallPublicacio({ params }: { params: Promise<{ i
   const historial = comprova(historialR) as { id: number; data_antiga: string | null; data_nova: string | null; motiu: string; usuari_id: string | null; creat_el: string }[];
   const mapaComptes = new Map(cs.map((c) => [c.id, c]));
   const canalsActius = pub.publicacio_canals.filter((c) => c.actiu && mapaComptes.has(c.compte_id));
+  const canals = canalsActius.map((c) => ({
+    compte_id: c.compte_id,
+    nom: mapaComptes.get(c.compte_id)!.nom,
+    plataforma: mapaComptes.get(c.compte_id)!.plataforma,
+    enllac_publicat: c.enllac_publicat,
+    publicat_el: c.publicat_el,
+  }));
+  const fetes = canals.filter((c) => c.publicat_el).length;
   const projecte = projectes.find((p) => p.id === pub.projecte_id);
   const vencuda = pub.data_prevista && pub.data_prevista < hui && !["publicada", "cancellada"].includes(pub.estat);
 
@@ -61,8 +69,9 @@ export default async function DetallPublicacio({ params }: { params: Promise<{ i
               <span>publicada el {dataCurta(pub.data_real)}</span>
             ) : pub.data_prevista ? (
               <span className={vencuda ? "tag-vencut" : ""}>
+                {fetes > 0 ? `publicada a ${fetes} de ${canals.length} xarxes · ` : ""}
                 prevista el {dataCurta(pub.data_prevista)}{pub.hora ? ` a les ${pub.hora.slice(0, 5)}` : ""}
-                {vencuda ? ` · fa ${diesEntre(pub.data_prevista, hui)} dies i no consta publicada` : ""}
+                {vencuda ? ` · fa ${diesEntre(pub.data_prevista, hui)} dies i no consta publicada${fetes > 0 ? " a totes" : ""}` : ""}
               </span>
             ) : (
               <span className="suau">sense data</span>
@@ -131,31 +140,18 @@ export default async function DetallPublicacio({ params }: { params: Promise<{ i
                 dataPrevista={pub.data_prevista}
                 hui={hui}
                 persones={(comprova(ambXarxesR) as { id: string; nom: string }[]) ?? []}
-                canals={canalsActius.map((c) => ({
-                  compte_id: c.compte_id,
-                  nom: mapaComptes.get(c.compte_id)!.nom,
-                  plataforma: mapaComptes.get(c.compte_id)!.plataforma,
-                  enllac_publicat: c.enllac_publicat,
-                }))}
+                canals={canals}
               />
             </div>
           </section>
 
-          {canalsActius.some((c) => c.enllac_publicat) && (
-            <section className="seccio compacta">
-              <header><span className="titol">on s&apos;ha publicat</span></header>
-              <ul className="llista-compacta">
-                {canalsActius.filter((c) => c.enllac_publicat).map((c) => {
-                  const k = mapaComptes.get(c.compte_id)!;
-                  return (
-                    <li key={c.compte_id}>
-                      <a href={c.enllac_publicat!} target="_blank" rel="noreferrer">
-                        {PLATAFORMES[k.plataforma].nom} · {k.nom} <ExternalLink className="icona-petita inline" aria-hidden />
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
+          {canals.length > 0 && (
+            <section className="seccio compacta" id="a-cada-xarxa">
+              <header>
+                <span className="titol">a cada xarxa</span>
+                <span className="meta">{fetes} de {canals.length} publicades</span>
+              </header>
+              <CanalsPublicats id={pub.id} canals={canals} editable={pub.estat !== "cancellada"} />
             </section>
           )}
 

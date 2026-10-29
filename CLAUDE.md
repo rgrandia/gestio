@@ -437,6 +437,11 @@ començar). Ningú no se la pot posar amb un update directe.
   (torna a esborrany). Tot ho fa complir un trigger.
 - Com a tot arreu: publicada ⇔ `data_real` (§4.1), i la data prevista només
   canvia per `replanificar('publicacions', …)`, amb historial (§4.2).
+- **Publicada xarxa per xarxa** (migració 0023): cada canal té la seva data
+  (`publicacio_canals.publicat_el`, mai futura). La publicació passa sola a
+  publicada (amb la data més tardana) quan totes les xarxes actives en tenen;
+  desmarcar-ne una la torna a programada. Marcar-la sencera data les que
+  faltaven; reobrir-la les treu totes. Ho fan triggers, no l'app.
 - **Dates clau** (`efemerides`, recurrents o no) i idees amb `data_objectiu`
   surten al calendari.
 - **Planner setmanal** (`/xarxes/setmana`): set columnes i una safata «sense

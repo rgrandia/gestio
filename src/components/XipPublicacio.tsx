@@ -14,9 +14,10 @@ export function XipPublicacio({
   ambData?: boolean;
 }) {
   const xarxes = p.publicacio_canals
-    .filter((c) => c.actiu)
-    .map((c) => comptes.get(c.compte_id))
-    .filter((c): c is Compte => !!c);
+    .filter((c) => c.actiu && comptes.has(c.compte_id))
+    .map((c) => ({ ...comptes.get(c.compte_id)!, publicat_el: c.publicat_el ?? null }));
+  // publicada només a algunes xarxes (0023): les que ja hi consten, marcades
+  const parcial = p.estat !== "publicada" && xarxes.some((c) => c.publicat_el);
   const color = xarxes[0] ? PLATAFORMES[xarxes[0].plataforma].color : "var(--linia-forta)";
   const data = p.data_real ?? p.data_prevista;
   return (
@@ -32,14 +33,23 @@ export function XipPublicacio({
           <span className="xarxa buida">sense compte</span>
         ) : (
           xarxes.map((c) => (
-            <span key={c.id} className="xarxa" style={{ background: PLATAFORMES[c.plataforma].color }}>
+            <span
+              key={c.id}
+              className={`xarxa ${parcial && c.publicat_el ? "feta" : ""}`}
+              style={{ background: PLATAFORMES[c.plataforma].color }}
+              title={parcial && c.publicat_el ? `ja publicada a ${c.nom}` : undefined}
+            >
+              {parcial && c.publicat_el ? "✓" : ""}
               {PLATAFORMES[c.plataforma].curt}
             </span>
           ))
         )}
         {ambData && data && <span className="suau">{data.slice(8, 10)}/{data.slice(5, 7)}</span>}
         {p.hora && <span className="suau">{p.hora.slice(0, 5)}</span>}
-        <span className="xip-estat">{NOM_ESTAT[p.estat]}</span>
+        <span className="xip-estat">
+          {NOM_ESTAT[p.estat]}
+          {parcial ? ` · ${xarxes.filter((c) => c.publicat_el).length}/${xarxes.length} publicades` : ""}
+        </span>
       </span>
       <span className="xip-titol">{p.titol}</span>
     </Link>

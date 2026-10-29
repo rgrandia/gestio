@@ -24,7 +24,7 @@ export default async function SetmanaXarxes({ searchParams }: { searchParams: Pr
     marquesEntre(inici, fi),
     supabase
       .from("publicacions")
-      .select("id, titol, estat, data_prevista, data_real, hora, publicacio_canals(compte_id, actiu, enllac_publicat)")
+      .select("id, titol, estat, data_prevista, data_real, hora, publicacio_canals(compte_id, actiu, enllac_publicat, publicat_el)")
       .is("data_prevista", null)
       .in("estat", OBERTES)
       .order("creat_el", { ascending: false }),
@@ -42,7 +42,12 @@ export default async function SetmanaXarxes({ searchParams }: { searchParams: Pr
       .filter((c) => c.actiu && mapa.has(c.compte_id))
       .map((c) => {
         const k = mapa.get(c.compte_id) as Compte;
-        return { curt: PLATAFORMES[k.plataforma].curt, color: PLATAFORMES[k.plataforma].color, nom: k.nom };
+        return {
+          curt: PLATAFORMES[k.plataforma].curt,
+          color: PLATAFORMES[k.plataforma].color,
+          nom: k.nom,
+          feta: p.estat !== "publicada" && !!c.publicat_el, // publicada només en algunes (0023)
+        };
       }),
   });
   const items = [...setmana, ...sense].map(aItem);

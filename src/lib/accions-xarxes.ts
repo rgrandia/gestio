@@ -243,6 +243,46 @@ export async function canviaEstatPublicacio(id: string, c: CanviEstat): Promise<
   return { ok: true };
 }
 
+// Publicada xarxa per xarxa (migració 0023): cada canal té la seva data. Quan
+// tots els canals actius en tenen, el trigger marca la publicació sencera com
+// a publicada (amb la data més tardana); desmarcar-ne un la torna a programada.
+export async function marcaCanalsPublicats(
+  id: string,
+  data: string,
+  canals: { compte_id: string; enllac: string }[],
+): Promise<Resultat> {
+  if (!esDataValida(data)) return { error: "Indica la data en què s'ha publicat." };
+  if (data > avui()) return { error: "La data de publicació no pot ser posterior a avui." };
+  if (canals.length === 0) return { error: "Tria almenys una xarxa." };
+  for (const c of canals) if (c.enllac && !enllacValid(c.enllac)) return { error: "Els enllaços han de començar per https://" };
+  const supabase = await createClient();
+  for (const c of canals) {
+    const { error, count } = await supabase
+      .from("publicacio_canals")
+      .update({ publicat_el: data, ...(c.enllac ? { enllac_publicat: c.enllac } : {}) }, { count: "exact" })
+      .eq("publicacio_id", id)
+      .eq("compte_id", c.compte_id)
+      .eq("actiu", true);
+    if (error) return { error: missatgeError(error) };
+    if (!count) return { error: "No s'ha trobat la xarxa d'aquesta publicació." };
+  }
+  refresca(id);
+  return { ok: true };
+}
+
+export async function desmarcaCanal(id: string, compte_id: string): Promise<Resultat> {
+  const supabase = await createClient();
+  const { error, count } = await supabase
+    .from("publicacio_canals")
+    .update({ publicat_el: null }, { count: "exact" })
+    .eq("publicacio_id", id)
+    .eq("compte_id", compte_id);
+  if (error) return { error: missatgeError(error) };
+  if (!count) return { error: "No s'ha trobat la xarxa d'aquesta publicació." };
+  refresca(id);
+  return { ok: true };
+}
+
 // Data prevista: sempre per replanificar(), perquè quedi a l'historial (§4.2).
 export async function replanificaPublicacio(id: string, data: string | null, motiu: string): Promise<Resultat> {
   if (data && !esDataValida(data)) return { error: "La data no és vàlida." };
