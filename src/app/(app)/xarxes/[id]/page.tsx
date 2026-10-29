@@ -26,7 +26,7 @@ export default async function DetallPublicacio({ params }: { params: Promise<{ i
   const [pubR, cs, projectes, persones, ambXarxesR, historialR] = await Promise.all([
     supabase
       .from("publicacions")
-      .select("id, titol, text, projecte_id, responsable_id, revisor_id, estat, data_prevista, hora, data_real, enllac_recursos, nota_revisio, aprovada_per, notes, publicacio_canals(compte_id, text_adaptat, enllac_publicat, actiu)")
+      .select("id, titol, text, projecte_id, responsable_id, revisor_id, estat, data_prevista, hora, data_real, enllac_recursos, nota_revisio, aprovada_per, sense_revisio, notes, publicacio_canals(compte_id, text_adaptat, enllac_publicat, actiu)")
       .eq("id", id)
       .maybeSingle(),
     comptes(),
@@ -87,7 +87,11 @@ export default async function DetallPublicacio({ params }: { params: Promise<{ i
         </p>
       )}
       {pub.aprovada_per && ["aprovada", "programada"].includes(pub.estat) && (
-        <p className="petit suau mb-2">aprovada per {persones.get(pub.aprovada_per)?.nom ?? "—"}</p>
+        <p className="petit suau mb-2">
+          {pub.sense_revisio
+            ? `validada per ${persones.get(pub.aprovada_per)?.nom ?? "—"}, sense revisió`
+            : `aprovada per ${persones.get(pub.aprovada_per)?.nom ?? "—"}`}
+        </p>
       )}
 
       <div className="detall-pub">

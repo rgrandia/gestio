@@ -41,6 +41,7 @@
     "perfils.funcions",
     "xarxes_comptes.cadencia_setmanal",
     "publicacions.aprovada_per",
+    "publicacions.sense_revisio",
     "publicacio_canals.text_adaptat",
     "efemerides.recurrent",
     "calendari_dies.tipus"

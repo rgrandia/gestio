@@ -430,9 +430,10 @@ començar). Ningú no se la pot posar amb un update directe.
 - **Publicacions** (`publicacions`), lligades a un projecte **o no**, a un o
   més comptes (`publicacio_canals`, amb text adaptat per xarxa i l'enllaç un
   cop publicada). Circuit: idea → esborrany → (revisió → aprovada) →
-  programada → publicada, o cancel·lada. La revisió és opcional, però
-  «aprovada» només la posa una altra persona amb la funció; retornar demana
-  comentari. **Si es toca el text d'una cosa aprovada, l'aprovació caduca**
+  programada → publicada, o cancel·lada. La revisió és opcional: des d'idea o
+  esborrany es pot **validar directament** (migració 0022; consta qui i
+  `sense_revisio`). Si està en revisió, només l'aprova qui revisa, i retornar
+  demana comentari. **Si es toca el text d'una cosa aprovada, l'aprovació caduca**
   (torna a esborrany). Tot ho fa complir un trigger.
 - Com a tot arreu: publicada ⇔ `data_real` (§4.1), i la data prevista només
   canvia per `replanificar('publicacions', …)`, amb historial (§4.2).

@@ -74,6 +74,16 @@ export function AccionsPublicacio(p: Props) {
             <Send className="icona-petita" aria-hidden /> enviar a revisar
           </button>
         )}
+        {["idea", "esborrany"].includes(p.estat) && (
+          <button
+            className="boto"
+            disabled={pendent}
+            onClick={() => estat({ estat: "aprovada" })}
+            title="la dones per bona tu mateix; constarà que no ha passat per revisió"
+          >
+            <CheckCheck className="icona-petita" aria-hidden /> validar sense revisió
+          </button>
+        )}
         {socRevisor && (
           <>
             <button className="boto boto-primari" disabled={pendent} onClick={() => estat({ estat: "aprovada" })}>

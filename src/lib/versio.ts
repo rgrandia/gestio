@@ -1,3 +1,3 @@
 // Darrera migració que aquesta versió del codi necessita. Cada migració nova
 // l'ha d'actualitzar (ho comprova scripts/comprova-migracions.sh a la CI).
-export const ESQUEMA_ESPERAT = "20261105000021_cascada_motiu";
+export const ESQUEMA_ESPERAT = "20261106000022_validar_sense_revisio";
