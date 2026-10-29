@@ -466,8 +466,8 @@ per a un interval), «cada setmana fins al» per repetir, i qui de l'equip no hi
 és aquesta setmana. A cada dia hi surt també **la meva feina**: les tasques
 obertes assignades a mi (de projecte i internes) i, en petit, l'inici i el
 final previst de les fases que porto (assignades a mi, o sense ningú en un
-projecte del qual soc responsable); el que ja ha vençut, en vermell. Al calendari dels 7 dies de l'inici surt com és cada dia
-i s'avisa si una tasca cau en un dia de vacances o festiu.
+projecte del qual soc responsable); el que ja ha vençut, en vermell. Al calendari dels 7 dies de l'inici surt com és cada dia,
+l'inici i el final de les mateixes fases (en petit, no s'arrosseguen) i s'avisa si una tasca cau en un dia de vacances o festiu.
 
 Límit RGPD: no hi ha cap tipus «baixa» ni «malaltia» i la nota és curta. Una
 absència per salut es marca «fora» sense explicar-la.
@@ -626,7 +626,8 @@ undecies). Les tasques i les publicacions s'hi **arrosseguen** a un altre dia
 (o nansa + ←/→): és replanificar, amb historial («sense motiu»). Cap altre
 botó: les altres accions es fan a «a revisar» i no es repeteixen. A la dreta, compacte, el dia a dia
 (revisions, xarxes, gestió interna, muts, moment polític, idees). A dalt, una
-línia de pastilles amb els comptadors.
+línia de pastilles amb els comptadors. És l'única pantalla que passa dels 1280px
+d'amplada (fins a 2200): en una pantalla gran s'eixampla la columna principal.
 
 Criteri: si l'obro cada matí i hi ha feina concreta a fer, l'app viu. Si hi ha
 percentatges d'avanç, mor.

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { CalendarDays, CheckSquare, GripVertical, House, Megaphone } from "lucide-react";
-import { diesMarcats } from "@/lib/dades-calendari";
+import { CalendarDays, CheckSquare, Flag, GripVertical, House, Megaphone } from "lucide-react";
+import { diesMarcats, fasesQuePorto } from "@/lib/dades-calendari";
 import { SetmanaArrossegable, type CitaSetmana, type DiaSetmana } from "@/components/SetmanaArrossegable";
 import { createClient } from "@/lib/supabase/server";
 import { teXarxes } from "@/lib/funcions";
@@ -23,9 +23,10 @@ type Pub = {
 };
 
 // Els 7 dies que venen, d'una ullada: les meves tasques de projecte, les
-// internes, (si tinc les xarxes activades) les meves publicacions i com és
-// cada dia al meu calendari (teletreball, vacances, festiu…). Es poden
-// arrossegar a un altre dia (SetmanaArrossegable); les altres accions es fan
+// internes, (si tinc les xarxes activades) les meves publicacions, en petit
+// l'inici i el final de les fases que porto, i com és cada dia al meu calendari (teletreball, vacances, festiu…). Es poden
+// arrossegar a un altre dia (SetmanaArrossegable; les fases no, es mouen des
+// del projecte, que n'ofereix la cascada); les altres accions es fan
 // a «a revisar», a «gestió interna» i a la fitxa de cada publicació.
 export async function CalendariSetmanaInici({ cites, hui, jo }: { cites: CitaInici[]; hui: string; jo: string }) {
   const dies = Array.from({ length: 7 }, (_, i) => sumaDies(hui, i));
@@ -49,7 +50,7 @@ export async function CalendariSetmanaInici({ cites, hui, jo }: { cites: CitaIni
     xarxes = new Map(cs.map((c) => [c.id, c]));
   }
 
-  const marques = await diesMarcats(hui, fi);
+  const [marques, fases] = await Promise.all([diesMarcats(hui, fi), fasesQuePorto(jo, hui, fi, hui)]);
   const items: CitaSetmana[] = [
     ...cites.map((c) => ({
       clau: `t:${c.id}`,
@@ -100,11 +101,12 @@ export async function CalendariSetmanaInici({ cites, hui, jo }: { cites: CitaIni
           <span><CheckSquare className="icona-petita inline" aria-hidden /> tasques</span>
           <span><House className="icona-petita inline" aria-hidden /> internes</span>
           {xarxes.size > 0 && <span><Megaphone className="icona-petita inline" aria-hidden /> xarxes</span>}
+          {fases.length > 0 && <span><Flag className="icona-petita inline" aria-hidden /> fases</span>}
           <span><GripVertical className="icona-petita inline" aria-hidden /> arrossega per canviar el dia</span>
           <Link href="/calendari">el meu calendari →</Link>
         </span>
       </header>
-      <SetmanaArrossegable key={items.map((i) => `${i.clau}:${i.data}`).join(",")} dies={infoDies} items={items} hui={hui} />
+      <SetmanaArrossegable key={items.map((i) => `${i.clau}:${i.data}`).join(",")} dies={infoDies} items={items} fases={fases} hui={hui} />
     </section>
   );
 }

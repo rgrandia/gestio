@@ -35,6 +35,7 @@ begin
     (p1,f_tab,'Revisar ponderació',roc,current_date+2),
     (p1,f_camp,'Seguiment de quotes diari',aina,current_date-8);
   update fases set data_prevista = current_date - 3 + (ordre-1)*12 where projecte_id=p2;
+  update fases set data_inici = current_date + 3 where projecte_id=p2 and ordre=2; -- comença dins dels 7 dies de l'inici
   -- presentació a punt i cap publicació: surt a «cal atenció» de xarxes
   perform set_config('app.motiu_canvi', 'dades de prova', true);
   update fases set data_prevista = current_date + 10 where projecte_id = p2 and nom = 'Presentació';

@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { requereixMembre } from "@/lib/auth/session";
 import { membres, obtePerfils } from "@/lib/dades";
 import { avui, diaCurt, sumaDies } from "@/lib/dates";
-import { diesMarcats } from "@/lib/dades-calendari";
+import { diesMarcats, fasesQuePorto } from "@/lib/dades-calendari";
 import { TIPUS_DIA } from "@/lib/calendari";
 import { dilluns } from "@/lib/xarxes";
 import { CalendariPersonal, type FeinaDia } from "@/components/CalendariPersonal";
@@ -27,8 +27,8 @@ export default async function Calendari({ searchParams }: { searchParams: Promis
   const setmana = [dilluns(hui), sumaDies(dilluns(hui), 6)];
 
   const supabase = await createClient();
-  const prj = "projectes!inner(id, titol, numero_estudi, responsable_id, estat, intern_de, arxivat_el, eliminat_el)";
-  const [marques, deLaSetmana, perfils, tasquesR, fasesR] = await Promise.all([
+  const prj = "projectes!inner(id, titol, numero_estudi, estat, intern_de, arxivat_el, eliminat_el)";
+  const [marques, deLaSetmana, perfils, tasquesR, fases] = await Promise.all([
     diesMarcats(inici, fi),
     diesMarcats(setmana[0], setmana[1]),
     obtePerfils(),
@@ -44,19 +44,9 @@ export default async function Calendari({ searchParams }: { searchParams: Promis
       .eq("projectes.estat", "actiu")
       .is("projectes.arxivat_el", null)
       .is("projectes.eliminat_el", null),
-    // fases obertes que comencen o acaben dins del mes; després es queden les
-    // que porto jo (assignades a mi, o sense ningú en un projecte meu)
-    supabase
-      .from("fases")
-      .select(`id, nom, data_inici, data_prevista, responsable_id, ${prj}`)
-      .is("data_real", null)
-      .neq("estat", "cancellat")
-      .or(`and(data_prevista.gte.${inici},data_prevista.lte.${fi}),and(data_inici.gte.${inici},data_inici.lte.${fi})`)
-      .eq("projectes.estat", "actiu")
-      .is("projectes.arxivat_el", null)
-      .is("projectes.eliminat_el", null),
+    fasesQuePorto(jo.id, inici, fi, hui),
   ]);
-  type P = { id: string; titol: string; numero_estudi: string | null; responsable_id: string; intern_de: string | null };
+  type P = { id: string; titol: string; numero_estudi: string | null; intern_de: string | null };
   const nomProjecte = (p: P) => (p.numero_estudi ? `${p.numero_estudi} · ` : "") + p.titol;
   const feina: FeinaDia[] = [
     ...((tasquesR.data ?? []) as unknown as { id: string; titol: string; data_prevista: string; projectes: P }[]).map((t) => ({
@@ -68,24 +58,7 @@ export default async function Calendari({ searchParams }: { searchParams: Promis
       href: t.projectes.intern_de ? "/#intern" : `/projectes/${t.projectes.id}`,
       vencut: t.data_prevista < hui,
     })),
-    ...((fasesR.data ?? []) as unknown as {
-      id: string;
-      nom: string;
-      data_inici: string | null;
-      data_prevista: string | null;
-      responsable_id: string | null;
-      projectes: P;
-    }[])
-      .filter((f) => f.responsable_id === jo.id || (!f.responsable_id && f.projectes.responsable_id === jo.id))
-      .flatMap((f) => {
-        const base = { titol: f.nom, on: nomProjecte(f.projectes), href: `/projectes/${f.projectes.id}` };
-        const r: FeinaDia[] = [];
-        if (f.data_inici && f.data_inici >= inici && f.data_inici <= fi && f.data_inici !== f.data_prevista)
-          r.push({ ...base, clau: `fi${f.id}`, data: f.data_inici, tipus: "fase-inici", vencut: false });
-        if (f.data_prevista && f.data_prevista >= inici && f.data_prevista <= fi)
-          r.push({ ...base, clau: `ff${f.id}`, data: f.data_prevista, tipus: "fase-fi", vencut: f.data_prevista < hui });
-        return r;
-      }),
+    ...fases,
   ].sort((a, b) => (a.tipus.startsWith("fase") ? 1 : 0) - (b.tipus.startsWith("fase") ? 1 : 0));
   const equip = membres(perfils);
   const persones = new Map(equip.map((p) => [p.id, p]));
