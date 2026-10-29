@@ -463,7 +463,10 @@ membre pot marcar **festius de tot l'equip** (`perfil_id` null; només
 `marca_dies()` (un any com a molt de cop); treure una marca la desactiva.
 Pantalla **el meu calendari** (`/calendari`): mes, tria de dies (clic, Maj+clic
 per a un interval), «cada setmana fins al» per repetir, i qui de l'equip no hi
-és aquesta setmana. Al calendari dels 7 dies de l'inici surt com és cada dia
+és aquesta setmana. A cada dia hi surt també **la meva feina**: les tasques
+obertes assignades a mi (de projecte i internes) i, en petit, l'inici i el
+final previst de les fases que porto (assignades a mi, o sense ningú en un
+projecte del qual soc responsable); el que ja ha vençut, en vermell. Al calendari dels 7 dies de l'inici surt com és cada dia
 i s'avisa si una tasca cau en un dia de vacances o festiu.
 
 Límit RGPD: no hi ha cap tipus «baixa» ni «malaltia» i la nota és curta. Una

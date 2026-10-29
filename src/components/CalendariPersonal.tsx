@@ -10,8 +10,20 @@ import { IconaDia } from "@/components/IconaDia";
 
 type Persona = { id: string; nom: string; color: string | null };
 
+// La meva feina amb data (tasques de projecte, internes i, en petit, les fases
+// que porto): el calendari no és només de dies, també del que hi cau.
+export type FeinaDia = {
+  clau: string;
+  data: string;
+  tipus: "tasca" | "interna" | "fase-fi" | "fase-inici";
+  titol: string;
+  on: string;
+  href: string;
+  vencut: boolean;
+};
+
 // El meu calendari: tries dies (clic; Maj+clic per a un interval) i els
-// marques. Es pot repetir cada setmana fins a una data (p. ex. teletreball
+// marques. Sota de cada dia, la meva feina que hi cau (tasques i fases). Es pot repetir cada setmana fins a una data (p. ex. teletreball
 // tots els divendres) i marcar festius de tot l'equip. Hi surten també els
 // dels companys, per saber qui hi ha.
 export function CalendariPersonal({
@@ -21,7 +33,9 @@ export function CalendariPersonal({
   jo,
   marques,
   persones,
+  feina = [],
 }: {
+  feina?: FeinaDia[];
   mes: string;
   dies: string[];
   hui: string;
@@ -42,6 +56,8 @@ export function CalendariPersonal({
   const festiusEquip = new Map(marques.filter((m) => m.perfil_id === null).map((m) => [m.data, m]));
   const altres = marques.filter((m) => m.perfil_id && m.perfil_id !== jo);
   const nomDe = new Map(persones.map((p) => [p.id, p]));
+  const feinaDe = new Map<string, FeinaDia[]>();
+  for (const f of feina) feinaDe.set(f.data, [...(feinaDe.get(f.data) ?? []), f]);
 
   const tria = (d: string, interval: boolean) => {
     setError(null);
@@ -129,11 +145,20 @@ export function CalendariPersonal({
           const f = festiusEquip.get(d);
           const ells = altres.filter((a) => a.data === d);
           return (
-            <button
+            // Clicar l'espai buit del dia també el tria (el botó és per al teclat);
+            // els enllaços de la feina naveguen.
+            <div
               key={d}
+              className={["dia", "dia-cel", fora ? "fora" : "", d === hui ? "avui" : "", triats.has(d) ? "triat" : ""].join(" ")}
+              onClick={(e) => {
+                if (!(e.target as HTMLElement).closest("a, button")) tria(d, e.shiftKey);
+              }}
+            >
+            <button
               type="button"
-              className={["dia", "dia-cal", fora ? "fora" : "", d === hui ? "avui" : "", triats.has(d) ? "triat" : ""].join(" ")}
+              className="dia-cal"
               aria-pressed={triats.has(d)}
+              aria-label={`triar el ${Number(d.slice(8))}/${Number(d.slice(5, 7))}`}
               data-data={d}
               onClick={(e) => tria(d, e.shiftKey)}
             >
@@ -167,6 +192,20 @@ export function CalendariPersonal({
                 </span>
               )}
             </button>
+            {(feinaDe.get(d) ?? []).length > 0 && (
+              <ul className="feina-dia">
+                {feinaDe.get(d)!.map((f) => (
+                  <li key={f.clau} className={`fd-${f.tipus} ${f.vencut ? "vencut" : ""}`} title={`${f.titol}${f.on ? ` · ${f.on}` : ""}`}>
+                    <a href={f.href}>
+                      {f.tipus === "fase-fi" ? "fi " : f.tipus === "fase-inici" ? "inici " : ""}
+                      {f.titol}
+                    </a>
+                    {f.on && <span className="on"> · {f.on}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+            </div>
           );
         })}
       </div>
