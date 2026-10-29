@@ -158,6 +158,10 @@ await roc.click(".columna-tauler[data-estat=idea] >> text=Idea per planificar");
 await roc.waitForURL(/\/xarxes\/[0-9a-f-]{36}$/);
 ok(await roc.isVisible(`text=prevista el ${demaIso.slice(8, 10)}/${demaIso.slice(5, 7)}/${demaIso.slice(2, 4)}`), "amb el teclat (→) es passa al dia següent");
 ok(await roc.isVisible("text=sense motiu"), "moure-la al planner queda a l'historial de dates");
+// validar directament, sense enviar a revisar (migració 0022)
+await roc.click("button:has-text('validar sense revisió')");
+await roc.waitForSelector(".etiqueta >> text=aprovada");
+ok(await roc.isVisible("text=validada per Roc, sense revisió"), "es pot validar sense revisió i hi consta");
 // al passat no
 await roc.goto(B + "/xarxes/setmana?d=" + hui);
 await roc.screenshot({ path: SHOTS + "xarxes-setmana.png", fullPage: true });

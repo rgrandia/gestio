@@ -1023,9 +1023,31 @@ do $$ begin
     raise exception 'FALLA: algú s''ha pogut revisar ell mateix';
   exception when raise_exception then null;
   end;
+end $$;
+
+-- validar directament, sense revisió (0022): queda qui i que no s'ha revisat
+update publicacions set estat = 'aprovada' where id = '71000000-0000-0000-0000-000000000002';
+do $$ begin
+  assert (select estat from publicacions where id = '71000000-0000-0000-0000-000000000002') = 'aprovada',
+    'no s''ha pogut validar directament';
+  assert (select aprovada_per = auth.uid() and sense_revisio from publicacions
+          where id = '71000000-0000-0000-0000-000000000002'), 'no consta qui l''ha validada sense revisió';
+end $$;
+update publicacions set text = 'Text nou' where id = '71000000-0000-0000-0000-000000000002';
+do $$ begin
+  assert (select estat = 'esborrany' and aprovada_per is null and not sense_revisio from publicacions
+          where id = '71000000-0000-0000-0000-000000000002'), 'tocar el text no fa caducar la validació directa';
+end $$;
+update publicacions set estat = 'cancellada' where id = '71000000-0000-0000-0000-000000000002';
+do $$ begin
   begin
-    update publicacions set estat = 'aprovada' where id = '71000000-0000-0000-0000-000000000001';
-    raise exception 'FALLA: s''ha aprovat sense revisió';
+    update publicacions set estat = 'aprovada' where id = '71000000-0000-0000-0000-000000000002';
+    raise exception 'FALLA: s''ha validat una publicació cancel·lada';
+  exception when raise_exception then null;
+  end;
+  begin
+    insert into publicacions (titol, estat) values ('Neix aprovada', 'aprovada');
+    raise exception 'FALLA: una publicació nova ha nascut aprovada';
   exception when raise_exception then null;
   end;
 end $$;
@@ -1033,6 +1055,13 @@ end $$;
 select activa_funcio('00000000-0000-0000-0000-00000000000c', 'xarxes', true);
 update publicacions set estat = 'revisio', revisor_id = '00000000-0000-0000-0000-00000000000c'
   where id = '71000000-0000-0000-0000-000000000001';
+do $$ begin
+  begin
+    update publicacions set estat = 'aprovada' where id = '71000000-0000-0000-0000-000000000001';
+    raise exception 'FALLA: en revisió, qui la porta se l''ha aprovada';
+  exception when raise_exception then null;
+  end;
+end $$;
 
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000c"}';
 do $$ begin
@@ -1051,6 +1080,8 @@ update publicacions set estat = 'aprovada' where id = '71000000-0000-0000-0000-0
 do $$ begin
   assert (select aprovada_per from publicacions where id = '71000000-0000-0000-0000-000000000001')
          = '00000000-0000-0000-0000-00000000000c', 'no consta qui l''ha aprovada';
+  assert not (select sense_revisio from publicacions where id = '71000000-0000-0000-0000-000000000001'),
+    'una aprovació per revisió no és «sense revisió»';
 end $$;
 
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';

@@ -84,6 +84,7 @@ export type Publicacio = {
   enllac_recursos: string | null;
   nota_revisio: string | null;
   aprovada_per: string | null;
+  sense_revisio?: boolean; // validada directament per qui la porta (0022)
   notes: string | null;
 };
 
