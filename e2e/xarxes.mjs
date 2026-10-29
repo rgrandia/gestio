@@ -98,11 +98,29 @@ ok(true, "qui revisa l'aprova");
 // publicada amb enllaç
 await roc.reload();
 ok(await roc.isVisible("text=aprovada per Aina"), "consta qui l'ha aprovada");
-await roc.click("button:has-text('marcar publicada')");
+// primer només a X (0023): la publicació encara no és publicada
+await roc.click("button:has-text('marcar publicada a…')");
+await roc.uncheck("input[aria-label='publicada a GESOP LinkedIn']");
 await roc.fill("input[aria-label='enllaç publicat a @gesop_prova']", "https://x.com/gesop_prova/status/1");
+await roc.click("button:has-text('desar on s\\'ha publicat')");
+await roc.waitForSelector("#a-cada-xarxa >> text=1 de 2 publicades");
+ok(await roc.isVisible(".etiqueta >> text=aprovada"), "publicada només a una xarxa, continua aprovada");
+ok(await roc.isVisible("#a-cada-xarxa li[data-publicat=no] >> text=GESOP LinkedIn"), "consta quina xarxa falta");
+ok(await roc.isVisible("a[href='https://x.com/gesop_prova/status/1']"), "es desa l'enllaç de la publicació");
+// després, la que faltava: ara sí, publicada
+await roc.click("button:has-text('marcar publicada')");
+ok(!(await roc.isVisible("input[aria-label='enllaç publicat a @gesop_prova']")), "només demana les xarxes que falten");
 await roc.click("button:has-text('desar com a publicada')");
 await roc.waitForSelector(".etiqueta >> text=publicada");
-ok(await roc.isVisible("a[href='https://x.com/gesop_prova/status/1']"), "es desa l'enllaç de la publicació");
+ok(await roc.isVisible("#a-cada-xarxa >> text=2 de 2 publicades"), "amb totes les xarxes, la publicació és publicada");
+// desfer-ne una la torna a programada; tornar-la a marcar la deixa publicada
+await roc.click("button[aria-label='desfer publicada a GESOP LinkedIn']");
+await roc.waitForSelector(".etiqueta >> text=programada");
+ok(await roc.isVisible("a[href='https://x.com/gesop_prova/status/1']"), "desfer una xarxa no toca l'altra");
+await roc.click("button:has-text('marcar publicada')");
+await roc.click("button:has-text('desar com a publicada')");
+await roc.waitForSelector(".etiqueta >> text=publicada");
+ok(true, "desfer una xarxa la torna a programada");
 ok(await roc.isVisible("text=planificació inicial"), "l'historial de dates registra la data");
 
 // al calendari i al projecte

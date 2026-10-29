@@ -5,12 +5,12 @@ import { sumaDies } from "@/lib/dates";
 import { dilluns, OBERTES, type Compte, type Publicacio } from "@/lib/xarxes";
 
 export type PublicacioLlista = Publicacio & {
-  publicacio_canals: { compte_id: string; actiu: boolean; enllac_publicat: string | null }[];
+  publicacio_canals: { compte_id: string; actiu: boolean; enllac_publicat: string | null; publicat_el?: string | null }[];
   projectes: { id: string; titol: string; numero_estudi: string | null } | null;
 };
 
 const CAMPS =
-  "id, titol, text, projecte_id, responsable_id, revisor_id, estat, data_prevista, hora, data_real, enllac_recursos, nota_revisio, aprovada_per, notes, publicacio_canals(compte_id, actiu, enllac_publicat), projectes(id, titol, numero_estudi)";
+  "id, titol, text, projecte_id, responsable_id, revisor_id, estat, data_prevista, hora, data_real, enllac_recursos, nota_revisio, aprovada_per, notes, publicacio_canals(compte_id, actiu, enllac_publicat, publicat_el), projectes(id, titol, numero_estudi)";
 
 export async function comptes(): Promise<Compte[]> {
   const supabase = await createClient();

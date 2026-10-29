@@ -8,6 +8,9 @@
   font-size: 9px; font-weight: 700; letter-spacing: .02em; color: #fff; text-transform: none;
 }
 .xarxa.buida { background: var(--fons); color: var(--text-suau); font-weight: 500; }
+/* publicada només en algunes xarxes (0023): la que ja hi consta, amb ✓ i contorn */
+.xarxa.feta { box-shadow: inset 0 0 0 1px #fff; gap: 1px; }
+.canals-publicats li[data-publicat="no"] .on { color: var(--risc); }
 
 .xip-pub {
   display: grid; gap: 2px; padding: 4px 6px; margin-top: 4px;

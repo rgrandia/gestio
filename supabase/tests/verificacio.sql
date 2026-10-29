@@ -1126,6 +1126,55 @@ do $$ begin
     'reobrir una publicació no li treu la data real';
 end $$;
 
+-- publicada xarxa per xarxa (0023): cada canal té la seva data i la
+-- publicació segueix els canals
+do $$ begin
+  assert not exists (select 1 from publicacio_canals where publicacio_id = '71000000-0000-0000-0000-000000000001'
+                     and publicat_el is not null), 'reobrir una publicació no treu la data dels canals';
+end $$;
+update publicacio_canals set publicat_el = current_date, enllac_publicat = 'https://www.linkedin.com/x'
+  where publicacio_id = '71000000-0000-0000-0000-000000000001' and compte_id = '70000000-0000-0000-0000-000000000001';
+do $$ begin
+  assert (select estat from publicacions where id = '71000000-0000-0000-0000-000000000001') = 'esborrany',
+    'publicada en una sola xarxa, la publicació ja consta publicada';
+  begin
+    update publicacio_canals set publicat_el = current_date + 1
+      where publicacio_id = '71000000-0000-0000-0000-000000000001' and compte_id = '70000000-0000-0000-0000-000000000002';
+    raise exception 'FALLA: un canal publicat amb data futura';
+  exception when raise_exception then null;
+  end;
+end $$;
+update publicacio_canals set publicat_el = current_date - 1
+  where publicacio_id = '71000000-0000-0000-0000-000000000001' and compte_id = '70000000-0000-0000-0000-000000000002';
+do $$ begin
+  assert (select estat = 'publicada' and data_real = current_date from publicacions
+          where id = '71000000-0000-0000-0000-000000000001'),
+    'amb totes les xarxes publicades, la publicació no és publicada amb la data més tardana';
+end $$;
+update publicacio_canals set publicat_el = null
+  where publicacio_id = '71000000-0000-0000-0000-000000000001' and compte_id = '70000000-0000-0000-0000-000000000001';
+do $$ begin
+  assert (select estat = 'programada' and data_real is null from publicacions
+          where id = '71000000-0000-0000-0000-000000000001'), 'desmarcar una xarxa no torna la publicació a programada';
+  assert (select publicat_el = current_date - 1 from publicacio_canals
+          where publicacio_id = '71000000-0000-0000-0000-000000000001' and compte_id = '70000000-0000-0000-0000-000000000002'),
+    'desmarcar una xarxa ha tocat l''altra';
+  assert (select enllac_publicat is null from publicacio_canals
+          where publicacio_id = '71000000-0000-0000-0000-000000000001' and compte_id = '70000000-0000-0000-0000-000000000001'),
+    'desmarcar una xarxa no en treu l''enllaç';
+end $$;
+-- marcar la publicació sencera data les xarxes que no en tenien
+update publicacions set estat = 'publicada', data_real = current_date
+  where id = '71000000-0000-0000-0000-000000000001';
+do $$ begin
+  assert (select count(*) from publicacio_canals where publicacio_id = '71000000-0000-0000-0000-000000000001'
+          and actiu and publicat_el is null) = 0, 'publicada sencera, hi ha xarxes sense data';
+  assert (select publicat_el = current_date - 1 from publicacio_canals
+          where publicacio_id = '71000000-0000-0000-0000-000000000001' and compte_id = '70000000-0000-0000-0000-000000000002'),
+    'publicar-la sencera ha trepitjat la data d''una xarxa';
+end $$;
+update publicacions set estat = 'esborrany' where id = '71000000-0000-0000-0000-000000000001';
+
 -- es pot desactivar; qui no la té ja no la pot tornar a donar
 select activa_funcio('00000000-0000-0000-0000-00000000000c', 'xarxes', false);
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000c"}';

@@ -13,7 +13,7 @@ export type ItemPlanner = {
   estat: EstatPublicacio;
   data: string | null; // la real si ja s'ha publicat; si no, la prevista
   hora: string | null;
-  xarxes: { curt: string; color: string; nom: string }[];
+  xarxes: { curt: string; color: string; nom: string; feta?: boolean }[];
 };
 type Marca = { data: string; titol: string; tipus: "efemeride" | "idea" };
 
@@ -66,7 +66,10 @@ export function PlannerSetmanal({
               <span className="xarxa buida">sense compte</span>
             ) : (
               item.xarxes.map((x, i) => (
-                <span key={i} className="xarxa" style={{ background: x.color }} title={x.nom}>{x.curt}</span>
+                <span key={i} className={`xarxa ${x.feta ? "feta" : ""}`} style={{ background: x.color }} title={x.feta ? `${x.nom}: ja publicada` : x.nom}>
+                    {x.feta ? "✓" : ""}
+                    {x.curt}
+                  </span>
               ))
             )}
             {item.hora && <span className="suau">{item.hora.slice(0, 5)}</span>}
