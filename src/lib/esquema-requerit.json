@@ -15,7 +15,10 @@
     "activa_funcio(uuid,text,boolean)",
     "marca_dies(date[],text,text,boolean)",
     "replanifica_en_cascada(uuid,date,text)",
-    "posa_motiu(text,uuid,text)"
+    "posa_motiu(text,uuid,text)",
+    "crea_onades(uuid,integer,integer,text)",
+    "agrupa_onades(uuid,uuid[])",
+    "treu_de_l_estudi(uuid)"
   ],
   "columnes": [
     "fases.data_inici",
@@ -45,6 +48,8 @@
     "publicacio_canals.text_adaptat",
     "publicacio_canals.publicat_el",
     "efemerides.recurrent",
-    "calendari_dies.tipus"
+    "calendari_dies.tipus",
+    "projectes.estudi_id",
+    "projectes.onada"
   ]
 }

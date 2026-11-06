@@ -75,12 +75,30 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
   const persones = mapaPersones(perfils);
   const hui = avui();
 
+  // Onades d'un mateix estudi (0024): una sola línia per estudi, la de
+  // l'onada en curs (la primera que no està tancada ni cancel·lada).
+  const totals = new Map<string, number>();
+  const ambEstudi = [...new Set(files.map((p) => p.estudi_id).filter((x): x is string => !!x))];
+  if (ambEstudi.length) {
+    const { data } = await supabase.from("projectes").select("estudi_id").in("estudi_id", ambEstudi).is("eliminat_el", null);
+    for (const r of (data ?? []) as { estudi_id: string }[]) totals.set(r.estudi_id, (totals.get(r.estudi_id) ?? 0) + 1);
+  }
+  const enCurs = (p: (typeof files)[number]) => (p.estat === "actiu" || p.estat === "pausat" ? 0 : 1);
+  const representant = new Map<string, (typeof files)[number]>();
+  for (const p of files) {
+    if (!p.estudi_id) continue;
+    const ara = representant.get(p.estudi_id);
+    if (!ara || enCurs(p) < enCurs(ara) || (enCurs(p) === enCurs(ara) && (p.onada ?? 0) < (ara.onada ?? 0)))
+      representant.set(p.estudi_id, p);
+  }
+  const visibles = files.filter((p) => !p.estudi_id || representant.get(p.estudi_id)?.id === p.id);
+
   return (
     <>
       <div className="cap-pagina">
         <div>
           <h1>projectes</h1>
-          <div className="sub">{files.length} {files.length === 1 ? "projecte" : "projectes"}</div>
+          <div className="sub">{visibles.length} {visibles.length === 1 ? "projecte" : "projectes"}</div>
         </div>
         <div className="flex gap-2">
           <Link href="/plantilles" className="boto">plantilles de tasques</Link>
@@ -115,7 +133,7 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
         <button className="boto">filtrar</button>
       </form>
 
-      {files.length === 0 ? (
+      {visibles.length === 0 ? (
         <div className="buit">cap projecte amb aquests filtres</div>
       ) : (
         <div className="desplacable">
@@ -134,11 +152,18 @@ export default async function Projectes({ searchParams }: { searchParams: Promis
               </tr>
             </thead>
             <tbody>
-              {files.map((p) => (
+              {visibles.map((p) => (
                 <tr key={p.id} data-estat={p.estat === "cancellat" ? "cancellat" : undefined}>
                   <td className="num suau">{p.numero_estudi ?? ""}</td>
                   <td className="element">
-                    <div className="titol-el"><Link href={`/projectes/${p.id}`}>{p.titol}</Link></div>
+                    <div className="titol-el">
+                      <Link href={`/projectes/${p.id}`}>{p.titol}</Link>
+                      {p.estudi_id && (totals.get(p.estudi_id) ?? 0) > 1 && (
+                        <span className="etiqueta tag-accent ml-1" title="estudi de diverses onades: la resta són a la fitxa">
+                          onada {p.onada} de {totals.get(p.estudi_id)}
+                        </span>
+                      )}
+                    </div>
                     {p.subtipus && <div className="context">{p.subtipus}</div>}
                   </td>
                   <td><span className={`etiqueta ${p.tipus === "estudi" ? "tag-accent" : ""}`}>{p.tipus}</span></td>

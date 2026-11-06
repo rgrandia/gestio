@@ -25,8 +25,11 @@ import {
   actualitzaFase,
   creaFase,
   creaTasca,
+  creaOnades,
   novaOnada,
 } from "@/lib/accions";
+import { OnadesEstudi, onadesDe } from "@/components/OnadesEstudi";
+import { GestioOnades } from "@/components/GestioOnades";
 import { AplicaFasesNoves } from "@/components/AplicaFasesNoves";
 import { FilaAccionable } from "@/components/FilaAccionable";
 import { Formulari } from "@/components/Formulari";
@@ -61,7 +64,7 @@ export default async function DetallProjecte({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ pestanya?: string; tot?: string }>;
+  searchParams: Promise<{ pestanya?: string; tot?: string; error?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -103,6 +106,7 @@ export default async function DetallProjecte({
   const persones = mapaPersones(perfils);
 
   const base = `/projectes/${id}`;
+  const onades = p.estudi_id ? await onadesDe(p.estudi_id) : [];
 
   return (
     <>
@@ -117,6 +121,9 @@ export default async function DetallProjecte({
             {p.numero_estudi && <span className="etiqueta tag-accent">núm. {p.numero_estudi}</span>}
             <span className={`etiqueta ${p.tipus === "estudi" ? "tag-accent" : ""}`}>{p.tipus}</span>
             {p.subtipus && <span className="etiqueta">{p.subtipus}</span>}
+            {p.onada && onades.length > 1 && (
+              <a href="#onades" className="etiqueta tag-accent">onada {p.onada} de {onades.length}</a>
+            )}
             <EtiquetaEstat estat={p.estat} />
             {p.arxivat_el && <span className="etiqueta tag-mut">arxivat</span>}
             {p.eliminat_el && <span className="etiqueta tag-vencut">a la paperera</span>}
@@ -137,6 +144,8 @@ export default async function DetallProjecte({
           Projecte arxivat el {dataCurta(p.arxivat_el.slice(0, 10))}: no surt a la safata ni a les llistes.
         </p>
       )}
+
+      {onades.length > 1 && <OnadesEstudi onades={onades} actual={p.id} hui={hui} />}
 
       <details className="meves-tasques">
         <summary>
@@ -218,13 +227,13 @@ export default async function DetallProjecte({
         </Link>
         <Link href={`${base}?pestanya=editar`} aria-current={pestanya === "editar" ? "page" : undefined}>editar</Link>
         {p.tipus === "estudi" && (
-          <Link href={`${base}?pestanya=onada`} aria-current={pestanya === "onada" ? "page" : undefined}>nova onada</Link>
+          <Link href={`${base}?pestanya=onada`} aria-current={pestanya === "onada" ? "page" : undefined}>onades</Link>
         )}
       </nav>
 
       {pestanya === "historial" && <Historial projecteId={id} />}
       {pestanya === "editar" && <Editar p={p} perfils={perfils} coresponsables={coresponsables} />}
-      {pestanya === "onada" && p.tipus === "estudi" && <NovaOnada p={p} />}
+      {pestanya === "onada" && p.tipus === "estudi" && <Onades p={p} n={onades.length} error={sp.error} />}
       {pestanya === "detall" && (
         <Detall p={p} hui={hui} persones={persones} perfils={perfils} mostraTancats={mostraTancats} base={base} />
       )}
@@ -886,12 +895,72 @@ function Editar({ p, perfils, coresponsables }: { p: Projecte; perfils: Perfil[]
   );
 }
 
+// Pestanya «onades» (0024): crear-les de cop, una a una o ajuntar estudis
+// que ja existien. Cada onada és un projecte dins del mateix estudi.
+async function Onades({ p, n, error }: { p: Projecte; n: number; error?: string }) {
+  const supabase = await createClient();
+  const { data: candidats } = await supabase
+    .from("projectes")
+    .select("id, titol, numero_estudi, data_inici")
+    .eq("client_id", p.client_id)
+    .eq("tipus", "estudi")
+    .is("estudi_id", null)
+    .is("intern_de", null)
+    .is("eliminat_el", null)
+    .neq("id", p.id)
+    .order("data_inici", { nullsFirst: false });
+  return (
+    <div className="grid gap-4">
+      {error && <p className="error" role="alert">No s&apos;han pogut crear les onades: {error}</p>}
+      <section className="seccio compacta">
+        <header>
+          <span className="titol">crear les onades de cop</span>
+          <span className="meta">{n > 1 ? `ara en té ${n}` : "ara és un estudi d'una sola onada"}</span>
+        </header>
+        <div className="cos">
+          <Formulari accio={creaOnades} boto="crear les onades que falten">
+            <input type="hidden" name="origen" value={p.id} />
+            <p className="prosa">
+              Copia aquesta onada (fases, entregables, tasques i gent, sense dates reals ni notes) tantes vegades com
+              calgui, cada una desplaçada l&apos;interval que diguis des de l&apos;inici d&apos;aquesta
+              {p.data_inici ? ` (${dataCurta(p.data_inici)})` : ""}. Després cada onada es replanifica pel seu compte.
+              Val la pena posar abans les dates de les fases d&apos;aquesta onada: es copien desplaçades.
+            </p>
+            <div className="fila-camps">
+              <label>
+                onades en total
+                <input name="total" type="number" min={Math.max(2, n + 1)} max={52} required defaultValue={Math.max(2, n + 1)} />
+              </label>
+              <label>
+                una cada
+                <input name="cada" type="number" min={1} required defaultValue={2} />
+              </label>
+              <label>
+                &nbsp;
+                <select name="unitat" defaultValue="mesos" aria-label="unitat">
+                  <option value="mesos">mesos</option>
+                  <option value="setmanes">setmanes</option>
+                </select>
+              </label>
+            </div>
+          </Formulari>
+        </div>
+      </section>
+      <section className="seccio compacta">
+        <header><span className="titol">afegir-ne una a una data concreta</span></header>
+        <div className="cos"><NovaOnada p={p} /></div>
+      </section>
+      <GestioOnades id={p.id} candidats={candidats ?? []} esOnada={Boolean(p.estudi_id)} />
+    </div>
+  );
+}
+
 function NovaOnada({ p }: { p: Projecte }) {
   return (
     <Formulari accio={novaOnada} boto="crear la nova onada">
       <input type="hidden" name="origen" value={p.id} />
       <p className="prosa">
-        Crea un estudi nou per al mateix client amb les mateixes fases, entregables i tasques (les que no estan
+        Afegeix una onada a aquest estudi amb les mateixes fases, entregables i tasques (les que no estan
         cancel·lades) i la mateixa gent. Les dates es mouen tants dies com hi hagi entre l&apos;inici d&apos;aquest
         estudi{p.data_inici ? ` (${dataCurta(p.data_inici)})` : ""} i el de la nova onada. No es copien dates reals,
         enllaços, notes, contactes ni historial.

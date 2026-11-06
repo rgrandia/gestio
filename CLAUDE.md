@@ -491,6 +491,27 @@ absència per salut es marca «fora» sense explicar-la.
 - **Cerca global** troba també publicacions (si tens xarxes) i dies marcats
   amb nota.
 
+### 4.4 terdecies Onades d'un mateix estudi (migració 0024)
+
+Un estudi de diverses onades (p. ex. un baròmetre de 6) és **un sol estudi** a
+l'app, però cada onada continua sent un projecte amb les seves fases, tasques,
+entregables, dates i historial (§1: una sola entitat; la safata, el cronograma
+i la cascada no canvien). L'enllaç: `projectes.estudi_id` (la primera onada,
+que s'apunta a si mateixa) i `projectes.onada` (1..N, per ordre d'inici; un
+trigger només ho permet a estudis del mateix client).
+
+- **Crear-les de cop**: en donar d'alta l'estudi (onades + «una cada N mesos o
+  setmanes») o després, des de la pestanya «onades» (`crea_onades()`): copia
+  l'onada d'origen com fa «nova onada», amb les dates desplaçades. Un sol avís
+  de resum per persona.
+- **Nova onada** (§4.4 septies) ara la posa dins del mateix estudi.
+- **Ajuntar** estudis solts del mateix client que ja existien
+  (`agrupa_onades()`) i **treure'n** una (`treu_de_l_estudi()`): només es fa o
+  es desfà l'enllaç, no s'esborra res.
+- A la fitxa, a dalt, un **desplegable per onada** (dates, estat, tira de fases)
+  i «gestionar» per anar-hi; la que s'està mirant es gestiona a sota. A la llista
+  de projectes, una sola línia per estudi (l'onada en curs, «onada 3 de 6»).
+
 ### 4.5 Qui actualitza les fases
 
 **Només el responsable del projecte** (membre del departament). El camp i la
