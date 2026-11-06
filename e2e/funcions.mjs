@@ -113,11 +113,44 @@ await p.click("button:has-text('crear la nova onada')");
 await p.waitForURL((u) => !u.toString().includes(u1.split("/").pop()));
 ok(await p.isVisible("h1:has-text('Baròmetre municipal onada 3')"), "nova onada creada");
 ok(await p.locator("tbody.fase").count() === 6, "nova onada amb 6 fases");
-ok(await p.isVisible("text=Camp telefònic"), "conserva els noms de fase editats");
+ok(await p.isVisible("tbody.fase >> text=Camp telefònic"), "conserva els noms de fase editats");
 await p.screenshot({ path: `${SHOTS}/g3-onada.png`, fullPage: true });
 const aina2 = await login("aina@prova.test");
 await aina2.goto(B + "/avisos");
 ok(await aina2.isVisible("text=ha creat la nova onada 2702"), "l'Aina rep un sol avís de resum");
+
+// onades d'un mateix estudi (0024): la nova onada va dins del mateix estudi
+await p.waitForSelector("#onades");
+ok((await p.locator("#onades details.onada").count()) === 2, "la nova onada i l'original són onades del mateix estudi");
+ok(await p.isVisible(".cap-pagina >> text=onada 2 de 2"), "la capçalera diu quina onada és");
+ok(await p.isVisible("#onades details.onada.aqui >> text=onada 2"), "l'onada que es gestiona és marcada");
+// crear-ne de cop fins a 4, una cada mes
+await p.goto(p.url().split("#")[0].split("?")[0] + "?pestanya=onada");
+await p.fill("input[name=total]", "4");
+await p.fill("input[name=cada]", "1");
+await p.click("button:has-text('crear les onades que falten')");
+await p.waitForSelector("#onades details.onada[data-onada='4']");
+ok((await p.locator("#onades details.onada").count()) === 4, "crea de cop les onades que falten");
+// desplegar una altra onada i anar-hi a gestionar-la
+const o1 = p.locator("#onades details.onada[data-onada='1']");
+await o1.locator("summary .num-onada").click();
+ok(await o1.locator(".tira-fases").isVisible(), "cada onada es desplega amb les seves fases");
+await o1.locator("a:has-text('gestionar')").click();
+await p.waitForSelector("#onades details.onada.aqui[data-onada='1']");
+ok(await p.isVisible("h1:has-text('Baròmetre municipal onada 2')"), "des del desplegable es va a gestionar una altra onada");
+// a la llista de projectes, una sola línia per estudi
+await p.goto(B + "/projectes");
+ok((await p.locator("tbody tr", { hasText: "Baròmetre municipal" }).count()) === 1, "a la llista, un estudi de diverses onades és una sola línia");
+ok(await p.isVisible("text=onada 1 de 4"), "la línia diu quina onada és la que està en curs");
+// treure'n una: torna a ser un estudi solt
+await p.click("a:has-text('Baròmetre municipal onada 2')");
+await p.waitForSelector("#onades");
+const u4 = p.url();
+await p.goto(u4.split("#")[0] + "?pestanya=onada");
+await p.click("button:has-text('treure de l\\'estudi')");
+await p.waitForSelector("text=ara és un estudi d'una sola onada");
+await p.goto(B + "/projectes");
+ok((await p.locator("tbody tr", { hasText: "Baròmetre municipal" }).count()) === 2, "treure una onada la torna a deixar com a estudi solt");
 
 // resum setmanal
 await p.goto(B + "/resum");

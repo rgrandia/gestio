@@ -1184,6 +1184,73 @@ end $$;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';
 
 -- ------------------------------------------------------------
+-- Onades d'un mateix estudi (0024)
+-- ------------------------------------------------------------
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';
+do $$ begin
+  -- la nova onada de més amunt ja va dins del mateix estudi
+  assert (select estudi_id = id and onada = 1 from projectes where id = '20000000-0000-0000-0000-000000000001'),
+    'nova_onada no posa l''original com a primera onada';
+  assert (select count(*) from projectes where estudi_id = '20000000-0000-0000-0000-000000000001') = 2,
+    'nova_onada no posa la nova onada dins del mateix estudi';
+end $$;
+insert into projectes (id, client_id, titol, tipus, responsable_id, data_inici) values
+  ('24000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'Baròmetre sis', 'estudi',
+   '00000000-0000-0000-0000-00000000000a', current_date + 100),
+  ('24000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'Baròmetre zero', 'estudi',
+   '00000000-0000-0000-0000-00000000000a', current_date + 40),
+  ('24000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000001', 'Consultoria solta', 'consultoria',
+   '00000000-0000-0000-0000-00000000000a', current_date);
+do $$
+declare n int;
+begin
+  n := crea_onades('24000000-0000-0000-0000-000000000001', 4, 2, 'mesos');
+  assert n = 3, 'crea_onades no n''ha creat 3';
+  assert (select string_agg(onada::text, ',' order by onada) from projectes
+          where estudi_id = '24000000-0000-0000-0000-000000000001') = '1,2,3,4', 'les onades no estan numerades 1..4';
+  assert (select data_inici from projectes where estudi_id = '24000000-0000-0000-0000-000000000001' and onada = 3)
+         = (current_date + 100 + interval '4 months')::date, 'la tercera onada no comença 4 mesos després';
+  assert (select titol from projectes where estudi_id = '24000000-0000-0000-0000-000000000001' and onada = 4)
+         = 'Baròmetre sis · onada 4', 'el títol de l''onada no porta el número';
+  assert (select count(*) from fases f join projectes p on p.id = f.projecte_id
+          where p.estudi_id = '24000000-0000-0000-0000-000000000001') = 24, 'cada onada no té les seves fases';
+  begin
+    perform crea_onades('24000000-0000-0000-0000-000000000001', 4, 2, 'mesos');
+    raise exception 'FALLA: s''han tornat a crear onades que ja hi eren';
+  exception when raise_exception then if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+  begin
+    perform agrupa_onades('24000000-0000-0000-0000-000000000001', array['24000000-0000-0000-0000-000000000003']::uuid[]);
+    raise exception 'FALLA: s''ha ajuntat una consultoria com a onada';
+  exception when raise_exception then if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+  begin
+    update projectes set estudi_id = '24000000-0000-0000-0000-000000000001', onada = 9
+     where id = '24000000-0000-0000-0000-000000000003';
+    raise exception 'FALLA: una consultoria s''ha posat dins d''un estudi amb un update directe';
+  exception when raise_exception then if sqlerrm like 'FALLA%' then raise; end if;
+  end;
+end $$;
+-- ajuntar un estudi que ja existia: es numera per data (comença abans, és la 1)
+select agrupa_onades('24000000-0000-0000-0000-000000000001', array['24000000-0000-0000-0000-000000000002']::uuid[]);
+do $$ begin
+  assert (select onada from projectes where id = '24000000-0000-0000-0000-000000000002') = 1,
+    'ajuntar no numera per data d''inici';
+  assert (select onada from projectes where id = '24000000-0000-0000-0000-000000000001') = 2,
+    'ajuntar no renumera les altres onades';
+end $$;
+-- treure l'arrel: l'estudi continua amb les altres, amb una arrel nova
+select treu_de_l_estudi('24000000-0000-0000-0000-000000000001');
+do $$ begin
+  assert (select estudi_id is null and onada is null from projectes where id = '24000000-0000-0000-0000-000000000001'),
+    'treure una onada no la deixa solta';
+  assert (select count(*) from projectes where estudi_id = '24000000-0000-0000-0000-000000000002') = 4,
+    'en treure l''arrel, les altres onades no queden amb la nova arrel';
+  assert (select string_agg(onada::text, ',' order by onada) from projectes
+          where estudi_id = '24000000-0000-0000-0000-000000000002') = '1,2,3,4', 'en treure una onada no es renumeren';
+end $$;
+
+-- ------------------------------------------------------------
 -- Calendari personal (0020)
 -- ------------------------------------------------------------
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-00000000000a"}';

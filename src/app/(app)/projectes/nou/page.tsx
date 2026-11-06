@@ -124,6 +124,24 @@ export default async function NouProjecte({
             <input name="dies_silenci_max" type="number" min={1} defaultValue={45} />
           </label>
         </div>
+        <fieldset className="fila-camps onades-alta">
+          <legend className="petit">només estudis: si té diverses onades, es creen totes de cop (una onada per projecte, juntes a la fitxa)</legend>
+          <label>
+            onades
+            <input name="onades" type="number" min={1} max={52} defaultValue={1} />
+          </label>
+          <label>
+            una cada
+            <input name="onades_cada" type="number" min={1} placeholder="2" />
+          </label>
+          <label>
+            &nbsp;
+            <select name="onades_unitat" defaultValue="mesos" aria-label="unitat">
+              <option value="mesos">mesos</option>
+              <option value="setmanes">setmanes</option>
+            </select>
+          </label>
+        </fieldset>
         <label>
           notes
           <textarea name="notes" rows={3} defaultValue={idea?.descripcio ?? ""} />

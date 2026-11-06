@@ -239,6 +239,16 @@ export async function creaProjecte(_p: Resultat, fd: FormData): Promise<Resultat
   if (!Number.isInteger(silenci) || silenci <= 0)
     return { error: "Els dies de silenci han de ser un enter positiu." };
 
+  // Estudi de diverses onades (0024): es creen totes de cop.
+  const onades = tipus === "estudi" ? Number(text(fd, "onades") || 1) : 1;
+  const cada = Number(text(fd, "onades_cada") || 0);
+  const unitat = text(fd, "onades_unitat") || "mesos";
+  if (!Number.isInteger(onades) || onades < 1 || onades > 52) return { error: "Les onades han de ser entre 1 i 52." };
+  if (onades > 1) {
+    if (!data_inici) return { error: "Per crear-ne diverses onades, posa la data d'inici de la primera." };
+    if (!Number.isInteger(cada) || cada < 1) return { error: "Indica cada quantes setmanes o mesos hi ha una onada." };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("projectes")
@@ -268,6 +278,11 @@ export async function creaProjecte(_p: Resultat, fd: FormData): Promise<Resultat
 
   if (idea_id) {
     await supabase.from("idees").update({ projecte_id: data.id, client_id }).eq("id", idea_id);
+  }
+  if (onades > 1) {
+    const { error: eo } = await supabase.rpc("crea_onades", { p_origen: data.id, p_total: onades, p_cada: cada, p_unitat: unitat });
+    // la primera onada ja existeix: si falla, es pot tornar a provar des de la fitxa
+    if (eo) redirect(`/projectes/${data.id}?pestanya=onada&error=${encodeURIComponent(missatgeError(eo))}`);
   }
   redirect(`/projectes/${data.id}`);
 }
@@ -361,6 +376,39 @@ export async function novaOnada(_p: Resultat, fd: FormData): Promise<Resultat> {
   if (error) return { error: missatgeError(error) };
   revalidatePath("/", "layout");
   redirect(`/projectes/${data}`);
+}
+
+// Onades d'un estudi (0024): crear les que falten de cop, ajuntar projectes
+// que ja existien i treure'n una. Cada onada continua sent un projecte.
+export async function creaOnades(_p: Resultat, fd: FormData): Promise<Resultat> {
+  const origen = text(fd, "origen");
+  const total = Number(text(fd, "total"));
+  const cada = Number(text(fd, "cada"));
+  const unitat = text(fd, "unitat");
+  if (!Number.isInteger(total) || total < 2) return { error: "Indica quantes onades ha de tenir l'estudi en total." };
+  if (!Number.isInteger(cada) || cada < 1) return { error: "Indica cada quantes setmanes o mesos hi ha una onada." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("crea_onades", { p_origen: origen, p_total: total, p_cada: cada, p_unitat: unitat });
+  if (error) return { error: missatgeError(error) };
+  revalidatePath("/", "layout");
+  return { ok: true, missatge: `S'han creat ${data} onades.` };
+}
+
+export async function agrupaOnades(estudi: string, projectes: string[]): Promise<Resultat> {
+  if (projectes.length === 0) return { error: "Tria quins projectes són onades d'aquest estudi." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("agrupa_onades", { p_estudi: estudi, p_projectes: projectes });
+  if (error) return { error: missatgeError(error) };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function treuDeLEstudi(id: string): Promise<Resultat> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("treu_de_l_estudi", { p_projecte: id });
+  if (error) return { error: missatgeError(error) };
+  revalidatePath("/", "layout");
+  return { ok: true };
 }
 
 // Arxivar i paperera: res no s'esborra (§7.2). Es marca amb una data i es
